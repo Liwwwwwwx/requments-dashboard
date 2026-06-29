@@ -46,6 +46,10 @@ npm run req -- show --project default REQ-0001
 npm run req -- render --project default
 ```
 
+## 产品方案
+
+- [Requirements Board PRD](docs/PRODUCT_REQUIREMENTS.md)
+
 ## API 路由
 
 | 方法 | 路由 | 说明 |
