@@ -119,34 +119,6 @@ export function Sidebar({
             </nav>
           </section>
         ))}
-
-        <section className="sidebar-section">
-          <div className="sidebar-eyebrow">
-            <span>角色</span>
-          </div>
-          <nav className="sidebar-nav">
-            <button type="button" className="sidebar-nav-item" disabled style={{ opacity: 0.4 }}>
-              <span className="icon" style={{ background: 'var(--role-contract)' }} />
-              <span className="label">契约</span>
-              <span className="count">—</span>
-            </button>
-            <button type="button" className="sidebar-nav-item" disabled style={{ opacity: 0.4 }}>
-              <span className="icon" style={{ background: 'var(--role-frontend)' }} />
-              <span className="label">前端</span>
-              <span className="count">—</span>
-            </button>
-            <button type="button" className="sidebar-nav-item" disabled style={{ opacity: 0.4 }}>
-              <span className="icon" style={{ background: 'var(--role-backend)' }} />
-              <span className="label">后端</span>
-              <span className="count">—</span>
-            </button>
-            <button type="button" className="sidebar-nav-item" disabled style={{ opacity: 0.4 }}>
-              <span className="icon" style={{ background: 'var(--role-qa)' }} />
-              <span className="label">测试</span>
-              <span className="count">—</span>
-            </button>
-          </nav>
-        </section>
       </div>
 
       {selectedItem && (

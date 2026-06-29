@@ -181,7 +181,6 @@ function App() {
             ) : view === 'list' ? (
               <RequirementGrid
                 data={data}
-                taskItems={taskItems}
                 filters={filters}
                 setFilters={setFilters}
                 navFilter={navFilter}

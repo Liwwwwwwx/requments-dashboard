@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Empty, Input, Select } from 'antd';
+import { Empty } from 'antd';
 import {
   statusLabel,
   priorityChipClass,
@@ -8,26 +8,14 @@ import {
   unique
 } from '../utils';
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: '全部状态' },
-  { value: 'todo', label: '待开始' },
-  { value: 'doing', label: '进行中' },
-  { value: 'paused', label: '暂停' },
-  { value: 'done', label: '完成' }
-];
-
 export function RequirementGrid({
   data,
-  taskItems,
   filters,
   setFilters,
   navFilter,
   selected,
   onSelect
 }) {
-  const types = useMemo(() => unique(data.items.map((i) => i.type)), [data.items]);
-  const roles = useMemo(() => unique(taskItems.map((t) => t.role)), [taskItems]);
-  const priorities = useMemo(() => unique(data.items.map((i) => i.priority)), [data.items]);
   const weeks = useMemo(() => unique(data.items.map((i) => i.week)).reverse(), [data.items]);
 
   const filteredItems = useMemo(() => {
@@ -146,42 +134,6 @@ export function RequirementGrid({
             <span>共 {data.items.length || 0} 条，当前显示 {filteredItems.length} 条</span>
             {filters.query && <span>· 搜索 "{filters.query}"</span>}
           </div>
-        </div>
-        <div className="view-list-filters">
-          <Input.Search
-            placeholder="搜索标题、编号、摘要..."
-            value={filters.query}
-            onChange={(e) => setFilters({ ...filters, query: e.target.value })}
-            style={{ width: 240 }}
-            allowClear
-          />
-          <Select
-            value={filters.type}
-            onChange={(v) => setFilters({ ...filters, type: v })}
-            style={{ width: 130 }}
-            options={[{ value: 'all', label: '全部类型' }, ...types.map((t) => ({ value: t, label: t }))]}
-          />
-          <Select
-            value={filters.role}
-            onChange={(v) => setFilters({ ...filters, role: v })}
-            style={{ width: 130 }}
-            options={[{ value: 'all', label: '全部角色' }, ...roles.map((r) => ({ value: r, label: r }))]}
-          />
-          <Select
-            value={filters.status}
-            onChange={(v) => setFilters({ ...filters, status: v })}
-            style={{ width: 130 }}
-            options={STATUS_OPTIONS}
-          />
-          <Select
-            value={filters.priority}
-            onChange={(v) => setFilters({ ...filters, priority: v })}
-            style={{ width: 130 }}
-            options={[
-              { value: 'all', label: '全部优先级' },
-              ...priorities.map((p) => ({ value: p, label: p }))
-            ]}
-          />
         </div>
       </header>
 
