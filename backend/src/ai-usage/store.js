@@ -167,6 +167,20 @@ function latestByAccount(snapshots) {
   return map;
 }
 
+function snapshotsByAccount(snapshots) {
+  const map = new Map();
+  for (const snapshot of snapshots) {
+    if (!map.has(snapshot.accountId)) map.set(snapshot.accountId, []);
+    map.get(snapshot.accountId).push(snapshot);
+  }
+  for (const list of map.values()) {
+    list.sort((a, b) => String(b.collectedAt).localeCompare(String(a.collectedAt)));
+  }
+  return map;
+}
+
+const HISTORY_LIMIT = 90;
+
 function toNumber(value) {
   if (value === "" || value === null || value === undefined) return null;
   const num = Number(value);
@@ -232,10 +246,112 @@ function deriveUsage(snapshot) {
   };
 }
 
+function localDay(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+function dayLabel(day) {
+  if (!day) return "";
+  const [, month, date] = String(day).split("-");
+  return `${month}/${date}`;
+}
+
+function snapshotComparableValue(account, snapshot) {
+  if (!snapshot) return null;
+  if (account.provider === "kimi") {
+    return toNumber(snapshot.metrics?.kimi?.period?.remaining) ?? toNumber(snapshot.quotaRemaining);
+  }
+  if (account.provider === "minimax") {
+    const weekly = snapshot.metrics?.minimax?.weekly;
+    const remaining = toNumber(weekly?.remaining);
+    const total = toNumber(weekly?.total);
+    if (remaining !== null && total !== 0) return remaining;
+    return toNumber(weekly?.remainingPercent) ?? toNumber(snapshot.quotaRemaining);
+  }
+  if (account.provider === "deepseek") {
+    return toNumber(snapshot.balanceAmount);
+  }
+  return null;
+}
+
+function buildDailyUsage(accounts, snapshots) {
+  const accountById = new Map(accounts.map((account) => [account.id, account]));
+  const latestByDay = new Map();
+
+  for (const snapshot of snapshots) {
+    const account = accountById.get(snapshot.accountId);
+    if (!account) continue;
+    const day = localDay(snapshot.collectedAt);
+    if (!day) continue;
+    const key = `${snapshot.accountId}:${day}`;
+    const prev = latestByDay.get(key);
+    if (!prev || String(snapshot.collectedAt).localeCompare(String(prev.collectedAt)) > 0) {
+      latestByDay.set(key, snapshot);
+    }
+  }
+
+  const accountDays = new Map();
+  for (const [key, snapshot] of latestByDay.entries()) {
+    const [accountId, day] = key.split(":");
+    if (!accountDays.has(accountId)) accountDays.set(accountId, []);
+    accountDays.get(accountId).push({ day, snapshot });
+  }
+
+  const rowsByDay = new Map();
+  const ensureRow = (day) => {
+    if (!rowsByDay.has(day)) {
+      rowsByDay.set(day, {
+        day,
+        label: dayLabel(day),
+        kimiWeeklyUsed: null,
+        minimaxWeeklyUsed: null,
+        deepseekCost: null,
+        resetOrRecharge: false
+      });
+    }
+    return rowsByDay.get(day);
+  };
+
+  for (const account of accounts) {
+    const entries = (accountDays.get(account.id) || [])
+      .sort((a, b) => String(a.day).localeCompare(String(b.day)));
+    let prevValue = null;
+    for (const entry of entries) {
+      const currentValue = snapshotComparableValue(account, entry.snapshot);
+      const row = ensureRow(entry.day);
+      if (prevValue !== null && currentValue !== null) {
+        const used = prevValue - currentValue;
+        if (used >= 0) {
+          if (account.provider === "kimi") row.kimiWeeklyUsed = used;
+          if (account.provider === "minimax") row.minimaxWeeklyUsed = used;
+          if (account.provider === "deepseek") row.deepseekCost = used;
+        } else {
+          row.resetOrRecharge = true;
+        }
+      }
+      if (currentValue !== null) prevValue = currentValue;
+    }
+  }
+
+  const rows = Array.from(rowsByDay.values())
+    .sort((a, b) => String(a.day).localeCompare(String(b.day)))
+    .slice(-14);
+  const today = rows.find((row) => row.day === localDay()) || rows.at(-1) || null;
+  return { rows, today };
+}
+
 function buildState(rootDir) {
   const accounts = readAccounts(rootDir).filter((account) => SUPPORTED_PROVIDERS.has(account.provider));
   const snapshots = readSnapshots(rootDir);
   const latestMap = latestByAccount(snapshots);
+  const historyMap = snapshotsByAccount(snapshots);
 
   const items = accounts.map((account) => {
     const latestSnapshot = latestMap.get(account.id) || null;
@@ -258,7 +374,8 @@ function buildState(rootDir) {
       ...sanitizeAccount(account),
       latestSnapshot,
       usage,
-      risk: lowQuota || lowBalance ? "warning" : stale ? "stale" : "ok"
+      risk: lowQuota || lowBalance ? "warning" : stale ? "stale" : "ok",
+      recentSnapshots: (historyMap.get(account.id) || []).slice(0, HISTORY_LIMIT)
     };
   });
 
@@ -281,6 +398,7 @@ function buildState(rootDir) {
       snapshotCount: snapshots.length,
       lastCollectedAt
     },
+    dailyUsage: buildDailyUsage(accounts, snapshots),
     accounts: items,
     recentSnapshots: snapshots
       .slice()
@@ -384,5 +502,7 @@ module.exports = {
   appendSnapshot,
   parseExtraHeaders,
   modelsUrl,
-  sanitizeAccount
+  sanitizeAccount,
+  readAccounts,
+  readSnapshots
 };

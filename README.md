@@ -61,6 +61,26 @@ npm run req -- render --project default
 | GET | `/api/projects/:project/events` | 原始事件流 |
 | POST | `/api/projects/:project/events` | 追加事件 |
 | POST | `/api/projects/:project/render` | 重新渲染 |
+| GET | `/api/ai-usage/state` | AI 用量聚合 |
+| POST | `/api/ai-usage/accounts` | 新增/更新 AI 账号 |
+| POST | `/api/ai-usage/test` | 测试 AI 账号连通性 |
+| POST | `/api/ai-usage/snapshots` | 手动追加快照 |
+| POST | `/api/ai-usage/accounts/:id/sync` | 同步单个账号 |
+
+## 前端路由
+
+| 路径 | 视图 |
+|---|---|
+| `/` | 重定向到 `/p/default` |
+| `/p/:project` | 需求列表 |
+| `/p/:project/r/:reqId` | 需求详情 |
+| `/ai-usage` | AI 用量看板 |
+
+AI 用量定时同步（默认 2h）通过后端环境变量控制：
+
+- `AI_USAGE_SYNC_INTERVAL_MS`：间隔毫秒，默认 `7200000`
+- `AI_USAGE_SYNC_DISABLED=1`：关闭
+- `AI_USAGE_SYNC_ON_BOOT=1`：启动后立即跑一次
 
 ## 目录结构
 

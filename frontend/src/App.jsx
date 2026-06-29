@@ -1,6 +1,14 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Layout, Button, Spin, Alert } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams
+} from 'react-router-dom';
 import { useRequirements } from './hooks/useRequirements';
 import { Sidebar } from './components/Sidebar';
 import { RequirementGrid } from './components/RequirementGrid';
@@ -18,40 +26,75 @@ const DEFAULT_FILTERS = {
   week: 'all'
 };
 
+const DEFAULT_PROJECT = 'default';
+
+function HomeRedirect() {
+  return <Navigate to={`/p/${DEFAULT_PROJECT}`} replace />;
+}
+
 function App() {
-  const { project, setProject, projects, data, taskItems, loading, error, refresh } = useRequirements();
-  const [workspace, setWorkspace] = useState('requirements');
-  const [selectedReqId, setSelectedReqId] = useState(null);
+  return (
+    <Routes>
+      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/ai-usage" element={<AppLayout />} />
+      <Route path="/p/:project" element={<AppLayout />} />
+      <Route path="/p/:project/r/:reqId" element={<AppLayout />} />
+      <Route path="*" element={<HomeRedirect />} />
+    </Routes>
+  );
+}
+
+function AppLayout() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { project, reqId } = useParams();
+  const { projects, data, taskItems, loading, error, refresh } = useRequirements({ project });
+
+  const [navFilter, setNavFilter] = useState('all');
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+
+  const workspace = location.pathname.startsWith('/ai-usage') ? 'ai-usage' : 'requirements';
+  const selectedReqId = reqId || null;
+
+  // 项目列表到达后，如果当前 project 不在列表里，导航到列表里第一个
+  useEffect(() => {
+    if (!projects || projects.length === 0) return;
+    if (!project || !projects.find((p) => p.id === project)) {
+      const next = projects[0].id;
+      if (workspace === 'ai-usage') {
+        navigate(`/ai-usage`, { replace: true });
+      } else {
+        navigate(`/p/${next}`, { replace: true });
+      }
+    }
+  }, [projects, project, workspace, navigate]);
 
   const selectedItem = useMemo(() => {
     return data.items.find((i) => i.id === selectedReqId) || null;
   }, [data.items, selectedReqId]);
 
-  // view 隐式: 有 selectedItem = detail, 否则 list
+  // view 隐式: workspace=ai-usage → ai-usage，否则 selectedItem 决定 detail / list
   const view = workspace === 'ai-usage' ? 'ai-usage' : selectedItem ? 'detail' : 'list';
 
-  // 切换项目时重置选择
-  useEffect(() => {
-    setSelectedReqId(null);
-  }, [project]);
-
   const handleSelect = (reqId) => {
-    setSelectedReqId(reqId);
+    navigate(`/p/${project}/r/${reqId}`);
   };
 
   const handleBack = () => {
-    setSelectedReqId(null);
+    navigate(`/p/${project}`);
   };
 
   const handleProjectChange = (nextProject) => {
-    setProject(nextProject);
-    setSelectedReqId(null);
+    setNavFilter('all');
+    navigate(`/p/${nextProject}`);
   };
 
   const handleWorkspaceChange = (nextWorkspace) => {
-    setWorkspace(nextWorkspace);
-    setSelectedReqId(null);
+    if (nextWorkspace === 'ai-usage') {
+      navigate('/ai-usage');
+    } else {
+      navigate(`/p/${project || DEFAULT_PROJECT}`);
+    }
   };
 
   // 工具栏统计
@@ -155,6 +198,9 @@ function App() {
           project={project}
           projects={projects}
           onProjectChange={handleProjectChange}
+          data={data}
+          navFilter={navFilter}
+          onNavFilterChange={setNavFilter}
           selectedItem={selectedItem}
           onClearSelection={handleBack}
           workspace={workspace}
@@ -176,8 +222,10 @@ function App() {
             ) : view === 'list' ? (
               <RequirementGrid
                 data={data}
+                taskItems={taskItems}
                 filters={filters}
                 setFilters={setFilters}
+                navFilter={navFilter}
                 selected={selectedItem?.id}
                 onSelect={handleSelect}
               />

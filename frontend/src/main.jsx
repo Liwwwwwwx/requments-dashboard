@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ConfigProvider, theme } from 'antd';
+import { BrowserRouter } from 'react-router-dom';
 import zhCN from 'antd/locale/zh_CN';
 import App from './App';
 import './styles.css';
@@ -42,7 +43,9 @@ const designTokens = {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ConfigProvider locale={zhCN} theme={{ algorithm: theme.defaultAlgorithm, token: designTokens }}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </ConfigProvider>
   </React.StrictMode>
 );

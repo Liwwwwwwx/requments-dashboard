@@ -1,26 +1,20 @@
-import { useMemo } from 'react';
 import {
   Alert,
   Button,
   Empty,
+  Tooltip,
   message,
   Spin,
   Tag
 } from 'antd';
 import {
-  ApiOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
   ReloadOutlined,
   WarningOutlined
 } from '@ant-design/icons';
 import { useAiUsage } from '../hooks/useAiUsage';
-
-const PROVIDER_META = {
-  kimi: { label: 'Kimi', tone: 'purple' },
-  minimax: { label: 'MiniMax', tone: 'cyan' },
-  deepseek: { label: 'DeepSeek', tone: 'green' }
-};
+import { resolveDailyUsed } from './DailyUsageChart';
 
 function formatNumber(value, unit) {
   if (value === null || value === undefined || value === '') return '-';
@@ -162,18 +156,12 @@ export function AiUsageDashboard() {
   const accounts = data.accounts || [];
   const summary = data.summary || {};
 
-  const providerGroups = useMemo(() => {
-    return accounts.reduce((acc, account) => {
-      const provider = account.provider || 'unknown';
-      if (!acc[provider]) {
-        acc[provider] = { provider, total: 0, warning: 0, stale: 0 };
-      }
-      acc[provider].total += 1;
-      if (account.risk === 'warning') acc[provider].warning += 1;
-      if (account.risk === 'stale') acc[provider].stale += 1;
-      return acc;
-    }, {});
-  }, [accounts]);
+  const todayUsage = data.dailyUsage?.today || {};
+  const todayUnit = {
+    kimi: 'quota',
+    minimax: 'quota',
+    deepseek: 'CNY'
+  };
 
   const handleSyncAll = async () => {
     if (accounts.length === 0) return;
@@ -219,10 +207,30 @@ export function AiUsageDashboard() {
 
         <div className="usage-account-card-quota">
           <div className={`usage-account-card-quota-content ${bands.length === 0 ? 'balance-layout' : ''}`}>
-            <span className="usage-quota-label">
-              {item.accountType === 'balance' ? '余额' : '剩余额度'}
-            </span>
-            {showPrimaryUsage ? <strong>{usage.primary}</strong> : null}
+            <div className="usage-quota-main">
+              {showPrimaryUsage ? (
+                <span className="usage-quota-headline">
+                  <strong>{usage.primary}</strong>
+                  <span className="usage-quota-label">
+                    {item.accountType === 'balance' ? '余额' : '剩余额度'}
+                  </span>
+                </span>
+              ) : (
+                <span className="usage-quota-label">
+                  {item.accountType === 'balance' ? '余额' : '剩余额度'}
+                </span>
+              )}
+              {(() => {
+                const daily = resolveDailyUsed(todayUsage, item.provider);
+                if (daily === null) return null;
+                return (
+                  <span className="usage-quota-daily">
+                    <span className="usage-quota-daily-label">今日消耗</span>
+                    <b>{formatNumber(daily, todayUnit[item.provider])}</b>
+                  </span>
+                );
+              })()}
+            </div>
             {usage.secondary ? <p>{usage.secondary}</p> : null}
             {bands.length > 0 ? (
               <div className="usage-band-list">
@@ -264,16 +272,18 @@ export function AiUsageDashboard() {
             <span className="usage-account-meta-label">Base URL</span>
             <span className="usage-account-meta-value">{hostLabel(item.baseUrl)}</span>
           </div>
-          <Button
-            size="small"
-            icon={<ReloadOutlined />}
-            className="usage-inline-refresh"
-            loading={syncLoading}
-            disabled={syncingAccountId === 'all'}
-            onClick={() => handleSyncOne(item)}
-          >
-            刷新
-          </Button>
+          <Tooltip title="刷新额度">
+            <Button
+              size="small"
+              type="text"
+              shape="circle"
+              icon={<ReloadOutlined />}
+              className="usage-inline-refresh"
+              loading={syncLoading}
+              disabled={syncingAccountId === 'all'}
+              onClick={() => handleSyncOne(item)}
+            />
+          </Tooltip>
         </div>
       </article>
     );
@@ -311,68 +321,13 @@ export function AiUsageDashboard() {
       )}
 
       <Spin spinning={loading}>
-        <section className="usage-summary-grid">
-          <div className="usage-summary-item">
-            <span className="usage-summary-label">账号数</span>
-            <strong>{summary.totalAccounts || 0}</strong>
+        {accounts.length === 0 ? (
+          <Empty description="暂无账号" />
+        ) : (
+          <div className="usage-account-card-grid">
+            {accounts.map(renderAccountCard)}
           </div>
-          <div className="usage-summary-item">
-            <span className="usage-summary-label">风险账号</span>
-            <strong>{summary.warningAccounts || 0}</strong>
-          </div>
-          <div className="usage-summary-item">
-            <span className="usage-summary-label">待刷新</span>
-            <strong>{summary.staleAccounts || 0}</strong>
-          </div>
-          <div className="usage-summary-item">
-            <span className="usage-summary-label">最近采集</span>
-            <strong>{formatDate(summary.lastCollectedAt)}</strong>
-          </div>
-        </section>
-
-        <section className="usage-provider-grid">
-          {Object.values(providerGroups).map((group) => {
-            const meta = PROVIDER_META[group.provider] || {};
-            return (
-              <div className="usage-provider-card" key={group.provider}>
-                <div className="usage-provider-icon">
-                  <ApiOutlined />
-                </div>
-                <div>
-                  <div className="usage-provider-title">
-                    {meta.label || group.provider}
-                    <Tag color={meta.tone || 'default'}>{group.total}</Tag>
-                  </div>
-                  <div className="usage-provider-meta">
-                    风险 {group.warning} · 待刷新 {group.stale}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </section>
-
-        <section className="usage-section">
-          <div className="usage-section-head">
-            <div>
-              <h2>账号状态</h2>
-              <p>账号配置保存 Base URL、模型和 Key；状态接口只返回脱敏 Key，不回显明文。</p>
-            </div>
-            {summary.warningAccounts > 0 && (
-              <Tag icon={<WarningOutlined />} color="error">
-                有账号接近阈值
-              </Tag>
-            )}
-          </div>
-          {accounts.length === 0 ? (
-            <Empty description="暂无账号" />
-          ) : (
-            <div className="usage-account-card-grid">
-              {accounts.map(renderAccountCard)}
-            </div>
-          )}
-        </section>
-
+        )}
       </Spin>
     </div>
   );

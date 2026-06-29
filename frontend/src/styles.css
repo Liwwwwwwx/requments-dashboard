@@ -1689,6 +1689,130 @@ body {
   text-align: center;
 }
 
+.usage-quota-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.usage-quota-headline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.usage-account-card-quota-content:not(.balance-layout) .usage-quota-main strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-main {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-headline {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-main strong {
+  color: #059669;
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-label {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-daily {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-daily-label {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-daily b {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.usage-account-card-quota-content:not(.balance-layout) .usage-quota-daily {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 11.5px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.usage-account-card-quota-content:not(.balance-layout) .usage-quota-daily-label {
+  color: #94a3b8;
+  font-size: 11.5px;
+}
+
+.usage-account-card-quota-content:not(.balance-layout) .usage-quota-daily b {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-label {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-summary {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-daily {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-daily-label {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.usage-account-card-quota-content.balance-layout .usage-quota-daily b {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .usage-quota-label {
   display: inline-block;
   color: var(--text-tertiary);
@@ -1846,6 +1970,41 @@ body {
 
 .usage-sparkline.is-empty {
   display: block;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+.usage-quota-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.usage-quota-daily {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 11.5px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.usage-quota-daily-label {
+  color: #94a3b8;
+  font-size: 11.5px;
+}
+
+.usage-quota-daily b {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.usage-account-card-daily {
+  display: none;
 }
 
 .usage-account-meta-inline {
@@ -1877,14 +2036,18 @@ body {
 
 .usage-inline-refresh {
   flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
-  border-color: #dbe4ef !important;
-  background: #f8fafc !important;
-  color: #51627e !important;
+  color: #64748b !important;
 }
 
 .usage-inline-refresh:hover {
-  border-color: #c3d2e5 !important;
   background: #f1f5f9 !important;
   color: #334155 !important;
 }
