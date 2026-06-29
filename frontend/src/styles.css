@@ -19,14 +19,50 @@ html, body, #root {
   background: #ffffff;
 }
 
+.topbar h4.ant-typography {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+.summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  font-size: 13px;
+  color: #475467;
+}
+
+.summary-bar .summary-total {
+  color: #17212f;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.summary-bar .summary-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
 .workspace {
   flex: 1;
-  display: grid;
-  grid-template-columns: minmax(360px, 38%) minmax(0, 1fr);
-  gap: 16px;
   padding: 16px 24px 24px;
   min-height: 0;
   overflow: hidden;
+}
+
+.workspace .ant-spin-nested-loading,
+.workspace .ant-spin-container {
+  height: 100%;
+}
+
+.workspace-grid {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 320px minmax(520px, 1fr) 360px;
+  gap: 16px;
+  min-height: 0;
 }
 
 .panel {
@@ -37,6 +73,12 @@ html, body, #root {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+}
+
+.requirement-rail,
+.workbench-panel,
+.inspector-panel {
+  min-width: 0;
 }
 
 .panel-head {
@@ -61,14 +103,237 @@ html, body, #root {
   color: #667085;
 }
 
-.requirement-item {
-  margin-bottom: 8px;
-  border-left: 3px solid transparent;
+.requirement-list-item {
+  height: auto;
+  padding: 9px 10px;
+  border: 1px solid #e4e9f1;
+  border-radius: 8px;
+  text-align: left;
+  background: #ffffff;
 }
 
-.requirement-item.priority-p0 { border-left-color: #ff6f7d; }
-.requirement-item.priority-p1 { border-left-color: #f4a24c; }
-.requirement-item.priority-p2 { border-left-color: #52d6b8; }
+.requirement-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.requirement-filters .filter-search {
+  grid-column: 1 / -1;
+}
+
+.requirement-filters .filter-select {
+  width: 100%;
+}
+
+.requirement-list-item.active {
+  border-color: rgba(15, 159, 143, 0.5);
+  background: rgba(15, 159, 143, 0.06);
+}
+
+.requirement-list-row {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+}
+
+.requirement-list-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.45;
+}
+
+.requirement-list-meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.45;
+}
+
+.requirement-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  line-height: 1.45;
+  color: #667085;
+  font-size: 12px;
+}
+
+.requirement-list-meta-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.requirement-list-meta-progress .ant-progress {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 !important;
+}
+
+.requirement-list-meta-text {
+  flex: 0 0 auto;
+  color: #475467;
+}
+
+.requirement-list-meta-blocked {
+  color: #cf3636;
+  flex: 0 0 auto;
+}
+
+.requirement-list-meta-date {
+  flex: 0 0 auto;
+  color: #98a2b3;
+}
+
+.workbench {
+  height: 100%;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workbench-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+}
+
+.workbench-title {
+  margin-top: 10px !important;
+  margin-bottom: 8px !important;
+  line-height: 1.3 !important;
+}
+
+.workbench-progress {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.workbench-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.surface-card,
+.role-card {
+  border-color: #dfe5ee !important;
+  background: #ffffff !important;
+}
+
+.muted-paragraph {
+  margin-bottom: 0 !important;
+  color: #475467;
+}
+
+.light-list-item {
+  border-color: #dfe5ee !important;
+}
+
+.role-task-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.role-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.role-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #d0d5dd;
+}
+
+.role-card.role-contract::before { background: #818cf8; }
+.role-card.role-frontend::before { background: #c084fc; }
+.role-card.role-backend::before { background: #22d3ee; }
+.role-card.role-review::before { background: #fb923c; }
+.role-card.role-qa::before { background: #34d399; }
+.role-card.role-integration::before { background: #f472b6; }
+.role-card.role-infra::before { background: #a78bfa; }
+
+.workbench-task {
+  height: auto;
+  min-height: 32px;
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.workbench-task.active {
+  background: rgba(15, 159, 143, 0.1);
+}
+
+.workbench-task > span {
+  display: grid;
+  grid-template-columns: 90px 86px minmax(0, 1fr) max-content;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.workbench-task-id {
+  color: #667085;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.workbench-task-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #17212f;
+}
+
+.workbench-task-agent {
+  color: #667085;
+  font-size: 12px;
+}
+
+.history-event {
+  padding: 2px 0 10px;
+}
+
+.history-event.active {
+  padding: 8px 10px;
+  border: 1px solid rgba(15, 159, 143, 0.35);
+  border-radius: 8px;
+  background: rgba(15, 159, 143, 0.06);
+}
+
+.history-event-title {
+  margin-top: 6px;
+  margin-bottom: 2px;
+  color: #17212f;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.history-event-description {
+  margin-top: 6px;
+  margin-bottom: 0 !important;
+  color: #475467;
+  line-height: 1.6;
+}
 
 .task-card {
   position: relative;
@@ -98,8 +363,13 @@ html, body, #root {
 .task-card.role-integration::before { background: #f472b6; }
 
 @media (max-width: 1100px) {
-  .workspace {
+  .workspace-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(300px, 42%) minmax(0, 1fr);
+    grid-template-rows: minmax(240px, 32%) minmax(360px, 1fr) minmax(300px, 38%);
+  }
+
+  .workbench-summary,
+  .role-task-grid {
+    grid-template-columns: 1fr;
   }
 }
