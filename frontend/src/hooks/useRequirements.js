@@ -1,59 +1,67 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchState, renderState, listProjects } from '../api';
 
-export function useRequirements() {
-  const [project, setProject] = useState('default');
+export function useRequirements({ project, fallbackProject = 'default' } = {}) {
   const [projects, setProjects] = useState([]);
   const [data, setData] = useState({ statuses: [], items: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const activeProject = project || fallbackProject;
+
   const loadProjects = useCallback(async () => {
     try {
       const res = await listProjects();
       setProjects(res.projects || []);
-      if (res.projects && res.projects.length > 0 && !res.projects.find((p) => p.id === project)) {
-        setProject(res.projects[0].id);
-      }
-    } catch (e) {
+    } catch (_e) {
       // ignore project list errors
     }
-  }, [project]);
+  }, []);
 
-  const loadState = useCallback(async (targetProject = project) => {
+  const loadState = useCallback(async (targetProject = activeProject) => {
+    if (!targetProject) return;
     setLoading(true);
     setError(null);
     try {
       const state = await fetchState(targetProject);
       setData(state);
     } catch (e) {
-      setError(e.message);
+      if (e.message === 'PROJECT_NOT_FOUND') {
+        setData({ statuses: [], items: [] });
+      } else {
+        setError(e.message);
+      }
     } finally {
       setLoading(false);
     }
-  }, [project]);
+  }, [activeProject]);
 
   const refresh = useCallback(async () => {
+    if (!activeProject) return;
     setLoading(true);
     setError(null);
     try {
-      await renderState(project);
-      const state = await fetchState(project);
+      await renderState(activeProject);
+      const state = await fetchState(activeProject);
       setData(state);
     } catch (e) {
-      setError(e.message);
+      if (e.message === 'PROJECT_NOT_FOUND') {
+        setData({ statuses: [], items: [] });
+      } else {
+        setError(e.message);
+      }
     } finally {
       setLoading(false);
     }
-  }, [project]);
+  }, [activeProject]);
 
   useEffect(() => {
     loadProjects();
-  }, []);
+  }, [loadProjects]);
 
   useEffect(() => {
-    loadState(project);
-  }, [project, loadState]);
+    loadState(activeProject);
+  }, [activeProject, loadState]);
 
   const taskItems = useMemo(() => {
     return data.items.flatMap((item) =>
@@ -76,8 +84,7 @@ export function useRequirements() {
   }, [data.items]);
 
   return {
-    project,
-    setProject,
+    project: activeProject,
     projects,
     data,
     taskItems,
