@@ -1,0 +1,19 @@
+{
+  "name": "requirements-board-backend",
+  "version": "0.1.0",
+  "description": "需求看板后端：Express + JSONL 事件流 + 多项目隔离",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test:schema": "node -e \"require('./src/schema').selfTest()\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "zod": "^3.23.0"
+  }
+}

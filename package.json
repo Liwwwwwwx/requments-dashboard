@@ -1,0 +1,33 @@
+{
+  "name": "requirements-board",
+  "version": "0.2.0",
+  "description": "多项目需求看板：React + Ant Design 前端，Express + JSONL 事件流后端",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
+    "start": "npm run start --workspace=backend",
+    "migrate": "node backend/scripts/migrate.js",
+    "test:schema": "npm run test:schema --workspace=backend",
+    "req": "node backend/cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "requirements",
+    "kanban",
+    "board",
+    "event-sourcing",
+    "jsonl",
+    "multi-project"
+  ],
+  "license": "MIT"
+}
