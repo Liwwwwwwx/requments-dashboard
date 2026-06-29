@@ -22,7 +22,6 @@ function App() {
   const { project, setProject, projects, data, taskItems, loading, error, refresh } = useRequirements();
   const [workspace, setWorkspace] = useState('requirements');
   const [selectedReqId, setSelectedReqId] = useState(null);
-  const [navFilter, setNavFilter] = useState('all');
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const selectedItem = useMemo(() => {
@@ -48,7 +47,6 @@ function App() {
   const handleProjectChange = (nextProject) => {
     setProject(nextProject);
     setSelectedReqId(null);
-    setNavFilter('all');
   };
 
   const handleWorkspaceChange = (nextWorkspace) => {
@@ -157,9 +155,6 @@ function App() {
           project={project}
           projects={projects}
           onProjectChange={handleProjectChange}
-          data={data}
-          navFilter={navFilter}
-          onNavFilterChange={setNavFilter}
           selectedItem={selectedItem}
           onClearSelection={handleBack}
           workspace={workspace}
@@ -183,7 +178,6 @@ function App() {
                 data={data}
                 filters={filters}
                 setFilters={setFilters}
-                navFilter={navFilter}
                 selected={selectedItem?.id}
                 onSelect={handleSelect}
               />

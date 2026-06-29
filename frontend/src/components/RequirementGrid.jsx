@@ -12,33 +12,17 @@ export function RequirementGrid({
   data,
   filters,
   setFilters,
-  navFilter,
   selected,
   onSelect
 }) {
   const weeks = useMemo(() => unique(data.items.map((i) => i.week)).reverse(), [data.items]);
 
   const filteredItems = useMemo(() => {
-    const q = filters.query.trim().toLowerCase();
     return data.items.filter((item) => {
-      if (navFilter !== 'all' && item.status !== navFilter) return false;
-
-      const taskText = (item.tasks || [])
-        .map((task) => [task.taskId, task.role, task.title, task.scope, task.agent].filter(Boolean).join(' '))
-        .join(' ');
-      const haystack = [item.id, item.title, item.summary, item.owner, item.type, item.week, taskText]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      const matchesQuery = !q || haystack.includes(q);
-      const matchesWeek = filters.week === 'all' || item.week === filters.week;
-      const matchesType = filters.type === 'all' || item.type === filters.type;
-      const matchesPriority = filters.priority === 'all' || item.priority === filters.priority;
-      const matchesStatus = filters.status === 'all' || item.status === filters.status;
-      const matchesRole = filters.role === 'all' || (item.tasks || []).some((t) => t.role === filters.role);
-      return matchesQuery && matchesWeek && matchesType && matchesPriority && matchesStatus && matchesRole;
+      if (filters.week !== 'all' && item.week !== filters.week) return false;
+      return true;
     });
-  }, [data.items, filters, navFilter]);
+  }, [data.items, filters.week]);
 
   const { pendingItems, doneItems } = useMemo(() => {
     const pending = [];
@@ -52,14 +36,6 @@ export function RequirementGrid({
     }
     return { pendingItems: pending, doneItems: done };
   }, [filteredItems]);
-
-  const navLabel = {
-    all: '全部需求',
-    doing: '进行中',
-    todo: '待开始',
-    paused: '暂停',
-    done: '完成'
-  }[navFilter] || '全部需求';
 
   const renderCard = (item, selected, onSelect, isDone = false) => {
     const stats = item.taskStats || { total: 0, done: 0, blocked: 0 };
@@ -127,15 +103,9 @@ export function RequirementGrid({
 
   return (
     <div className="view-list">
-      <header className="view-list-head">
-        <div>
-          <h1 className="view-list-title">{navLabel}</h1>
-          <div className="view-list-meta">
-            <span>共 {data.items.length || 0} 条，当前显示 {filteredItems.length} 条</span>
-            {filters.query && <span>· 搜索 "{filters.query}"</span>}
-          </div>
-        </div>
-      </header>
+      <div className="view-list-meta" style={{ marginBottom: 16 }}>
+        <span>共 {filteredItems.length} 条需求</span>
+      </div>
 
       {weeks.length > 0 && (
         <div className="week-tabs">
