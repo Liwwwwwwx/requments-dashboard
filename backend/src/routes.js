@@ -6,9 +6,12 @@ const fs = require("fs");
 const { projectPaths, listProjects, ensureProject, isValidProjectId } = require("./projects");
 const { readEvents, appendEvents, withLock } = require("./events");
 const { render } = require("./state");
+const { createAiUsageRoutes } = require("./ai-usage/routes");
 
 function createRoutes(rootDir) {
   const router = express.Router();
+
+  router.use("/ai-usage", createAiUsageRoutes(rootDir));
 
   router.get("/health", (_req, res) => {
     res.json({ ok: true, service: "requirements-board-backend", dataDir: path.join(rootDir, "data") });
