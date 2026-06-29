@@ -8,6 +8,14 @@ import {
   unique
 } from '../utils';
 
+const STATUS_TABS = [
+  { key: 'all', label: '全部' },
+  { key: 'todo', label: '待开始' },
+  { key: 'doing', label: '进行中' },
+  { key: 'paused', label: '暂停' },
+  { key: 'done', label: '完成' }
+];
+
 export function RequirementGrid({
   data,
   filters,
@@ -20,11 +28,15 @@ export function RequirementGrid({
   const filteredItems = useMemo(() => {
     return data.items.filter((item) => {
       if (filters.week !== 'all' && item.week !== filters.week) return false;
+      if (filters.status !== 'all' && item.status !== filters.status) return false;
       return true;
     });
-  }, [data.items, filters.week]);
+  }, [data.items, filters.week, filters.status]);
 
   const { pendingItems, doneItems } = useMemo(() => {
+    if (filters.status !== 'all') {
+      return { pendingItems: filteredItems, doneItems: [] };
+    }
     const pending = [];
     const done = [];
     for (const item of filteredItems) {
@@ -35,7 +47,7 @@ export function RequirementGrid({
       }
     }
     return { pendingItems: pending, doneItems: done };
-  }, [filteredItems]);
+  }, [filteredItems, filters.status]);
 
   const renderCard = (item, selected, onSelect, isDone = false) => {
     const stats = item.taskStats || { total: 0, done: 0, blocked: 0 };
@@ -101,10 +113,34 @@ export function RequirementGrid({
     );
   };
 
+  const statusCounts = useMemo(() => {
+    const counts = { all: 0, todo: 0, doing: 0, paused: 0, done: 0 };
+    for (const item of data.items) {
+      if (filters.week !== 'all' && item.week !== filters.week) continue;
+      counts.all += 1;
+      counts[item.status] = (counts[item.status] || 0) + 1;
+    }
+    return counts;
+  }, [data.items, filters.week]);
+
   return (
     <div className="view-list">
-      <div className="view-list-meta" style={{ marginBottom: 16 }}>
+      <div className="view-list-meta" style={{ marginBottom: 12 }}>
         <span>共 {filteredItems.length} 条需求</span>
+      </div>
+
+      <div className="filter-tabs">
+        {STATUS_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={`week-tab ${filters.status === tab.key ? 'active' : ''}`}
+            onClick={() => setFilters({ ...filters, status: tab.key })}
+          >
+            {tab.label}
+            <span className="tab-count">{statusCounts[tab.key]}</span>
+          </button>
+        ))}
       </div>
 
       {weeks.length > 0 && (

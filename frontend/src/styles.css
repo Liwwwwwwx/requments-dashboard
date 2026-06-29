@@ -587,6 +587,28 @@ body {
   font-weight: 500;
 }
 
+.filter-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+}
+
+.filter-tabs .week-tab .tab-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-quaternary);
+  margin-left: 4px;
+}
+
+.filter-tabs .week-tab.active .tab-count {
+  color: var(--text-on-hero-muted);
+}
+
 /* —— 需求卡片网格 —— */
 .req-grid {
   display: grid;
