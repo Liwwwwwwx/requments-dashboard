@@ -5,6 +5,7 @@ import { useRequirements } from './hooks/useRequirements';
 import { Sidebar } from './components/Sidebar';
 import { RequirementGrid } from './components/RequirementGrid';
 import { RequirementDetailView } from './components/RequirementDetailView';
+import { AiUsageDashboard } from './components/AiUsageDashboard';
 
 const { Content } = Layout;
 
@@ -19,6 +20,7 @@ const DEFAULT_FILTERS = {
 
 function App() {
   const { project, setProject, projects, data, taskItems, loading, error, refresh } = useRequirements();
+  const [workspace, setWorkspace] = useState('requirements');
   const [selectedReqId, setSelectedReqId] = useState(null);
   const [navFilter, setNavFilter] = useState('all');
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -28,7 +30,7 @@ function App() {
   }, [data.items, selectedReqId]);
 
   // view 隐式: 有 selectedItem = detail, 否则 list
-  const view = selectedItem ? 'detail' : 'list';
+  const view = workspace === 'ai-usage' ? 'ai-usage' : selectedItem ? 'detail' : 'list';
 
   // 切换项目时重置选择
   useEffect(() => {
@@ -47,6 +49,11 @@ function App() {
     setProject(nextProject);
     setSelectedReqId(null);
     setNavFilter('all');
+  };
+
+  const handleWorkspaceChange = (nextWorkspace) => {
+    setWorkspace(nextWorkspace);
+    setSelectedReqId(null);
   };
 
   // 工具栏统计
@@ -79,8 +86,10 @@ function App() {
           </div>
           <div className="toolbar-divider" />
           <div className="toolbar-project">
-            <span className="toolbar-project-label">项目</span>
-            <span className="toolbar-project-name">{currentProject?.name || project}</span>
+            <span className="toolbar-project-label">{workspace === 'ai-usage' ? '工作台' : '项目'}</span>
+            <span className="toolbar-project-name">
+              {workspace === 'ai-usage' ? 'AI 用量' : currentProject?.name || project}
+            </span>
           </div>
           <div className="toolbar-divider" />
           <span className="toolbar-week">{currentWeek}</span>
@@ -95,47 +104,51 @@ function App() {
         </div>
 
         <div className="toolbar-right">
-          <div className="toolbar-stats">
-            <div className="toolbar-stat">
-              <span className="dot" style={{ background: 'var(--text-tertiary)' }} />
-              <span>全部</span>
-              <strong>{total}</strong>
+          {workspace === 'requirements' && (
+            <div className="toolbar-stats">
+              <div className="toolbar-stat">
+                <span className="dot" style={{ background: 'var(--text-tertiary)' }} />
+                <span>全部</span>
+                <strong>{total}</strong>
+              </div>
+              <div className="toolbar-stat">
+                <span className="dot" style={{ background: 'var(--status-doing-dot)' }} />
+                <span>进行中</span>
+                <strong>{doing}</strong>
+              </div>
+              <div className="toolbar-stat">
+                <span className="dot" style={{ background: 'var(--status-todo-dot)' }} />
+                <span>待开始</span>
+                <strong>{todo}</strong>
+              </div>
+              <div className="toolbar-stat">
+                <span className="dot" style={{ background: 'var(--status-paused-dot)' }} />
+                <span>暂停</span>
+                <strong>{paused}</strong>
+              </div>
+              <div className="toolbar-stat">
+                <span className="dot" style={{ background: 'var(--status-done-dot)' }} />
+                <span>完成</span>
+                <strong>{done}</strong>
+              </div>
+              <div className={`toolbar-stat ${blocked > 0 ? 'is-blocked' : ''}`}>
+                <span className="dot" style={{ background: 'var(--status-blocked-dot)' }} />
+                <span>阻塞</span>
+                <strong>{blocked}</strong>
+              </div>
             </div>
-            <div className="toolbar-stat">
-              <span className="dot" style={{ background: 'var(--status-doing-dot)' }} />
-              <span>进行中</span>
-              <strong>{doing}</strong>
-            </div>
-            <div className="toolbar-stat">
-              <span className="dot" style={{ background: 'var(--status-todo-dot)' }} />
-              <span>待开始</span>
-              <strong>{todo}</strong>
-            </div>
-            <div className="toolbar-stat">
-              <span className="dot" style={{ background: 'var(--status-paused-dot)' }} />
-              <span>暂停</span>
-              <strong>{paused}</strong>
-            </div>
-            <div className="toolbar-stat">
-              <span className="dot" style={{ background: 'var(--status-done-dot)' }} />
-              <span>完成</span>
-              <strong>{done}</strong>
-            </div>
-            <div className={`toolbar-stat ${blocked > 0 ? 'is-blocked' : ''}`}>
-              <span className="dot" style={{ background: 'var(--status-blocked-dot)' }} />
-              <span>阻塞</span>
-              <strong>{blocked}</strong>
-            </div>
-          </div>
-          <Button
-            icon={<ReloadOutlined />}
-            loading={loading}
-            onClick={refresh}
-            type="primary"
-            size="middle"
-          >
-            刷新
-          </Button>
+          )}
+          {workspace === 'requirements' && (
+            <Button
+              icon={<ReloadOutlined />}
+              loading={loading}
+              onClick={refresh}
+              type="primary"
+              size="middle"
+            >
+              刷新
+            </Button>
+          )}
         </div>
       </header>
 
@@ -149,10 +162,12 @@ function App() {
           onNavFilterChange={setNavFilter}
           selectedItem={selectedItem}
           onClearSelection={handleBack}
+          workspace={workspace}
+          onWorkspaceChange={handleWorkspaceChange}
         />
 
         <Content className="main">
-          {error && (
+          {workspace === 'requirements' && error && (
             <Alert
               message={error}
               type="error"
@@ -160,8 +175,10 @@ function App() {
               style={{ margin: 24 }}
             />
           )}
-          <Spin spinning={loading}>
-            {view === 'list' ? (
+          <Spin spinning={workspace === 'requirements' && loading}>
+            {view === 'ai-usage' ? (
+              <AiUsageDashboard />
+            ) : view === 'list' ? (
               <RequirementGrid
                 data={data}
                 taskItems={taskItems}
