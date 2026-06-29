@@ -38,10 +38,39 @@ export function roleColor(role) {
 }
 
 export function priorityColor(priority) {
-  if (priority === 'P0') return '#ff6f7d';
-  if (priority === 'P1') return '#f4a24c';
-  if (priority === 'P2') return '#52d6b8';
-  return '#9ca3af';
+  if (priority === 'P0') return '#ef4444';
+  if (priority === 'P1') return '#f59e0b';
+  if (priority === 'P2') return '#14b8a6';
+  return '#94a3b8';
+}
+
+const PRIORITY_TOKEN = {
+  P0: { chip: 'chip-p0', bar: 'priority-p0' },
+  P1: { chip: 'chip-p1', bar: 'priority-p1' },
+  P2: { chip: 'chip-p2', bar: 'priority-p2' }
+};
+
+export function priorityChipClass(priority) {
+  return PRIORITY_TOKEN[priority]?.chip || 'chip-p3';
+}
+
+export function priorityBarClass(priority) {
+  return PRIORITY_TOKEN[priority]?.bar || 'priority-p3';
+}
+
+const STATUS_TOKEN = {
+  todo: 'chip-status-todo',
+  doing: 'chip-status-doing',
+  paused: 'chip-status-paused',
+  done: 'chip-status-done',
+  blocked: 'chip-status-blocked',
+  claimed: 'chip-status-claimed',
+  accepted: 'chip-status-accepted',
+  working: 'chip-status-doing'
+};
+
+export function statusChipClass(status) {
+  return STATUS_TOKEN[status] || 'chip-status-todo';
 }
 
 export function unique(values) {

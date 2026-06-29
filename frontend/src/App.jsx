@@ -1,15 +1,12 @@
-import { useState, useMemo } from 'react';
-import { Layout, Button, Space, Typography, Spin, Alert, Row, Col } from 'antd';
+import { useState, useMemo, useEffect } from 'react';
+import { Layout, Button, Spin, Alert } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useRequirements } from './hooks/useRequirements';
-import { ProjectSelector } from './components/ProjectSelector';
-import { StatCards } from './components/StatCards';
-import { RequirementList } from './components/RequirementList';
-import { RequirementWorkbench } from './components/RequirementWorkbench';
-import { RequirementDetail } from './components/RequirementDetail';
+import { Sidebar } from './components/Sidebar';
+import { RequirementGrid } from './components/RequirementGrid';
+import { RequirementDetailView } from './components/RequirementDetailView';
 
-const { Header, Content } = Layout;
-const { Title, Text } = Typography;
+const { Content } = Layout;
 
 const DEFAULT_FILTERS = {
   query: '',
@@ -23,84 +20,168 @@ const DEFAULT_FILTERS = {
 function App() {
   const { project, setProject, projects, data, taskItems, loading, error, refresh } = useRequirements();
   const [selectedReqId, setSelectedReqId] = useState(null);
-  const [selectedTaskKey, setSelectedTaskKey] = useState(null);
+  const [navFilter, setNavFilter] = useState('all');
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const selectedItem = useMemo(() => {
-    return data.items.find((i) => i.id === selectedReqId) || data.items[0] || null;
+    return data.items.find((i) => i.id === selectedReqId) || null;
   }, [data.items, selectedReqId]);
 
-  const handleSelect = (reqId, taskKey) => {
+  // view 隐式: 有 selectedItem = detail, 否则 list
+  const view = selectedItem ? 'detail' : 'list';
+
+  // 切换项目时重置选择
+  useEffect(() => {
+    setSelectedReqId(null);
+  }, [project]);
+
+  const handleSelect = (reqId) => {
     setSelectedReqId(reqId);
-    setSelectedTaskKey(taskKey || null);
+  };
+
+  const handleBack = () => {
+    setSelectedReqId(null);
   };
 
   const handleProjectChange = (nextProject) => {
     setProject(nextProject);
     setSelectedReqId(null);
-    setSelectedTaskKey(null);
+    setNavFilter('all');
   };
+
+  // 工具栏统计
+  const items = data.items || [];
+  const total = items.length;
+  const doing = items.filter((i) => i.status === 'doing').length;
+  const todo = items.filter((i) => i.status === 'todo').length;
+  const paused = items.filter((i) => i.status === 'paused').length;
+  const done = items.filter((i) => i.status === 'done').length;
+  const blocked = items.reduce((acc, item) => acc + (item.taskStats?.blocked || 0), 0);
+  const currentProject = projects.find((p) => p.id === project);
+
+  // 当前周
+  const currentWeek = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const start = new Date(year, 0, 1);
+    const days = Math.floor((now - start) / (24 * 60 * 60 * 1000));
+    const week = Math.ceil((days + start.getDay() + 1) / 7);
+    return `${year}-W${String(week).padStart(2, '0')}`;
+  }, []);
 
   return (
     <Layout className="app">
-      <Header className="topbar" style={{ height: 'auto', lineHeight: 'normal' }}>
-        <Row align="middle" justify="space-between" gutter={[16, 16]}>
-          <Col>
-            <Title level={4} style={{ margin: 0, color: '#17212f' }}>需求看板</Title>
-            <div style={{ marginTop: 4 }}>
-              <StatCards data={data} />
-            </div>
-          </Col>
-          <Col>
-            <Space>
-              <ProjectSelector project={project} projects={projects} onChange={handleProjectChange} />
-              <Button icon={<ReloadOutlined />} loading={loading} onClick={refresh} type="primary">刷新看板</Button>
-            </Space>
-          </Col>
-        </Row>
-      </Header>
+      <header className="toolbar">
+        <div className="toolbar-left">
+          <div className="toolbar-brand">
+            <span className="dot" />
+            需求<span className="accent">看板</span>
+          </div>
+          <div className="toolbar-divider" />
+          <div className="toolbar-project">
+            <span className="toolbar-project-label">项目</span>
+            <span className="toolbar-project-name">{currentProject?.name || project}</span>
+          </div>
+          <div className="toolbar-divider" />
+          <span className="toolbar-week">{currentWeek}</span>
+          {view === 'detail' && selectedItem && (
+            <>
+              <div className="toolbar-divider" />
+              <span className="toolbar-week" style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                / {selectedItem.id}
+              </span>
+            </>
+          )}
+        </div>
 
-      <Content className="workspace">
-        {error && (
-          <Alert
-            message={error}
-            type="error"
-            showIcon
-            style={{ position: 'absolute', top: 16, right: 24, zIndex: 100 }}
-          />
-        )}
-        <Spin spinning={loading} style={{ width: '100%', height: '100%' }}>
-          <div className="workspace-grid">
-            <div className="panel requirement-rail">
-              <RequirementList
-                data={data}
-                taskItems={taskItems}
-                selected={selectedItem?.id}
-                onSelect={handleSelect}
-                filters={filters}
-                setFilters={setFilters}
-              />
+        <div className="toolbar-right">
+          <div className="toolbar-stats">
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--text-tertiary)' }} />
+              <span>全部</span>
+              <strong>{total}</strong>
             </div>
-            <div className="panel workbench-panel">
-              <RequirementWorkbench
-                item={selectedItem}
-                selectedTaskKey={selectedTaskKey}
-                onTaskSelect={handleSelect}
-              />
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--status-doing-dot)' }} />
+              <span>进行中</span>
+              <strong>{doing}</strong>
             </div>
-            <div className="panel inspector-panel">
-              <RequirementDetail
-                project={project}
-                item={selectedItem}
-                taskItems={taskItems}
-                selectedTaskKey={selectedTaskKey}
-                filters={filters}
-                onTaskSelect={handleSelect}
-              />
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--status-todo-dot)' }} />
+              <span>待开始</span>
+              <strong>{todo}</strong>
+            </div>
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--status-paused-dot)' }} />
+              <span>暂停</span>
+              <strong>{paused}</strong>
+            </div>
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--status-done-dot)' }} />
+              <span>完成</span>
+              <strong>{done}</strong>
+            </div>
+            <div className={`toolbar-stat ${blocked > 0 ? 'is-blocked' : ''}`}>
+              <span className="dot" style={{ background: 'var(--status-blocked-dot)' }} />
+              <span>阻塞</span>
+              <strong>{blocked}</strong>
             </div>
           </div>
-        </Spin>
-      </Content>
+          <Button
+            icon={<ReloadOutlined />}
+            loading={loading}
+            onClick={refresh}
+            type="primary"
+            size="middle"
+          >
+            刷新
+          </Button>
+        </div>
+      </header>
+
+      <div className="layout">
+        <Sidebar
+          project={project}
+          projects={projects}
+          onProjectChange={handleProjectChange}
+          data={data}
+          navFilter={navFilter}
+          onNavFilterChange={setNavFilter}
+          selectedItem={selectedItem}
+          onClearSelection={handleBack}
+        />
+
+        <Content className="main">
+          {error && (
+            <Alert
+              message={error}
+              type="error"
+              showIcon
+              style={{ margin: 24 }}
+            />
+          )}
+          <Spin spinning={loading}>
+            {view === 'list' ? (
+              <RequirementGrid
+                data={data}
+                taskItems={taskItems}
+                filters={filters}
+                setFilters={setFilters}
+                navFilter={navFilter}
+                selected={selectedItem?.id}
+                onSelect={handleSelect}
+              />
+            ) : (
+              <RequirementDetailView
+                item={selectedItem}
+                taskItems={taskItems}
+                onBack={handleBack}
+                onClearSelection={handleBack}
+              />
+            )}
+          </Spin>
+        </Content>
+      </div>
     </Layout>
   );
 }
