@@ -1,5 +1,5 @@
 import { Select, Typography } from 'antd';
-import { FolderOutlined } from '@ant-design/icons';
+import { BarChartOutlined, FolderOutlined, UnorderedListOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -25,7 +25,9 @@ export function Sidebar({
   navFilter,
   onNavFilterChange,
   selectedItem,
-  onClearSelection
+  onClearSelection,
+  workspace,
+  onWorkspaceChange
 }) {
   const items = data.items || [];
   const counts = {
@@ -41,6 +43,36 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="sidebar-scroll">
+        <section className="sidebar-section">
+          <div className="sidebar-eyebrow">
+            <span>工作区</span>
+          </div>
+          <nav className="sidebar-nav">
+            <button
+              type="button"
+              className={`sidebar-nav-item ${workspace === 'requirements' ? 'active' : ''}`}
+              onClick={() => onWorkspaceChange('requirements')}
+            >
+              <span className="icon nav-icon" style={{ background: 'var(--accent)' }}>
+                <UnorderedListOutlined />
+              </span>
+              <span className="label">需求看板</span>
+              <span className="count">{counts.all}</span>
+            </button>
+            <button
+              type="button"
+              className={`sidebar-nav-item ${workspace === 'ai-usage' ? 'active' : ''}`}
+              onClick={() => onWorkspaceChange('ai-usage')}
+            >
+              <span className="icon nav-icon" style={{ background: 'var(--role-qa)' }}>
+                <BarChartOutlined />
+              </span>
+              <span className="label">AI 用量</span>
+              <span className="count">新</span>
+            </button>
+          </nav>
+        </section>
+
         <section className="sidebar-section">
           <div className="sidebar-eyebrow">
             <span>项目</span>
@@ -59,7 +91,11 @@ export function Sidebar({
         </section>
 
         {NAV_GROUPS.map((group) => (
-          <section key={group.key} className="sidebar-section">
+          <section
+            key={group.key}
+            className="sidebar-section"
+            style={{ opacity: workspace === 'requirements' ? 1 : 0.45 }}
+          >
             <div className="sidebar-eyebrow">
               <span>{group.label}</span>
             </div>
@@ -69,6 +105,7 @@ export function Sidebar({
                   key={item.key}
                   type="button"
                   className={`sidebar-nav-item ${navFilter === item.filterStatus ? 'active' : ''}`}
+                  disabled={workspace !== 'requirements'}
                   onClick={() => {
                     onNavFilterChange(item.filterStatus);
                     onClearSelection();
