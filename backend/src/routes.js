@@ -51,6 +51,32 @@ function createRoutes(rootDir) {
     fs.createReadStream(paths.eventsPath).pipe(res);
   });
 
+  router.get("/projects/:project/requirements/:requirementId/events", (req, res) => {
+    const paths = projectPaths(rootDir, req.params.project);
+    if (!fs.existsSync(paths.eventsPath)) {
+      return res.status(404).json({ ok: false, error: "PROJECT_NOT_FOUND" });
+    }
+
+    try {
+      const events = readEvents(paths.eventsPath)
+        .filter((event) => event.requirementId === req.params.requirementId)
+        .map((event) => ({
+          eventId: event.eventId,
+          ts: event.ts,
+          kind: event.kind || event.type,
+          actor: event.actor,
+          requirementId: event.requirementId,
+          taskId: event.taskId,
+          updatedAt: event.updatedAt,
+          at: event.at,
+          event
+        }));
+      return res.json({ ok: true, project: paths.projectId, requirementId: req.params.requirementId, events });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  });
+
   router.post("/projects/:project/events", express.json({ limit: "10mb" }), (req, res) => {
     const paths = projectPaths(rootDir, req.params.project);
     ensureProject(rootDir, req.params.project);

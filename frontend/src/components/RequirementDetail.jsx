@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Descriptions, Tag, Typography, List, Space, Tabs, Card, Empty, Button } from 'antd';
 import { statusLabel, priorityColor, roleColor, roleLabel } from '../utils';
 import { TaskDrawer } from './TaskDrawer';
+import { RequirementHistory } from './RequirementHistory';
 
 const { Title, Paragraph, Text } = Typography;
 
-export function RequirementDetail({ item, taskItems, selectedTaskKey, filters }) {
+export function RequirementDetail({ project, item, taskItems, selectedTaskKey, filters, onTaskSelect }) {
   const [activeTab, setActiveTab] = useState('details');
   const [drawerTask, setDrawerTask] = useState(null);
 
@@ -47,22 +48,13 @@ export function RequirementDetail({ item, taskItems, selectedTaskKey, filters })
       <Tabs activeKey={activeTab} onChange={setActiveTab} style={{ paddingLeft: 16, paddingRight: 16 }}>
         <Tabs.TabPane tab="详情" key="details" />
         <Tabs.TabPane tab={`任务 (${filteredTasks.length}/${tasks.length})`} key="tasks" />
+        <Tabs.TabPane tab={`契约 (${item.contract?.endpoints?.length || 0})`} key="contract" />
+        <Tabs.TabPane tab="历史" key="history" />
       </Tabs>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-        {activeTab === 'details' ? (
+        {activeTab === 'details' && (
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <div>
-              <Text type="secondary">{item.id} / {item.type} / {statusLabel(item.status).label}</Text>
-              <Title level={3} style={{ marginTop: 8, marginBottom: 12 }}>{item.title}</Title>
-              <Space wrap>
-                <Tag color={priorityColor(item.priority)}>{item.priority || '-'}</Tag>
-                <Tag color={statusLabel(item.status).color}>{statusLabel(item.status).label}</Tag>
-                <Tag>{item.workflowStatus || '未登记'}</Tag>
-                <Tag>任务 {item.taskStats?.done || 0}/{item.taskStats?.total || 0}</Tag>
-              </Space>
-            </div>
-
             <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="计划周">{item.week || '-'}</Descriptions.Item>
               <Descriptions.Item label="截止日">{item.dueDate || '无'}</Descriptions.Item>
@@ -111,23 +103,6 @@ export function RequirementDetail({ item, taskItems, selectedTaskKey, filters })
               />
             </Card>
 
-            <Card title="接口契约" size="small" style={{ background: '#ffffff', borderColor: '#dfe5ee' }}>
-              <List
-                size="small"
-                dataSource={item.contract?.endpoints || []}
-                locale={{ emptyText: '暂无结构化接口契约' }}
-                renderItem={(ep) => (
-                  <List.Item style={{ borderColor: '#dfe5ee' }}>
-                    <Text strong>{(ep.method || 'METHOD').toUpperCase()} {ep.path || '-'}</Text>
-                    <div>
-                      {ep.permission && <Tag>权限：{ep.permission}</Tag>}
-                      {ep.reasonRequired && <Tag>需要 reason</Tag>}
-                    </div>
-                  </List.Item>
-                )}
-              />
-            </Card>
-
             <Card title="关联文档" size="small" style={{ background: '#ffffff', borderColor: '#dfe5ee' }}>
               <Space wrap>
                 {(item.links || []).map((link) => (
@@ -139,7 +114,9 @@ export function RequirementDetail({ item, taskItems, selectedTaskKey, filters })
               </Space>
             </Card>
           </Space>
-        ) : (
+        )}
+
+        {activeTab === 'tasks' && (
           <Space direction="vertical" style={{ width: '100%' }}>
             {tasks.length === 0 ? (
               <Empty description="该需求暂无任务" />
@@ -149,26 +126,56 @@ export function RequirementDetail({ item, taskItems, selectedTaskKey, filters })
               filteredTasks.map((task) => {
                 const taskKey = `${item.id}::${task.taskId}`;
                 return (
-                <Card
-                  key={task.taskId}
-                  size="small"
-                  className={`task-card role-${task.role}${selectedTaskKey === taskKey ? ' active' : ''}`}
-                  style={{ background: '#ffffff', borderColor: '#dfe5ee', cursor: 'pointer' }}
-                  onClick={() => openTask(task)}
-                  hoverable
-                >
-                  <Space>
-                    <Text type="secondary">{task.taskId}</Text>
-                    <Tag color={roleColor(task.role)}>{roleLabel(task.role)}</Tag>
-                    <Tag color={statusLabel(task.status).color}>{statusLabel(task.status).label}</Tag>
-                    <Text strong>{task.title || task.taskId}</Text>
-                    <Text type="secondary">{task.agent || '未领取'}</Text>
-                  </Space>
-                </Card>
+                  <Card
+                    key={task.taskId}
+                    size="small"
+                    className={`task-card role-${task.role}${selectedTaskKey === taskKey ? ' active' : ''}`}
+                    style={{ background: '#ffffff', borderColor: '#dfe5ee', cursor: 'pointer' }}
+                    onClick={() => openTask(task)}
+                    hoverable
+                  >
+                    <Space>
+                      <Text type="secondary">{task.taskId}</Text>
+                      <Tag color={roleColor(task.role)}>{roleLabel(task.role)}</Tag>
+                      <Tag color={statusLabel(task.status).color}>{statusLabel(task.status).label}</Tag>
+                      <Text strong>{task.title || task.taskId}</Text>
+                      <Text type="secondary">{task.agent || '未领取'}</Text>
+                    </Space>
+                  </Card>
                 );
               })
             )}
           </Space>
+        )}
+
+        {activeTab === 'contract' && (
+          <Card title="接口契约" size="small" style={{ background: '#ffffff', borderColor: '#dfe5ee' }}>
+            <List
+              size="small"
+              dataSource={item.contract?.endpoints || []}
+              locale={{ emptyText: '暂无结构化接口契约' }}
+              renderItem={(ep) => (
+                <List.Item style={{ borderColor: '#dfe5ee' }}>
+                  <Space direction="vertical" size={4}>
+                    <Text strong>{(ep.method || 'METHOD').toUpperCase()} {ep.path || '-'}</Text>
+                    <Space wrap>
+                      {ep.permission && <Tag>权限：{ep.permission}</Tag>}
+                      {ep.reasonRequired && <Tag>需要 reason</Tag>}
+                    </Space>
+                  </Space>
+                </List.Item>
+              )}
+            />
+          </Card>
+        )}
+
+        {activeTab === 'history' && (
+          <RequirementHistory
+            project={project}
+            requirementId={item.id}
+            selectedTaskKey={selectedTaskKey}
+            onTaskSelect={onTaskSelect}
+          />
         )}
       </div>
 

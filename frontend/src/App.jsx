@@ -5,6 +5,7 @@ import { useRequirements } from './hooks/useRequirements';
 import { ProjectSelector } from './components/ProjectSelector';
 import { StatCards } from './components/StatCards';
 import { RequirementList } from './components/RequirementList';
+import { RequirementWorkbench } from './components/RequirementWorkbench';
 import { RequirementDetail } from './components/RequirementDetail';
 
 const { Header, Content } = Layout;
@@ -46,18 +47,15 @@ function App() {
         <Row align="middle" justify="space-between" gutter={[16, 16]}>
           <Col>
             <Title level={4} style={{ margin: 0, color: '#17212f' }}>需求看板</Title>
-            <Text type="secondary">JSONL 事件流 / 多项目 / 多 Agent 协同</Text>
+            <div style={{ marginTop: 4 }}>
+              <StatCards data={data} />
+            </div>
           </Col>
           <Col>
             <Space>
               <ProjectSelector project={project} projects={projects} onChange={handleProjectChange} />
               <Button icon={<ReloadOutlined />} loading={loading} onClick={refresh} type="primary">刷新看板</Button>
             </Space>
-          </Col>
-        </Row>
-        <Row style={{ marginTop: 16 }}>
-          <Col span={24}>
-            <StatCards data={data} />
           </Col>
         </Row>
       </Header>
@@ -72,24 +70,34 @@ function App() {
           />
         )}
         <Spin spinning={loading} style={{ width: '100%', height: '100%' }}>
-          <div className="panel">
-            <RequirementList
-              data={data}
-              taskItems={taskItems}
-              selected={selectedItem?.id}
-              selectedTaskKey={selectedTaskKey}
-              onSelect={handleSelect}
-              filters={filters}
-              setFilters={setFilters}
-            />
-          </div>
-          <div className="panel">
-            <RequirementDetail
-              item={selectedItem}
-              taskItems={taskItems}
-              selectedTaskKey={selectedTaskKey}
-              filters={filters}
-            />
+          <div className="workspace-grid">
+            <div className="panel requirement-rail">
+              <RequirementList
+                data={data}
+                taskItems={taskItems}
+                selected={selectedItem?.id}
+                onSelect={handleSelect}
+                filters={filters}
+                setFilters={setFilters}
+              />
+            </div>
+            <div className="panel workbench-panel">
+              <RequirementWorkbench
+                item={selectedItem}
+                selectedTaskKey={selectedTaskKey}
+                onTaskSelect={handleSelect}
+              />
+            </div>
+            <div className="panel inspector-panel">
+              <RequirementDetail
+                project={project}
+                item={selectedItem}
+                taskItems={taskItems}
+                selectedTaskKey={selectedTaskKey}
+                filters={filters}
+                onTaskSelect={handleSelect}
+              />
+            </div>
           </div>
         </Spin>
       </Content>

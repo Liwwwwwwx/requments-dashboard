@@ -28,6 +28,10 @@ export async function renderState(project) {
   return fetchJson(`/projects/${encodeURIComponent(project)}/render`, { method: 'POST' });
 }
 
+export async function fetchRequirementEvents(project, requirementId) {
+  return fetchJson(`/projects/${encodeURIComponent(project)}/requirements/${encodeURIComponent(requirementId)}/events`);
+}
+
 export async function appendEvents(project, events) {
   return fetchJson(`/projects/${encodeURIComponent(project)}/events`, {
     method: 'POST',
