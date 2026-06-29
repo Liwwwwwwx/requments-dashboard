@@ -281,6 +281,40 @@ function snapshotComparableValue(account, snapshot) {
   return null;
 }
 
+// 今日消耗：每天 08:00 自动同步一次，08:00 那次快照当作今日起点。
+// today 字段 = 「今天 ≥ 08:00 的最早一次有效快照」与「今天最新有效快照」的差值。
+// 在 08:00 自动同步成功之前，今天的消耗返回 null（前端就不会显示「今日消耗」）。
+function buildTodayUsage(accounts, snapshots, nowMs = Date.now()) {
+  const today = localDay(new Date(nowMs));
+  const result = { day: today, label: dayLabel(today) };
+  const dayStartMs = Date.parse(`${today}T00:00:00Z`);
+  const todayAt8UtcMs = dayStartMs + (8 - getShanghaiOffsetHours(nowMs)) * 3600 * 1000;
+
+  for (const account of accounts) {
+    const todays = snapshots
+      .filter((s) => s.accountId === account.id && localDay(s.collectedAt) === today)
+      .map((s) => ({ at: Date.parse(s.collectedAt), value: snapshotComparableValue(account, s) }))
+      .filter((item) => Number.isFinite(item.at) && item.value !== null)
+      .sort((a, b) => a.at - b.at);
+
+    const startItem = todays.find((item) => item.at >= todayAt8UtcMs);
+    if (!startItem) continue;
+    const endItem = todays[todays.length - 1];
+    if (endItem.at <= startItem.at) continue;
+    const used = startItem.value - endItem.value;
+    if (!Number.isFinite(used) || used < 0) continue;
+    if (account.provider === "kimi") result.kimiWeeklyUsed = used;
+    if (account.provider === "minimax") result.minimaxWeeklyUsed = used;
+    if (account.provider === "deepseek") result.deepseekCost = used;
+  }
+  return result;
+}
+
+function getShanghaiOffsetHours(nowMs) {
+  // Asia/Shanghai 固定 +8，不区分夏令时
+  return 8;
+}
+
 function buildDailyUsage(accounts, snapshots) {
   const accountById = new Map(accounts.map((account) => [account.id, account]));
   const latestByDay = new Map();
@@ -343,7 +377,7 @@ function buildDailyUsage(accounts, snapshots) {
   const rows = Array.from(rowsByDay.values())
     .sort((a, b) => String(a.day).localeCompare(String(b.day)))
     .slice(-14);
-  const today = rows.find((row) => row.day === localDay()) || rows.at(-1) || null;
+  const today = buildTodayUsage(accounts, snapshots);
   return { rows, today };
 }
 

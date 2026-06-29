@@ -78,9 +78,12 @@ npm run req -- render --project default
 
 AI 用量定时同步（默认 2h）通过后端环境变量控制：
 
-- `AI_USAGE_SYNC_INTERVAL_MS`：间隔毫秒，默认 `7200000`
+- `AI_USAGE_SYNC_CRON`：每日触发时间（`HH:MM`），默认 `08:00`，时区 `Asia/Shanghai`
+- `AI_USAGE_SYNC_INTERVAL_MS`：按毫秒循环，>0 时覆盖 cron（兼容旧用法）
 - `AI_USAGE_SYNC_DISABLED=1`：关闭
 - `AI_USAGE_SYNC_ON_BOOT=1`：启动后立即跑一次
+
+「今日消耗」语义：以「今天 ≥ 08:00 的最早一次有效快照」为起点，减去当前最新一次快照的值；08:00 自动同步前，前端不会显示「今日消耗」数字，第二天 08:00 同步后即重置为 0 重新累计。
 
 ## 目录结构
 
