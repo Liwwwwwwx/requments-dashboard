@@ -80,10 +80,11 @@ jobs:
           name: frontend-build
           path: frontend/.next/
 
-      - name: Install rsync and add host key
+      - name: Verify rsync
+        run: rsync --version
+
+      - name: Add server host key
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq rsync
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
