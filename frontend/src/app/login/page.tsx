@@ -237,7 +237,7 @@ function LoginForm() {
               lineHeight: 1.6,
             }}
           >
-            默认账号：admin / admin
+            默认账号：admin / admin123
           </p>
         </div>
       </div>
