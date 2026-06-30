@@ -52,5 +52,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Hello from deploy
-        run: echo "deploy job triggers"
+      - name: Save deploy key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Test SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: whoami && hostname && uptime
