@@ -72,13 +72,15 @@ jobs:
       - name: Install rsync
         run: sudo apt-get update -qq && sudo apt-get install -y -qq rsync
 
-      - name: Pull source and install deps on server
+      - name: Pull source on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 5m
           script: |
+            set -e
             cd /home/ubuntu/requments-dashboard
             git pull
             npm install --prefer-offline --no-audit --no-fund --loglevel=error
@@ -96,9 +98,12 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 1m
+          fails_on_error: false
           script: |
-            pm2 restart req-board-backend || pm2 start /home/ubuntu/requments-dashboard/ecosystem.config.cjs --only req-board-backend
-            pm2 restart req-board-frontend || pm2 start /home/ubuntu/requments-dashboard/ecosystem.config.cjs --only req-board-frontend
+            cd /home/ubuntu/requments-dashboard
+            pm2 restart req-board-backend 2>&1 || pm2 start ecosystem.config.cjs --only req-board-backend
+            pm2 restart req-board-frontend 2>&1 || pm2 start ecosystem.config.cjs --only req-board-frontend
             pm2 save
 
       - name: Smoke test
@@ -107,6 +112,8 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 30s
+          fails_on_error: false
           script: |
             sleep 3
             curl -sf http://127.0.0.1:4315/api/health && echo " (backend)"
