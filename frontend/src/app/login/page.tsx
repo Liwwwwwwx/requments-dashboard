@@ -9,7 +9,7 @@ import { useAuth } from '@/components/AuthProvider';
 const { Text } = Typography;
 
 function LoginForm() {
-  const { login, user, loading: authLoading } = useAuth();
+  const { login, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [username, setUsername] = useState('');
@@ -23,14 +23,6 @@ function LoginForm() {
       router.replace(redirect);
     }
   }, [user, router, searchParams]);
-
-  if (authLoading) {
-    return (
-      <div style={{ textAlign: 'center', padding: 40 }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
 
   if (user) return null;
 
