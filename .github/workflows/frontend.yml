@@ -14,6 +14,10 @@ on:
       - 'package*.json'
       - '.github/workflows/frontend.yml'
 
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DEPLOY_USER: ubuntu
   DEPLOY_PATH: /home/ubuntu/requments-dashboard
@@ -54,6 +58,7 @@ jobs:
         with:
           name: frontend-build
           path: frontend/.next/
+          include-hidden-files: true
           retention-days: 1
 
   deploy:
