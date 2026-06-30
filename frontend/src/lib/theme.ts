@@ -1,40 +1,37 @@
 import type { ThemeConfig } from 'antd';
 import { theme } from 'antd';
+import { COLOR_TOKENS, sharedTokens, type ThemeMode } from './tokens';
 
-export const designTokens = {
-  colorPrimary: '#2563eb',
-  colorInfo: '#2563eb',
-  colorSuccess: '#16a34a',
-  colorWarning: '#d97706',
-  colorError: '#dc2626',
+/**
+ * 按主题模式构建 AntD ThemeConfig。颜色来自 tokens.ts（单一来源），
+ * 阴影按明暗分别给值，算法按模式切换 default / dark。
+ */
+export function buildAntdTheme(mode: ThemeMode): ThemeConfig {
+  const colors = COLOR_TOKENS[mode];
+  const shadow =
+    mode === 'dark'
+      ? {
+          boxShadow:
+            '0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 18px rgba(0, 0, 0, 0.45)',
+          boxShadowSecondary:
+            '0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3)'
+        }
+      : {
+          boxShadow:
+            '0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.06)',
+          boxShadowSecondary:
+            '0 4px 14px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03)'
+        };
 
-  colorBgBase: '#f4f5f7',
-  colorTextBase: '#0f172a',
-  colorBgContainer: '#ffffff',
-  colorBgElevated: '#ffffff',
-  colorBgLayout: '#f4f5f7',
+  return {
+    algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+    token: {
+      ...colors,
+      ...sharedTokens,
+      ...shadow
+    }
+  };
+}
 
-  colorBorder: 'rgba(15, 23, 42, 0.1)',
-  colorBorderSecondary: 'rgba(15, 23, 42, 0.07)',
-
-  borderRadius: 8,
-  borderRadiusSM: 6,
-  borderRadiusLG: 14,
-
-  fontFamily:
-    '"IBM Plex Sans", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
-  fontSize: 14,
-
-  controlHeight: 34,
-  controlHeightSM: 28,
-
-  boxShadow:
-    '0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.06)',
-  boxShadowSecondary:
-    '0 4px 14px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03)'
-};
-
-export const antdTheme: ThemeConfig = {
-  algorithm: theme.defaultAlgorithm,
-  token: designTokens
-};
+/** 默认（亮色）主题，供未包裹 ThemeProvider 的场景兜底。 */
+export const antdTheme: ThemeConfig = buildAntdTheme('light');

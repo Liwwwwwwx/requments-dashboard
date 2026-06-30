@@ -1,210 +1,151 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Empty } from 'antd';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  priorityBarClass,
-  priorityChipClass,
-  statusChipClass,
-  statusLabel,
-  unique
-} from '@/lib/utils';
-import type { BoardState, Filters, RequirementStatus } from '@/lib/types';
+import { InboxOutlined } from '@ant-design/icons';
+import type { BoardState, Filters, Priority, RequirementStatus } from '@/lib/types';
+import { BOARD_VIEWS } from '@/lib/nav';
 
 interface Props {
   data: BoardState;
   project: string;
   filters: Filters;
-  setFilters: (updater: (prev: Filters) => Filters) => void;
   selectedId: string | null;
-  viewMode: 'grid' | 'list';
+  loading?: boolean;
 }
 
-const STATUS_TABS: { key: 'all' | RequirementStatus; label: string }[] = [
-  { key: 'all', label: '全部' },
-  { key: 'todo', label: '待开始' },
-  { key: 'doing', label: '进行中' },
-  { key: 'paused', label: '暂停' },
-  { key: 'done', label: '完成' }
+const COLS: { key: RequirementStatus; label: string; tone: string }[] = [
+  { key: 'todo', label: '待开始', tone: 'todo' },
+  { key: 'doing', label: '进行中', tone: 'doing' },
+  { key: 'paused', label: '暂停', tone: 'paused' },
+  { key: 'done', label: '完成', tone: 'done' }
 ];
 
-export function RequirementGrid({ data, project, filters, setFilters, selectedId, viewMode }: Props) {
+const PRIORITY_TONE: Record<string, string> = { P0: 'p0', P1: 'p1', P2: 'p2' };
+function prioTone(priority: Priority | string): string {
+  return PRIORITY_TONE[priority] || 'p3';
+}
+
+export function RequirementGrid({ data, project, filters, selectedId, loading }: Props) {
   const router = useRouter();
+  const [activeView, setActiveView] = useState('board');
 
-  const weeks = useMemo(() => unique(data.items.map((i) => i.week)).reverse(), [data.items]);
-
-  const filteredItems = useMemo(() => {
+  const query = filters.query.toLowerCase();
+  const items = useMemo(() => {
     return data.items.filter((item) => {
-      if (filters.week !== 'all' && item.week !== filters.week) return false;
       if (filters.status !== 'all' && item.status !== filters.status) return false;
+      if (query && !item.title.toLowerCase().includes(query) && !item.id.toLowerCase().includes(query))
+        return false;
       return true;
     });
-  }, [data.items, filters.week, filters.status]);
+  }, [data.items, filters.status, query]);
 
-  const { pendingItems, doneItems } = useMemo(() => {
-    if (filters.status !== 'all') {
-      return { pendingItems: filteredItems, doneItems: [] };
-    }
-    const pending: typeof filteredItems = [];
-    const done: typeof filteredItems = [];
-    for (const item of filteredItems) {
-      if (item.status === 'done') done.push(item);
-      else pending.push(item);
-    }
-    return { pendingItems: pending, doneItems: done };
-  }, [filteredItems, filters.status]);
+  const cols = useMemo(
+    () => COLS.map((col) => ({ ...col, items: items.filter((i) => i.status === col.key) })),
+    [items]
+  );
 
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: 0, todo: 0, doing: 0, paused: 0, done: 0 };
-    for (const item of data.items) {
-      if (filters.week !== 'all' && item.week !== filters.week) continue;
-      counts.all += 1;
-      counts[item.status] = (counts[item.status] || 0) + 1;
-    }
-    return counts;
-  }, [data.items, filters.week]);
-
-  const goDetail = (reqId: string) => {
-    router.push(`/p/${project}/r/${reqId}`);
-  };
-
-  const renderCard = (item: BoardState['items'][number], isDone = false) => {
-    const stats = item.taskStats || { total: 0, done: 0, blocked: 0 };
-    const percent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
-    const status = statusLabel(item.status);
-    const isActive = selectedId === item.id;
-    const isBlocked = (stats.blocked || 0) > 0;
-
-    return (
-      <div
-        key={item.id}
-        role="button"
-        tabIndex={0}
-        className={[
-          'req-card',
-          priorityBarClass(item.priority),
-          isActive ? 'active' : '',
-          isDone ? 'is-done' : ''
-        ]
-          .join(' ')
-          .trim()}
-        onClick={() => goDetail(item.id)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            goDetail(item.id);
-          }
-        }}
-      >
-        <div className="req-card-head">
-          <span className="req-card-id">{item.id}</span>
-          {item.priority && (
-            <span className={`chip ${priorityChipClass(item.priority)}`}>
-              <span className="chip-dot" />
-              {item.priority}
-            </span>
-          )}
-        </div>
-
-        <div className="req-card-title">{item.title}</div>
-
-        <div className="req-card-chips">
-          <span className={`chip ${statusChipClass(item.status)}`}>
-            <span className="chip-dot" />
-            {status.label}
-          </span>
-          {item.type && <span className="chip">{item.type}</span>}
-        </div>
-
-        <div className="req-card-foot">
-          <div className="req-card-progress">
-            <div className={isBlocked ? 'bar is-blocked' : 'bar'}>
-              <span style={{ width: `${percent}%` }} />
-            </div>
-            <span className="count">
-              {stats.done || 0}/{stats.total || 0}
-            </span>
-          </div>
-          <div className="req-card-meta">
-            <span className="type">{item.week || '未排期'}</span>
-            {isBlocked && <span className="blocked">⚠ {stats.blocked}</span>}
-            <span>{item.updatedAt || '-'}</span>
-          </div>
-        </div>
-        {isDone && <div className="req-card-done-overlay" />}
-      </div>
-    );
-  };
+  const isInitialLoading = loading && data.items.length === 0;
+  const open = (id: string) => router.push(`/p/${project}/r/${id}`);
 
   return (
-    <div className="view-list">
-      <div className="view-list-meta" style={{ marginBottom: 12 }}>
-        <span>共 {filteredItems.length} 条需求</span>
-      </div>
-
-      <div className="filter-tabs">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={`week-tab ${filters.status === tab.key ? 'active' : ''}`}
-            onClick={() => setFilters((prev) => ({ ...prev, status: tab.key }))}
-          >
-            {tab.label}
-            <span className="tab-count">{statusCounts[tab.key] ?? 0}</span>
-          </button>
-        ))}
-      </div>
-
-      {weeks.length > 0 && (
-        <div className="week-tabs">
-          <button
-            type="button"
-            className={`week-tab ${filters.week === 'all' ? 'active' : ''}`}
-            onClick={() => setFilters((prev) => ({ ...prev, week: 'all' }))}
-          >
-            全部
-          </button>
-          {weeks.map((w) => (
-            <button
-              key={w}
-              type="button"
-              className={`week-tab ${filters.week === w ? 'active' : ''}`}
-              onClick={() => setFilters((prev) => ({ ...prev, week: w }))}
-            >
-              {w}
-            </button>
-          ))}
+    <div className="board-wrap">
+      <div className="board-toolbar">
+        <div className="viewtabs" role="tablist" aria-label="视图切换">
+          {BOARD_VIEWS.map((view) => {
+            const Icon = view.icon;
+            const active = activeView === view.key;
+            const soon = view.status === 'soon';
+            return (
+              <button
+                key={view.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                disabled={soon}
+                className={`viewtab ${active ? 'is-active' : ''} ${soon ? 'is-soon' : ''}`}
+                onClick={() => !soon && setActiveView(view.key)}
+                title={soon ? `${view.label}视图（即将上线）` : `${view.label}视图`}
+              >
+                <Icon className="viewtab-icon" />
+                <span>{view.label}</span>
+                {soon && <span className="viewtab-soon">Soon</span>}
+              </button>
+            );
+          })}
         </div>
-      )}
+        <div className="board-count">
+          共 <strong>{items.length}</strong> 条需求
+        </div>
+      </div>
 
-      {filteredItems.length === 0 ? (
-        <Empty description="暂无任务" />
-      ) : (
-        <>
-          {pendingItems.length > 0 && (
-            <div className={viewMode === 'grid' ? 'req-grid' : 'req-list'}>
-              {pendingItems.map((item) => renderCard(item))}
-            </div>
-          )}
-          {doneItems.length > 0 && (
-            <>
-              {pendingItems.length > 0 && (
-                <div className="req-section-divider">
-                  <span className="req-section-divider-line" />
-                  <span className="req-section-divider-label">已完成</span>
-                  <span className="req-section-divider-count">{doneItems.length}</span>
-                  <span className="req-section-divider-line" />
+      <div className="board">
+        {cols.map((col) => (
+          <section key={col.key} className="board-col">
+            <header className="board-col-header">
+              <span className={`board-col-dot tone-${col.tone}`} />
+              <span className="board-col-label">{col.label}</span>
+              <span className="board-col-count">{col.items.length}</span>
+            </header>
+
+            <div className="board-col-body">
+              {isInitialLoading
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="card card-skeleton" aria-hidden="true">
+                      <span className="sk-line sk-line-1" />
+                      <span className="sk-line sk-line-2" />
+                    </div>
+                  ))
+                : col.items.map((item) => {
+                    const blocked = item.taskStats?.blocked || 0;
+                    const active = item.taskStats?.active || 0;
+                    return (
+                      <article
+                        key={item.id}
+                        className={`card ${selectedId === item.id ? 'is-active' : ''}`}
+                        onClick={() => open(item.id)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            open(item.id);
+                          }
+                        }}
+                      >
+                        <h4 className="card-title">{item.title}</h4>
+                        <footer className="card-meta">
+                          <span className={`card-prio tone-${prioTone(item.priority)}`}>
+                            {item.priority || 'P3'}
+                          </span>
+                          <span className="card-id">{item.id}</span>
+                          <span className="card-badges">
+                            {blocked > 0 && (
+                              <span className="card-badge is-blocked" title={`${blocked} 个阻塞任务`}>
+                                阻塞 {blocked}
+                              </span>
+                            )}
+                            {active > 0 && (
+                              <span className="card-badge" title={`${active} 个进行中任务`}>
+                                进行 {active}
+                              </span>
+                            )}
+                          </span>
+                        </footer>
+                      </article>
+                    );
+                  })}
+
+              {!isInitialLoading && col.items.length === 0 && (
+                <div className="board-col-empty">
+                  <InboxOutlined className="board-col-empty-icon" />
+                  <span>暂无需求</span>
                 </div>
               )}
-              <div className={viewMode === 'grid' ? 'req-grid' : 'req-list'}>
-                {doneItems.map((item) => renderCard(item, true))}
-              </div>
-            </>
-          )}
-        </>
-      )}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

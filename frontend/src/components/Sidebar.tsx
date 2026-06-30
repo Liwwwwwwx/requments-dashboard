@@ -1,9 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { useParams, usePathname } from 'next/navigation';
-import { UnorderedListOutlined, FolderOutlined } from '@ant-design/icons';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import type { Project, Requirement } from '@/lib/types';
+import { MODULE_NAV } from '@/lib/nav';
 
 interface SidebarProps {
   projects: Project[];
@@ -12,79 +11,69 @@ interface SidebarProps {
 }
 
 export function Sidebar({ projects, selectedItem, onProjectChange }: SidebarProps) {
-  const pathname = usePathname();
   const params = useParams<{ project?: string }>();
-  const currentProjectId = params?.project;
-
-  const handleProjectClick = (projectId: string) => {
-    onProjectChange?.(projectId);
-  };
+  const pathname = usePathname() || '';
+  const router = useRouter();
+  const currentProjectId = params?.project || 'default';
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-scroll">
-        <section className="sidebar-section">
-          <div className="sidebar-eyebrow">
-            <span>工作区</span>
-          </div>
-          <nav className="sidebar-nav">
-            <button
-              type="button"
-              className="sidebar-nav-item active"
-            >
-              <span className="icon nav-icon" style={{ background: 'var(--accent)' }}>
-                <UnorderedListOutlined />
-              </span>
-              <span className="label">TraceBoard</span>
-            </button>
+    <aside className="sidenav">
+      <div className="sidenav-scroll">
+        <section className="sidenav-section">
+          <div className="sidenav-eyebrow">项目</div>
+          <nav className="sidenav-list">
+            {projects.map((p) => {
+              const active = currentProjectId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`sidenav-item ${active ? 'is-active' : ''}`}
+                  onClick={() => onProjectChange?.(p.id)}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <span className={`sidenav-dot ${active ? 'is-active' : ''}`} />
+                  <span className="sidenav-item-label">{p.name}</span>
+                </button>
+              );
+            })}
+            {projects.length === 0 && <div className="sidenav-empty">暂无项目</div>}
           </nav>
         </section>
 
-        <section className="sidebar-section">
-          <div className="sidebar-eyebrow">
-            <span>项目</span>
-          </div>
-          <nav className="sidebar-nav">
-            {projects.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={`sidebar-nav-item ${currentProjectId === p.id ? 'active' : ''}`}
-                onClick={() => handleProjectClick(p.id)}
-              >
-                <FolderOutlined className="sidebar-project-icon" />
-                <span className="label">{p.name}</span>
-              </button>
-            ))}
+        <section className="sidenav-section">
+          <div className="sidenav-eyebrow">模块</div>
+          <nav className="sidenav-list">
+            {MODULE_NAV.map((mod) => {
+              const Icon = mod.icon;
+              const active = mod.match(pathname, currentProjectId);
+              const soon = mod.status === 'soon';
+              return (
+                <button
+                  key={mod.key}
+                  type="button"
+                  className={`sidenav-item ${active ? 'is-active' : ''} ${soon ? 'is-soon' : ''}`}
+                  disabled={soon}
+                  onClick={() => !soon && router.push(mod.path(currentProjectId))}
+                  aria-current={active ? 'page' : undefined}
+                  title={soon ? `${mod.label}（即将上线）` : mod.label}
+                >
+                  <Icon className="sidenav-item-icon" />
+                  <span className="sidenav-item-label">{mod.label}</span>
+                  {soon && <span className="sidenav-soon">Soon</span>}
+                </button>
+              );
+            })}
           </nav>
         </section>
-
-        {pathname && (
-          <section className="sidebar-section">
-            <div className="sidebar-eyebrow">
-              <span>关于</span>
-            </div>
-            <nav className="sidebar-nav">
-              <Link
-                href="/"
-                className="sidebar-nav-item"
-                style={{ textDecoration: 'none' }}
-              >
-                <span className="label">首页</span>
-              </Link>
-            </nav>
-          </section>
-        )}
       </div>
 
       {selectedItem && (
-        <div className="sidebar-current">
-          <div className="sidebar-current-eyebrow">正在查看</div>
-          <div className="sidebar-current-title">{selectedItem.title}</div>
-          <div className="sidebar-current-meta">
-            <span>{selectedItem.id}</span>
-            <span>·</span>
-            <span>{selectedItem.owner || '未分配'}</span>
+        <div className="sidenav-current">
+          <div className="sidenav-current-eyebrow">当前查看</div>
+          <div className="sidenav-current-title">{selectedItem.title}</div>
+          <div className="sidenav-current-meta">
+            <span className="mono">{selectedItem.id}</span>
           </div>
         </div>
       )}

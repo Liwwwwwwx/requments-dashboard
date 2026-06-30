@@ -21,6 +21,7 @@ data/
 *.log
 
 # Next.js / 构建产物
+.next/
 frontend/.next/
 frontend/out/
 frontend/dist/

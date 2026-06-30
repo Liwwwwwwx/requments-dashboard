@@ -93,16 +93,17 @@ export function RequirementDetailView({ item, project, taskItems }: Props) {
 
   return (
     <div className="view-detail">
-      <button type="button" className="view-detail-back" onClick={handleBack}>
-        <span className="arrow">←</span>
-        <span>返回需求列表</span>
-      </button>
-
       <header className="view-detail-header">
-        <div className="view-detail-eyebrow">
-          <span className="id">{item.id}</span>
-          <span>·</span>
-          <span>需求详情</span>
+        <div className="view-detail-topline">
+          <div className="view-detail-eyebrow">
+            <span className="id">{item.id}</span>
+            <span>·</span>
+            <span>需求详情</span>
+          </div>
+          <button type="button" className="view-detail-back" onClick={handleBack}>
+            <span className="arrow">←</span>
+            <span>返回列表</span>
+          </button>
         </div>
         <h1 className="view-detail-title">{item.title}</h1>
         <div className="view-detail-chips">
