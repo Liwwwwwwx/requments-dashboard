@@ -9,7 +9,7 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
-  path: "/api/auth",
+  path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000
 };
 
@@ -60,7 +60,7 @@ function createAuthRoutes(rootDir) {
   });
 
   router.post("/auth/logout", (_req, res) => {
-    res.clearCookie("refresh_token", { httpOnly: true, secure: COOKIE_OPTIONS.secure, sameSite: "lax", path: "/api/auth" });
+    res.clearCookie("refresh_token", { httpOnly: true, secure: COOKIE_OPTIONS.secure, sameSite: "lax", path: "/" });
     return res.json({ ok: true });
   });
 
