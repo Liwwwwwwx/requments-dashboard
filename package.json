@@ -16,6 +16,10 @@
     "start": "npm run start --workspace=backend",
     "migrate": "node backend/scripts/migrate.js",
     "test:schema": "npm run test:schema --workspace=backend",
+    "test:backend": "npm run test --workspace=backend",
+    "test:frontend": "npm run test --workspace=frontend",
+    "typecheck": "npm run typecheck --workspace=frontend",
+    "lint": "npm run lint --workspace=frontend",
     "req": "node backend/cli.js",
     "req:remote": "node backend/cli-remote.js"
   },
