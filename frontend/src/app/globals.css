@@ -125,8 +125,8 @@
     monospace;
 
   /* —— 布局 —— */
-  --sidebar-width: 240px;
-  --toolbar-h: 56px;
+  --sidebar-width: 200px;
+  --toolbar-h: 48px;
 }
 
 /* =========================================================
@@ -196,10 +196,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 0 24px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 16px;
+  padding: 0 20px;
+  background: transparent;
+  border-bottom: 1px solid var(--border-hairline);
   height: var(--toolbar-h);
   z-index: 5;
 }
@@ -213,11 +213,8 @@ body {
 }
 
 .toolbar-brand {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 14px;
   color: var(--text-primary);
   font-weight: 400;
   letter-spacing: -0.01em;
@@ -226,15 +223,6 @@ body {
 .toolbar-brand .accent {
   color: var(--accent);
   font-style: italic;
-}
-
-.toolbar-brand .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: inline-block;
-  margin-right: 2px;
 }
 
 .toolbar-divider {
@@ -325,10 +313,9 @@ body {
 
 .toolbar-user-name {
   font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--text-secondary);
-  letter-spacing: 0.06em;
-  font-weight: 500;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0;
 }
 
 /* =========================================================
@@ -345,8 +332,8 @@ body {
    Sidebar
    ========================================================= */
 .sidebar {
-  background: var(--bg-canvas-2);
-  border-right: 1px solid var(--border-subtle);
+  background: transparent;
+  border-right: 1px solid var(--border-hairline);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -356,7 +343,7 @@ body {
 .sidebar-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 14px 32px;
+  padding: 12px 0;
 }
 
 .sidebar-section {
@@ -370,37 +357,42 @@ body {
 .sidebar-eyebrow {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-quaternary);
-  padding: 0 10px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  padding: 0 8px;
+  margin-bottom: 4px;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
+  padding: 8px 8px;
 }
 
 .sidebar-nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 12.5px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background 0.1s ease;
   background: transparent;
   border: none;
   text-align: left;
   width: 100%;
   font-family: var(--font-sans);
+}
+
+.sidebar-nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: 0 0 auto;
 }
 
 .sidebar-nav-item:hover {
@@ -458,13 +450,11 @@ body {
 /* —— Sidebar 当前选中卡片 —— */
 .sidebar-current {
   margin-top: auto;
-  padding: 14px 14px 16px;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--border-hairline);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .sidebar-current-eyebrow {
@@ -502,7 +492,7 @@ body {
 .main {
   flex: 1;
   overflow-y: auto;
-  background: var(--bg-canvas);
+  background: transparent;
   min-height: 0;
 }
 
@@ -2161,120 +2151,102 @@ body {
   }
 }
 
+
 /* =========================================================
-   Kanban (simple)
+   Board — Linear / Notion style
    ========================================================= */
-.kanban {
+.board {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  padding: 20px 24px 40px;
+  gap: 0;
+  padding: 24px 28px 60px;
   align-items: start;
 }
 
-.kanban-col {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+.board-col {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-hairline);
+  min-height: calc(100vh - 140px);
 }
 
-.kanban-col-head {
+.board-col:last-child {
+  border-right: none;
+}
+
+.board-col-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border-hairline);
+  gap: 6px;
+  padding: 10px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
-.kanban-col-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex: 0 0 auto;
-}
-
-.kanban-col-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  flex: 1;
-}
-
-.kanban-col-count {
-  font-family: var(--font-mono);
-  font-size: 11px;
+.board-col-icon {
+  font-size: 12px;
   color: var(--text-quaternary);
 }
 
-.kanban-col-body {
-  padding: 10px;
+.board-col-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  flex: 1;
+  letter-spacing: 0;
+}
+
+.board-col-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-quaternary);
+  font-weight: 400;
+}
+
+.board-col-items {
+  flex: 1;
+  padding: 4px 8px 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 80px;
+  gap: 1px;
 }
 
-.kanban-col-empty {
+.board-col-empty {
+  padding: 16px 8px;
   text-align: center;
+  font-size: 11px;
   color: var(--border-strong);
-  font-size: 18px;
-  padding: 20px 0;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
 }
 
-.kanban-card {
-  position: relative;
-  padding: 12px 12px 12px 14px;
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-sm);
+.board-item {
+  padding: 10px 12px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.1s ease;
+  border: 1px solid transparent;
 }
 
-.kanban-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
-  background: var(--p3);
-  transition: top 0.15s ease, bottom 0.15s ease;
+.board-item:hover {
+  background: var(--bg-surface);
+  border-color: var(--border-hairline);
 }
 
-.kanban-card.priority-p0::before { background: var(--p0); }
-.kanban-card.priority-p1::before { background: var(--p1); }
-.kanban-card.priority-p2::before { background: var(--p2); }
-
-.kanban-card:hover {
-  border-color: var(--border-default);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-
-.kanban-card:hover::before {
-  top: 6px;
-  bottom: 6px;
-}
-
-.kanban-card.active {
-  border-color: var(--accent-border);
+.board-item.is-active {
   background: var(--bg-active-soft);
+  border-color: var(--accent-border);
 }
 
-.kanban-card.active::before {
-  background: var(--accent);
-  top: 6px;
-  bottom: 6px;
-}
-
-.kanban-card-title {
+.board-item-title {
+  font-family: var(--font-sans);
   font-size: 13px;
-  line-height: 1.4;
+  font-weight: 400;
   color: var(--text-primary);
-  font-weight: 500;
+  line-height: 1.45;
+  margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -2282,29 +2254,33 @@ body {
   word-break: break-word;
 }
 
-.kanban-card-foot {
+.board-item-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
-.kanban-card-id {
+.board-item-key {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text-quaternary);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.kanban-card-blocked {
+.board-item-badge {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 9.5px;
+  color: var(--text-tertiary);
+  background: var(--bg-surface-2);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.board-item-badge--danger {
   color: var(--status-blocked-text);
   background: var(--status-blocked-bg);
-  padding: 1px 6px;
-  border-radius: var(--radius-pill);
-  font-weight: 600;
 }
 
 .toolbar-search .ant-input {

@@ -2,7 +2,12 @@
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { priorityBarClass } from '@/lib/utils';
+import {
+  AimOutlined,
+  CheckOutlined,
+  ClockCircleOutlined,
+  ExclamationOutlined,
+} from '@ant-design/icons';
 import type { BoardState, Filters, RequirementStatus } from '@/lib/types';
 
 interface Props {
@@ -12,11 +17,11 @@ interface Props {
   selectedId: string | null;
 }
 
-const COLS: { key: RequirementStatus; label: string; color: string }[] = [
-  { key: 'todo', label: '待开始', color: 'var(--status-todo-dot)' },
-  { key: 'doing', label: '进行中', color: 'var(--status-doing-dot)' },
-  { key: 'paused', label: '暂停', color: 'var(--status-paused-dot)' },
-  { key: 'done', label: '完成', color: 'var(--status-done-dot)' },
+const COLS: { key: RequirementStatus; label: string; icon: typeof CheckOutlined }[] = [
+  { key: 'todo', label: 'Backlog', icon: ClockCircleOutlined },
+  { key: 'doing', label: 'In Progress', icon: AimOutlined },
+  { key: 'paused', label: 'Paused', icon: ExclamationOutlined },
+  { key: 'done', label: 'Done', icon: CheckOutlined },
 ];
 
 export function RequirementGrid({ data, project, filters, selectedId }: Props) {
@@ -39,35 +44,52 @@ export function RequirementGrid({ data, project, filters, selectedId }: Props) {
   }, [items]);
 
   return (
-    <div className="kanban">
-      {cols.map((col) => (
-        <div key={col.key} className="kanban-col">
-          <div className="kanban-col-head">
-            <span className="kanban-col-dot" style={{ background: col.color }} />
-            <span className="kanban-col-name">{col.label}</span>
-            <span className="kanban-col-count">{col.items.length}</span>
-          </div>
-          <div className="kanban-col-body">
-            {col.items.map((item) => (
-              <div
-                key={item.id}
-                className={`kanban-card ${priorityBarClass(item.priority)} ${selectedId === item.id ? 'active' : ''}`}
-                onClick={() => router.push(`/p/${project}/r/${item.id}`)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/p/${project}/r/${item.id}`); } }}
-              >
-                <div className="kanban-card-title">{item.title}</div>
-                <div className="kanban-card-foot">
-                  <span className="kanban-card-id">{item.id}</span>
-                  {(item.taskStats?.blocked || 0) > 0 && <span className="kanban-card-blocked">{(item.taskStats?.blocked || 0)}</span>}
-                </div>
-              </div>
-            ))}
-            {col.items.length === 0 && <div className="kanban-col-empty">—</div>}
-          </div>
-        </div>
-      ))}
+    <div className="board">
+      {cols.map((col) => {
+        const Icon = col.icon;
+        return (
+          <section key={col.key} className="board-col">
+            <header className="board-col-header">
+              <Icon className="board-col-icon" />
+              <span className="board-col-label">{col.label}</span>
+              <span className="board-col-count">{col.items.length}</span>
+            </header>
+            <div className="board-col-items">
+              {col.items.map((item) => (
+                <article
+                  key={item.id}
+                  className={`board-item ${selectedId === item.id ? 'is-active' : ''}`}
+                  onClick={() => router.push(`/p/${project}/r/${item.id}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      router.push(`/p/${project}/r/${item.id}`);
+                    }
+                  }}
+                >
+                  <h4 className="board-item-title">{item.title}</h4>
+                  <footer className="board-item-meta">
+                    <span className="board-item-key">{item.id}</span>
+                    {(item.taskStats?.blocked || 0) > 0 && (
+                      <span className="board-item-badge board-item-badge--danger">
+                        ⚠ {item.taskStats.blocked}
+                      </span>
+                    )}
+                    {(item.taskStats?.active || 0) > 0 && (
+                      <span className="board-item-badge">{item.taskStats.active}</span>
+                    )}
+                  </footer>
+                </article>
+              ))}
+              {col.items.length === 0 && (
+                <div className="board-col-empty">No issues</div>
+              )}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

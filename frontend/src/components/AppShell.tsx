@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Input, Layout, Spin } from 'antd';
-import { LogoutOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequirements } from '@/hooks/useRequirements';
 import { useAuth } from '@/components/AuthProvider';
 import { Sidebar } from './Sidebar';
@@ -48,7 +48,6 @@ export function AppShell({ project, reqId, children }: Props) {
     return data.items.find((i) => i.id === reqId) || null;
   }, [data.items, reqId]);
 
-  const currentProject = projects.find((p) => p.id === project);
   const total = (data.items || []).length;
 
   const handleProjectChange = (next: string) => {
@@ -60,60 +59,43 @@ export function AppShell({ project, reqId, children }: Props) {
       <header className="toolbar">
         <div className="toolbar-left">
           <div className="toolbar-brand">
-            <span className="dot" />
             Trace<span className="accent">Board</span>
-          </div>
-          <div className="toolbar-divider" />
-          <div className="toolbar-project">
-            <span className="toolbar-project-label">项目</span>
-            <span className="toolbar-project-name">{currentProject?.name || activeProject}</span>
           </div>
         </div>
 
         <div className="toolbar-right">
           {!reqId && (
-            <>
-              <Input
-                className="toolbar-search"
-                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                placeholder={`搜索 ${total} 条需求`}
-                value={filters.query}
-                onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
-                allowClear
-                style={{ width: 200, height: 34, borderRadius: 6 }}
-              />
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                style={{ height: 34, borderRadius: 6, fontSize: 13, fontWeight: 500 }}
-              >
-                新建
-              </Button>
-            </>
-          )}
-          {user && (
-            <div className="toolbar-user">
-              <UserOutlined style={{ color: 'var(--text-tertiary)', fontSize: 13 }} />
-              <span className="toolbar-user-name">{user.displayName || user.username}</span>
-              <Button
-                size="small"
-                icon={<LogoutOutlined />}
-                onClick={() => void logout()}
-                style={{ background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-tertiary)', fontSize: 12 }}
-              >
-                退出
-              </Button>
-            </div>
+            <Input
+              className="toolbar-search"
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              placeholder={`Search ${total} issues`}
+              value={filters.query}
+              onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
+              allowClear
+              style={{ width: 220, height: 32, borderRadius: 6 }}
+            />
           )}
           <Button
             icon={<ReloadOutlined />}
             loading={loading}
             onClick={() => void refresh()}
-            type="primary"
-            size="middle"
-          >
-            刷新
-          </Button>
+            type="text"
+            size="small"
+            style={{ color: 'var(--text-tertiary)', fontSize: 13 }}
+          />
+          {user && (
+            <div className="toolbar-user">
+              <span className="toolbar-user-name">{user.displayName || user.username}</span>
+              <Button
+                size="small"
+                icon={<span style={{ fontSize: 14, lineHeight: 1 }}>↪</span>}
+                onClick={() => void logout()}
+                style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-tertiary)', fontSize: 12 }}
+              >
+                Log out
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 
