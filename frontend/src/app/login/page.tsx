@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Alert, Button, Input, Spin, Typography } from 'antd';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Alert, Button, Input, Typography } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -10,19 +10,20 @@ const { Text } = Typography;
 
 function LoginForm() {
   const { login, user } = useAuth();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !didRedirect.current) {
+      didRedirect.current = true;
       const redirect = searchParams.get('redirect') || '/p/default';
-      router.replace(redirect);
+      window.location.href = redirect;
     }
-  }, [user, router, searchParams]);
+  }, [user, searchParams]);
 
   if (user) return null;
 
