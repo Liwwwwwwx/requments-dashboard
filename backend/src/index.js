@@ -2,22 +2,17 @@
 
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
-const fs = require("fs");
 const { createRoutes } = require("./routes");
+const { errorMiddleware } = require("./errors");
 const { syncAllAccounts } = require("./ai-usage/sync");
 
-const ROOT = process.env.REQUIREMENTS_ROOT || path.resolve(__dirname, "..", "..");
+const ROOT = process.env.REQUIREMENTS_ROOT || require("path").resolve(__dirname, "..", "..");
 const HOST = process.env.REQUIREMENTS_HOST || "127.0.0.1";
 const PORT = Number(process.env.REQUIREMENTS_PORT || 4315);
 
 const SYNC_DISABLED = /^(1|true|yes)$/i.test(process.env.AI_USAGE_SYNC_DISABLED || "");
 const SYNC_ON_BOOT = /^(1|true|yes)$/i.test(process.env.AI_USAGE_SYNC_ON_BOOT || "");
 
-// 默认行为：每天早上 8:00 拉取一次最新额度（Asia/Shanghai）。
-// - AI_USAGE_SYNC_CRON 仅支持 "HH:MM" 写法，例如 "08:00"、"20:30"。
-// - AI_USAGE_SYNC_INTERVAL_MS > 0 时按毫秒循环（兼容旧用法）。
-// - AI_USAGE_SYNC_TZ 调整时区，默认 Asia/Shanghai。
 const SYNC_CRON = (process.env.AI_USAGE_SYNC_CRON || "08:00").trim();
 const SYNC_INTERVAL_MS = Number(process.env.AI_USAGE_SYNC_INTERVAL_MS || 0);
 const SYNC_TIMEZONE = process.env.AI_USAGE_SYNC_TZ || "Asia/Shanghai";
@@ -56,7 +51,6 @@ function getLocalHms(now, timeZone) {
   };
 }
 
-// 找到「时区当天 00:00」对应的 UTC 时刻
 function localMidnightUtc(now, timeZone) {
   const { y, m, d } = getLocalYmd(now, timeZone);
   let lo = now.getTime() - 36 * 3600 * 1000;
@@ -100,22 +94,17 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api", createRoutes(ROOT));
-
-// 生产环境：托管前端构建产物
-const distDir = path.join(ROOT, "frontend", "dist");
-if (fs.existsSync(distDir)) {
-  app.use(express.static(distDir));
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(distDir, "index.html"));
-  });
-}
+app.use(errorMiddleware());
 
 app.listen(PORT, HOST, () => {
+  // eslint-disable-next-line no-console
   console.log(`Requirements board backend listening at http://${HOST}:${PORT}`);
-  console.log(`  data dir: ${path.join(ROOT, "data")}`);
+  // eslint-disable-next-line no-console
+  console.log(`  data dir: ${require("path").join(ROOT, "data")}`);
 });
 
 if (SYNC_DISABLED) {
+  // eslint-disable-next-line no-console
   console.log("[ai-usage] 自动同步已禁用（AI_USAGE_SYNC_DISABLED）");
 } else {
   const runOnce = async (trigger) => {
@@ -123,11 +112,14 @@ if (SYNC_DISABLED) {
       const results = await syncAllAccounts(ROOT);
       const ok = results.filter((r) => r.ok).length;
       const failed = results.length - ok;
+      // eslint-disable-next-line no-console
       console.log(`[ai-usage] ${trigger}：成功 ${ok}，失败 ${failed}`);
       results.filter((r) => !r.ok).forEach((r) => {
+        // eslint-disable-next-line no-console
         console.warn(`[ai-usage]   ${r.accountId}: ${r.error}`);
       });
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.warn(`[ai-usage] ${trigger} 失败: ${err.message}`);
     }
   };
@@ -142,16 +134,19 @@ if (SYNC_DISABLED) {
   } else {
     const target = parseCronHHMM(SYNC_CRON);
     if (!target) {
+      // eslint-disable-next-line no-console
       console.log(`[ai-usage] 自动同步 cron 非法（${SYNC_CRON}），已禁用`);
     } else {
       const scheduleNext = () => {
         const delay = nextRunAt(target, new Date(), SYNC_TIMEZONE);
         if (delay === null) {
+          // eslint-disable-next-line no-console
           console.log("[ai-usage] 自动同步调度失败，时区无效");
           return;
         }
         const wait = Math.max(delay - Date.now(), 1000);
         const at = formatLocalClock(delay, SYNC_TIMEZONE);
+        // eslint-disable-next-line no-console
         console.log(`[ai-usage] 下一次自动同步：${at}（${SYNC_TIMEZONE} ${SYNC_CRON}）`);
         timer = setTimeout(async () => {
           await runOnce("每日定时同步");
@@ -164,12 +159,12 @@ if (SYNC_DISABLED) {
   }
 
   if (description) {
+    // eslint-disable-next-line no-console
     console.log(`[ai-usage] 自动同步已启用，${description}${SYNC_ON_BOOT ? "，启动后立即跑一次" : ""}`);
   }
 
   if (SYNC_ON_BOOT) runOnce("启动同步");
 
-  // 优雅退出
   const shutdown = () => {
     if (timer) clearTimeout(timer);
     if (interval) clearInterval(interval);

@@ -1,19 +1,31 @@
 {
   "name": "requirements-board-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "需求看板后端：Express + JSONL 事件流 + 多项目隔离",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:schema": "node -e \"require('./src/schema').selfTest()\""
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.20.0",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "supertest": "^7.2.2",
+    "vitest": "^2.1.9"
   }
 }

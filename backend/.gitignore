@@ -1,0 +1,17 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# 测试产物
+coverage/
+
+# 编辑器
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 日志
+*.log

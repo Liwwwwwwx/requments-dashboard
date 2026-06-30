@@ -4,7 +4,7 @@
 
 ## 技术栈
 
-- 前端：React 18 + Vite 5 + Ant Design 5
+- 前端：**Next.js 15 (App Router) + TypeScript 5 + Ant Design 5**，ESLint flat + Prettier + Vitest
 - 后端：Node 18+ + Express 4 + JSONL 事件流
 - 数据：按项目分文件存储 (`data/<project>/events.jsonl`)
 
@@ -13,13 +13,13 @@
 ```bash
 cd requirements-board
 npm run install:all
-npm run migrate        # 从 REQUIREMENTS/data/events.jsonl 迁移现有数据
+npm run migrate        # 从 REQUIREMENTS/data/events.jsonl 迁移现有数据（首次可选）
 npm run dev            # 同时启动前后端
 ```
 
 访问：http://127.0.0.1:5173
 
-后端 API：http://127.0.0.1:4315
+后端 API：http://127.0.0.1:4315（前端通过 `/api/*` 重写代理）
 
 ## 常用命令
 
@@ -45,6 +45,25 @@ npm run req -- show --project default REQ-0001
 # 重新渲染状态
 npm run req -- render --project default
 ```
+
+## 前端开发
+
+```bash
+cd frontend
+npm run dev          # 启动 Next.js 开发服务器（http://127.0.0.1:5173）
+npm run lint         # ESLint
+npm run lint:fix     # ESLint --fix
+npm run format       # Prettier --write
+npm run typecheck    # tsc --noEmit
+npm run test         # Vitest 单测
+npm run build        # 生产构建
+npm run start        # 生产模式启动
+```
+
+环境变量：
+
+- `REQUIREMENTS_BACKEND_URL`：默认 `http://127.0.0.1:4315`，用于 Next.js rewrite 代理 `/api`。
+- `NEXT_PUBLIC_API_BASE`：默认 `/api`，前端 fetch 时的基础路径。
 
 ## 产品方案
 
@@ -90,15 +109,29 @@ AI 用量定时同步（默认 2h）通过后端环境变量控制：
 ```
 requirements-board/
 ├── backend/
-│   ├── src/            # Express 服务、事件流、状态渲染、校验
+│   ├── src/                  # Express 服务、事件流、状态渲染、校验
+│   │   └── ai-usage/         # AI 用量同步与 API
 │   ├── scripts/
-│   │   └── migrate.js  # 数据迁移脚本
-│   └── cli.js          # 命令行工具
+│   │   └── migrate.js        # 数据迁移脚本
+│   └── cli.js                # 命令行工具
 ├── frontend/
-│   └── src/            # React + AntD 看板组件
-└── data/               # 运行时数据
-│   └── src/            # React + AntD 看板组件
-└── package.json
+│   ├── src/
+│   │   ├── app/              # Next.js App Router
+│   │   │   ├── p/[project]/  # 项目路由（含详情 /r/[reqId]）
+│   │   │   └── ai-usage/     # AI 用量路由
+│   │   ├── components/       # 业务组件（AppShell、Sidebar、各看板）
+│   │   ├── hooks/            # 数据 hooks
+│   │   ├── lib/              # API、types、utils、AntD 主题
+│   │   └── app/globals.css   # 设计系统
+│   ├── tests/                # Vitest 测试
+│   ├── next.config.ts        # /api 反代后端
+│   ├── tsconfig.json
+│   └── eslint.config.mjs
+└── data/                     # 运行时数据
+    └── <project>/
+        ├── events.jsonl      # 唯一事实源
+        ├── state.json        # 渲染产物
+        └── state.js          # 渲染产物（旧兼容，建议删除）
 ```
 
 ## 数据规则

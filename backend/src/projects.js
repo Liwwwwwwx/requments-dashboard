@@ -19,9 +19,9 @@ function projectPaths(rootDir, projectId) {
   return {
     projectId: safeId,
     dataDir,
-    eventsPath: path.join(dataDir, "events.jsonl"),
+    eventsPath: path.join(dataDir, "events.db"),
+    legacyEventsJsonlPath: path.join(dataDir, "events.jsonl"),
     stateJsonPath: path.join(dataDir, "state.json"),
-    stateJsPath: path.join(dataDir, "state.js"),
     lockPath: path.join(dataDir, ".requirements.lock")
   };
 }

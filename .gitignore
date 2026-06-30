@@ -5,10 +5,10 @@ yarn-error.log
 .npm/
 
 # 运行时数据（每个项目独立，不入库）
-data/**/*.jsonl
-data/**/*.json
-data/**/*.js
-data/**/.requirements.lock
+data/
+*.db
+*.db-shm
+*.db-wal
 
 # 编辑器 / 系统
 .DS_Store
@@ -19,4 +19,13 @@ data/**/.requirements.lock
 
 # 日志
 *.log
-frontend/dist
+
+# Next.js / 构建产物
+frontend/.next/
+frontend/out/
+frontend/dist/
+frontend/coverage/
+backend/coverage/
+
+# TypeScript
+*.tsbuildinfo

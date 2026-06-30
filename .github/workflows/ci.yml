@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Lint · Typecheck · Test · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backend smoke test (zod schema)
+        run: npm run test:schema
+
+      - name: Backend tests
+        run: npm run test:backend
+
+      - name: Frontend typecheck
+        run: npm run typecheck --workspace=frontend
+
+      - name: Frontend lint
+        run: npm run lint --workspace=frontend
+
+      - name: Frontend tests
+        run: npm run test:frontend
+
+      - name: Frontend build
+        run: npm run build --workspace=frontend
+
+      - name: Upload backend coverage
+        if: matrix.node-version == '22.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend
+          path: backend/coverage/
+          retention-days: 7
+
+      - name: Upload frontend coverage
+        if: matrix.node-version == '22.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          path: frontend/coverage/
+          retention-days: 7

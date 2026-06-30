@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const { readEvents } = require("./events");
+const { assertRequirementTransition, assertTaskTransition } = require("./state-machine");
 
 const BOARD_STATUSES = [
   { key: "todo", label: "待开始", tone: "neutral" },
@@ -111,7 +112,10 @@ function applyEvent(state, event) {
   const req = getOrCreateRequirement(state, event.requirementId);
 
   if (kind === "req.status") {
-    if (event.status) req.status = event.status;
+    if (event.status) {
+      assertRequirementTransition(req.status, event.status, event.requirementId);
+      req.status = event.status;
+    }
     if (event.workflowStatus) req.workflowStatus = event.workflowStatus;
     if (event.next !== undefined) req.detail.next = event.next;
     req.updatedAt = event.updatedAt || localDate();
@@ -175,7 +179,10 @@ function applyEvent(state, event) {
         files: []
       });
     }
-    if (event.status) task.status = event.status;
+    if (event.status) {
+      assertTaskTransition(task.status, event.status, event.requirementId, event.taskId);
+      task.status = event.status;
+    }
     if (event.role !== undefined) task.role = event.role;
     if (event.title !== undefined) task.title = event.title;
     if (event.scope !== undefined) task.scope = event.scope;
@@ -263,10 +270,6 @@ function buildState(events) {
 function writeState(paths, state) {
   fs.mkdirSync(paths.dataDir, { recursive: true });
   fs.writeFileSync(paths.stateJsonPath, `${JSON.stringify(state, null, 2)}\n`);
-  fs.writeFileSync(
-    paths.stateJsPath,
-    `window.REQUIREMENTS_DATA = ${JSON.stringify(state, null, 2)};\n`
-  );
 }
 
 function render(paths) {
