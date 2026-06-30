@@ -107,7 +107,7 @@ jobs:
               set -e
               export PATH="${{ env.PM2_PATH }}:$PATH"
               cd "${{ env.DEPLOY_PATH }}"
-              pm2 restart req-board-backend --update-env || pm2 start ecosystem.config.cjs --only req-board-backend
+              pm2 startOrReload ecosystem.config.cjs --only req-board-backend --update-env
               pm2 save
               pm2 ls --no-color
             '
