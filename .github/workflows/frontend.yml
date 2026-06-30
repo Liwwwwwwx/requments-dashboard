@@ -90,7 +90,7 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-      - name: Prepare server checkout and dependencies
+      - name: Prepare server checkout and refresh dependencies when needed
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -103,8 +103,21 @@ jobs:
             flock /tmp/req-board-deploy.lock bash -lc '
               set -e
               cd "${{ env.DEPLOY_PATH }}"
+              before="$(git rev-parse HEAD)"
               git pull --ff-only
-              npm ci --omit=dev --no-audit --no-fund --loglevel=error
+              after="$(git rev-parse HEAD)"
+              deps_changed=0
+              if [ "$before" != "$after" ] && git diff --name-only "$before" "$after" -- package.json package-lock.json frontend/package.json backend/package.json | grep -q .; then
+                deps_changed=1
+              fi
+              if [ ! -d node_modules ] || [ ! -x node_modules/.bin/next ] || [ ! -x node_modules/.bin/tsc ]; then
+                deps_changed=1
+              fi
+              if [ "$deps_changed" = "1" ]; then
+                npm ci --no-audit --no-fund --loglevel=error
+              else
+                echo "Dependencies unchanged; skipping npm ci"
+              fi
             '
 
       - name: Sync frontend build to server
