@@ -31,16 +31,23 @@ jobs:
         run: npm run test:backend
 
       - name: Frontend typecheck
-        run: npm run typecheck --workspace=frontend
+        run: npm run typecheck
 
       - name: Frontend lint
-        run: npm run lint --workspace=frontend
+        run: npm run lint
 
       - name: Frontend tests
         run: npm run test:frontend
 
       - name: Frontend build
-        run: npm run build --workspace=frontend
+        run: npm run build
+
+      - name: Upload frontend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/.next/
+          retention-days: 1
 
   deploy:
     name: Deploy to production
@@ -56,23 +63,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-
-      - name: Save deploy key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build frontend
-        run: npm run build --workspace=frontend
+        run: npm run build
 
-      - name: Install rsync
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq rsync
+      - name: Install rsync and add host key
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq rsync
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Pull source on server
+      - name: Save deploy key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Pull source and install production dependencies on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -83,12 +94,12 @@ jobs:
             set -e
             cd /home/ubuntu/requments-dashboard
             git pull
-            npm install --prefer-offline --no-audit --no-fund --loglevel=error
+            npm ci --omit=dev --no-audit --no-fund --loglevel=error
 
       - name: Sync .next/ to server
         run: |
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            -e "ssh -i ~/.ssh/deploy_key" \
             frontend/.next/ \
             ubuntu@${{ secrets.SSH_HOST }}:/home/ubuntu/requments-dashboard/frontend/.next/
 
@@ -99,13 +110,13 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 1m
-          fails_on_error: false
           script: |
+            set -e
             cd /home/ubuntu/requments-dashboard
-            pm2 restart req-board-backend --update-env 2>/dev/null || pm2 start ecosystem.config.cjs --only req-board-backend
-            pm2 restart req-board-frontend --update-env 2>/dev/null || pm2 start ecosystem.config.cjs --only req-board-frontend
-            pm2 save 2>/dev/null
-            pm2 ls --no-color 2>/dev/null
+            pm2 restart req-board-backend --update-env || pm2 start ecosystem.config.cjs --only req-board-backend
+            pm2 restart req-board-frontend --update-env || pm2 start ecosystem.config.cjs --only req-board-frontend
+            pm2 save
+            pm2 ls --no-color
 
       - name: Smoke test
         uses: appleboy/ssh-action@v1.0.3
@@ -114,8 +125,8 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 30s
-          fails_on_error: false
           script: |
+            set -e
             sleep 3
             curl -sf http://127.0.0.1:4315/api/health && echo " (backend)"
             curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ && echo " (frontend)"
