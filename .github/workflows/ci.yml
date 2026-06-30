@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [22.x]
 
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +48,7 @@ jobs:
         run: npm run build --workspace=frontend
 
       - name: Upload backend coverage
-        if: matrix.node-version == '22.x'
+        if: always() && matrix.node-version == '22.x'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-backend
@@ -56,7 +56,7 @@ jobs:
           retention-days: 7
 
       - name: Upload frontend coverage
-        if: matrix.node-version == '22.x'
+        if: always() && matrix.node-version == '22.x'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-frontend
@@ -79,7 +79,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: npm
+
+      - name: Save deploy key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
       - name: Install dependencies
         run: npm ci
@@ -87,8 +92,8 @@ jobs:
       - name: Build frontend
         run: npm run build --workspace=frontend
 
-      - name: Pull latest source on server
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Pull source and install deps on server
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -98,35 +103,45 @@ jobs:
             git pull
             npm install --prefer-offline --no-audit --no-fund --loglevel=error
 
-      - name: Ship .next/ build artifact
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "frontend/.next"
-          target: /home/ubuntu/requments-dashboard/frontend/
-          strip_components: 0
-          rm: true
-
-      - name: Restart services
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Sync .next/ to server (rsync over SSH)
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            pm2 restart req-board-backend || pm2 start ecosystem.config.cjs --only req-board-backend
-            pm2 restart req-board-frontend || pm2 start ecosystem.config.cjs --only req-board-frontend
+            set -e
+            cd /home/ubuntu/requments-dashboard/frontend
+            rm -rf .next
+            mkdir -p .next
+            echo ".next/ cleared, ready for rsync"
+
+      - name: Upload .next via SCP
+        run: |
+          apt-get update -qq && apt-get install -y -qq openssh-client rsync
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            frontend/.next/ \
+            ubuntu@${{ secrets.SSH_HOST }}:/home/ubuntu/requments-dashboard/frontend/.next/
+
+      - name: Restart services
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            pm2 restart req-board-backend || pm2 start /home/ubuntu/requments-dashboard/ecosystem.config.cjs --only req-board-backend
+            pm2 restart req-board-frontend || pm2 start /home/ubuntu/requments-dashboard/ecosystem.config.cjs --only req-board-frontend
             pm2 save
 
       - name: Smoke test
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             sleep 3
-            curl -sf http://127.0.0.1:4315/api/health && echo " ✓ backend"
-            curl -sf -o /dev/null -w "%{http_code}\n" http://127.0.0.1:5173/ && echo " ✓ frontend"
+            curl -sf http://127.0.0.1:4315/api/health && echo " (backend)"
+            curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ && echo " (frontend)"
