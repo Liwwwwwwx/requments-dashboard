@@ -4,12 +4,23 @@ import os from 'node:os';
 import path from 'node:path';
 import express from 'express';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import { createRoutes } from '../src/routes';
 import { errorMiddleware } from '../src/errors';
 import { appendEvents } from '../src/events';
 import { projectPaths } from '../src/projects';
 
 let tmpDir: string;
+
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'requirements-board-access-secret-dev';
+
+function makeToken(userId = 'u1', username = 'test-admin') {
+  return jwt.sign({ sub: userId, username, type: 'access' }, ACCESS_SECRET, { expiresIn: '15m' });
+}
+
+function authReq(base: request.Test, token = makeToken()) {
+  return base.set('Authorization', `Bearer ${token}`);
+}
 
 function makeApp() {
   const app = express();
@@ -38,7 +49,7 @@ describe('GET /api/health', () => {
 
 describe('GET /api/projects', () => {
   it('returns empty list when no projects', async () => {
-    const res = await request(makeApp()).get('/api/projects');
+    const res = await authReq(request(makeApp()).get('/api/projects'));
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, projects: [] });
   });
@@ -46,16 +57,18 @@ describe('GET /api/projects', () => {
   it('returns existing projects', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'alpha'), { recursive: true });
     fs.mkdirSync(path.join(tmpDir, 'data', 'beta'), { recursive: true });
-    const res = await request(makeApp()).get('/api/projects');
+    const res = await authReq(request(makeApp()).get('/api/projects'));
     expect(res.body.projects.map((p: { id: string }) => p.id)).toEqual(['alpha', 'beta']);
   });
 });
 
 describe('POST /api/projects', () => {
   it('creates a project with valid id', async () => {
-    const res = await request(makeApp())
-      .post('/api/projects')
-      .send({ id: 'newproj' });
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({ id: 'newproj' })
+    );
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.project.id).toBe('newproj');
@@ -63,9 +76,11 @@ describe('POST /api/projects', () => {
   });
 
   it('rejects invalid id with structured error', async () => {
-    const res = await request(makeApp())
-      .post('/api/projects')
-      .send({ id: 'bad id with space' });
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({ id: 'bad id with space' })
+    );
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject({
       ok: false,
@@ -75,9 +90,11 @@ describe('POST /api/projects', () => {
   });
 
   it('rejects missing id with structured error', async () => {
-    const res = await request(makeApp())
-      .post('/api/projects')
-      .send({});
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({})
+    );
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_PROJECT_ID');
   });
@@ -85,7 +102,7 @@ describe('POST /api/projects', () => {
 
 describe('GET /api/projects/:project/state', () => {
   it('returns 404 with structured error when project missing', async () => {
-    const res = await request(makeApp()).get('/api/projects/missing/state');
+    const res = await authReq(request(makeApp()).get('/api/projects/missing/state'));
     expect(res.status).toBe(404);
     expect(res.body).toMatchObject({
       ok: false,
@@ -107,7 +124,7 @@ describe('GET /api/projects/:project/state', () => {
       }
     ]);
 
-    const res = await request(makeApp()).get('/api/projects/p1/state');
+    const res = await authReq(request(makeApp()).get('/api/projects/p1/state'));
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
     expect(res.body.items[0].id).toBe('REQ-0001');
@@ -116,9 +133,11 @@ describe('GET /api/projects/:project/state', () => {
 
 describe('POST /api/projects/:project/events', () => {
   it('rejects empty events list with structured error', async () => {
-    const res = await request(makeApp())
-      .post('/api/projects/p1/events')
-      .send({ events: [] });
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/p1/events')
+        .send({ events: [] })
+    );
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject({
       ok: false,
@@ -127,18 +146,20 @@ describe('POST /api/projects/:project/events', () => {
   });
 
   it('appends valid event and returns updated state', async () => {
-    const res = await request(makeApp())
-      .post('/api/projects/p2/events')
-      .send({
-        events: [
-          {
-            kind: 'req.new',
-            requirementId: 'REQ-0001',
-            title: 't',
-            summary: 's'
-          }
-        ]
-      });
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/p2/events')
+        .send({
+          events: [
+            {
+              kind: 'req.new',
+              requirementId: 'REQ-0001',
+              title: 't',
+              summary: 's'
+            }
+          ]
+        })
+    );
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.appended).toBe(1);
@@ -147,11 +168,13 @@ describe('POST /api/projects/:project/events', () => {
   });
 
   it('rejects invalid event with structured error', async () => {
-    const res = await request(makeApp())
-      .post('/api/projects/p3/events')
-      .send({
-        events: [{ kind: 'req.new' /* missing requirementId */ }]
-      });
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/p3/events')
+        .send({
+          events: [{ kind: 'req.new' /* missing requirementId */ }]
+        })
+    );
     expect(res.status).toBe(400);
     expect(res.body.ok).toBe(false);
     expect(res.body.code).toBe('BAD_REQUEST');
@@ -161,7 +184,7 @@ describe('POST /api/projects/:project/events', () => {
 
 describe('POST /api/projects/:project/render', () => {
   it('returns 404 when project missing', async () => {
-    const res = await request(makeApp()).post('/api/projects/missing/render').send({});
+    const res = await authReq(request(makeApp()).post('/api/projects/missing/render').send({}));
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('PROJECT_NOT_FOUND');
   });
@@ -178,7 +201,7 @@ describe('POST /api/projects/:project/render', () => {
         summary: 's'
       }
     ]);
-    const res = await request(makeApp()).post('/api/projects/p4/render').send({});
+    const res = await authReq(request(makeApp()).post('/api/projects/p4/render').send({}));
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.items).toBe(1);
