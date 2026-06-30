@@ -102,9 +102,10 @@ jobs:
           fails_on_error: false
           script: |
             cd /home/ubuntu/requments-dashboard
-            pm2 restart req-board-backend 2>&1 || pm2 start ecosystem.config.cjs --only req-board-backend
-            pm2 restart req-board-frontend 2>&1 || pm2 start ecosystem.config.cjs --only req-board-frontend
-            pm2 save
+            pm2 restart req-board-backend --update-env 2>/dev/null || pm2 start ecosystem.config.cjs --only req-board-backend
+            pm2 restart req-board-frontend --update-env 2>/dev/null || pm2 start ecosystem.config.cjs --only req-board-frontend
+            pm2 save 2>/dev/null
+            pm2 ls --no-color 2>/dev/null
 
       - name: Smoke test
         uses: appleboy/ssh-action@v1.0.3
