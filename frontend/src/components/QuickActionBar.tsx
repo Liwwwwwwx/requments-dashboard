@@ -1,14 +1,12 @@
 'use client';
 
-import { Input, Button, Tooltip } from 'antd';
-import { AppstoreOutlined, UnorderedListOutlined, PlusOutlined, SearchOutlined, ProjectOutlined } from '@ant-design/icons';
+import { Input, Button } from 'antd';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import type { Filters, RequirementStatus } from '@/lib/types';
 
 interface Props {
   filters: Filters;
   setFilters: (f: Filters) => void;
-  viewMode: 'kanban' | 'grid' | 'list';
-  setViewMode: (m: 'kanban' | 'grid' | 'list') => void;
   totalCount: number;
 }
 
@@ -19,7 +17,7 @@ const STATUS_SHORTCUTS: { key: RequirementStatus | 'all'; label: string }[] = [
   { key: 'paused', label: '暂停' },
 ];
 
-export function QuickActionBar({ filters, setFilters, viewMode, setViewMode, totalCount }: Props) {
+export function QuickActionBar({ filters, setFilters, totalCount }: Props) {
   return (
     <div className="quick-action-bar">
       <div className="qa-left">
@@ -30,7 +28,7 @@ export function QuickActionBar({ filters, setFilters, viewMode, setViewMode, tot
           value={filters.query}
           onChange={(e) => setFilters({ ...filters, query: e.target.value })}
           allowClear
-          style={{ width: 240, height: 36, borderRadius: 8 }}
+          style={{ width: 260, height: 36, borderRadius: 8 }}
         />
         <div className="qa-shortcuts">
           {STATUS_SHORTCUTS.map((s) => (
@@ -53,35 +51,6 @@ export function QuickActionBar({ filters, setFilters, viewMode, setViewMode, tot
         >
           新建需求
         </Button>
-        <div className="qa-view-toggle">
-          <Tooltip title="看板视图">
-            <button
-              type="button"
-              className={`qa-toggle-btn ${viewMode === 'kanban' ? 'active' : ''}`}
-              onClick={() => setViewMode('kanban')}
-            >
-              <ProjectOutlined />
-            </button>
-          </Tooltip>
-          <Tooltip title="网格视图">
-            <button
-              type="button"
-              className={`qa-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')}
-            >
-              <AppstoreOutlined />
-            </button>
-          </Tooltip>
-          <Tooltip title="列表视图">
-            <button
-              type="button"
-              className={`qa-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-            >
-              <UnorderedListOutlined />
-            </button>
-          </Tooltip>
-        </div>
       </div>
     </div>
   );

@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   priorityBarClass,
   priorityChipClass,
-  statusChipClass,
-  statusLabel,
   unique
 } from '@/lib/utils';
 import type { BoardState, Filters, Requirement, RequirementStatus } from '@/lib/types';
@@ -17,22 +15,20 @@ interface Props {
   filters: Filters;
   setFilters: (updater: (prev: Filters) => Filters) => void;
   selectedId: string | null;
-  viewMode: 'kanban' | 'grid' | 'list';
 }
 
-interface Column {
+interface KanbanColumn {
   key: RequirementStatus;
   label: string;
   color: string;
   bg: string;
-  count: number;
 }
 
-const KANBAN_COLUMNS: Column[] = [
-  { key: 'todo', label: '待开始', color: 'var(--status-todo-dot)', bg: 'var(--status-todo-bg)', count: 0 },
-  { key: 'doing', label: '进行中', color: 'var(--status-doing-dot)', bg: 'var(--status-doing-bg)', count: 0 },
-  { key: 'paused', label: '暂停', color: 'var(--status-paused-dot)', bg: 'var(--status-paused-bg)', count: 0 },
-  { key: 'done', label: '完成', color: 'var(--status-done-dot)', bg: 'var(--status-done-bg)', count: 0 },
+const KANBAN_COLUMNS: KanbanColumn[] = [
+  { key: 'todo', label: '待开始', color: 'var(--status-todo-dot)', bg: 'var(--status-todo-bg)' },
+  { key: 'doing', label: '进行中', color: 'var(--status-doing-dot)', bg: 'var(--status-doing-bg)' },
+  { key: 'paused', label: '暂停', color: 'var(--status-paused-dot)', bg: 'var(--status-paused-bg)' },
+  { key: 'done', label: '完成', color: 'var(--status-done-dot)', bg: 'var(--status-done-bg)' },
 ];
 
 const STATUS_TABS: { key: 'all' | RequirementStatus; label: string }[] = [
@@ -43,7 +39,7 @@ const STATUS_TABS: { key: 'all' | RequirementStatus; label: string }[] = [
   { key: 'done', label: '完成' }
 ];
 
-export function RequirementGrid({ data, project, filters, setFilters, selectedId, viewMode }: Props) {
+export function RequirementGrid({ data, project, filters, setFilters, selectedId }: Props) {
   const router = useRouter();
 
   const weeks = useMemo(() => unique(data.items.map((i) => i.week)).reverse(), [data.items]);
@@ -60,17 +56,16 @@ export function RequirementGrid({ data, project, filters, setFilters, selectedId
     });
   }, [data.items, filters.week, filters.status, filters.query]);
 
-  const { pendingItems, doneItems } = useMemo(() => {
+  const kanbanColumns = useMemo(() => {
+    const columns = KANBAN_COLUMNS.map((col) => ({
+      ...col,
+      items: filteredItems.filter((item) => item.status === col.key),
+    }));
+
     if (filters.status !== 'all') {
-      return { pendingItems: filteredItems, doneItems: [] };
+      return columns.filter((col) => col.key === filters.status);
     }
-    const pending: Requirement[] = [];
-    const done: Requirement[] = [];
-    for (const item of filteredItems) {
-      if (item.status === 'done') done.push(item);
-      else pending.push(item);
-    }
-    return { pendingItems: pending, doneItems: done };
+    return columns;
   }, [filteredItems, filters.status]);
 
   const statusCounts = useMemo(() => {
@@ -83,25 +78,11 @@ export function RequirementGrid({ data, project, filters, setFilters, selectedId
     return counts;
   }, [data.items, filters.week]);
 
-  const kanbanColumns = useMemo(() => {
-    return KANBAN_COLUMNS.map((col) => ({
-      ...col,
-      items: filteredItems.filter((item) => item.status === col.key),
-      count: filteredItems.filter((item) => item.status === col.key).length,
-    }));
-  }, [filteredItems]);
-
   const goDetail = (reqId: string) => {
     router.push(`/p/${project}/r/${reqId}`);
   };
 
-  const renderCard = (item: Requirement, isDone = false, compact = false) => {
-    const stats = item.taskStats || { total: 0, done: 0, blocked: 0 };
-    const percent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
-    const status = statusLabel(item.status);
-    const isActive = selectedId === item.id;
-    const isBlocked = (stats.blocked || 0) > 0;
-
+  const renderCard = (item: Requirement, isDone = false) => {
     return (
       <div
         key={item.id}
@@ -109,10 +90,10 @@ export function RequirementGrid({ data, project, filters, setFilters, selectedId
         tabIndex={0}
         className={[
           'req-card',
+          'compact',
           priorityBarClass(item.priority),
-          isActive ? 'active' : '',
-          isDone ? 'is-done' : '',
-          compact ? 'compact' : ''
+          selectedId === item.id ? 'active' : '',
+          isDone ? 'is-done' : ''
         ].join(' ').trim()}
         onClick={() => goDetail(item.id)}
         onKeyDown={(e) => {
@@ -134,40 +115,45 @@ export function RequirementGrid({ data, project, filters, setFilters, selectedId
 
         <div className="req-card-title">{item.title}</div>
 
-        {item.summary && !compact && (
+        {item.summary && (
           <div className="req-card-summary">{item.summary}</div>
         )}
 
         <div className="req-card-chips">
-          <span className={`chip chip-sm ${statusChipClass(item.status)}`}>
-            <span className="chip-dot" />
-            {status.label}
-          </span>
-          {item.type && <span className="chip chip-sm">{item.type}</span>}
-          {isBlocked && <span className="chip chip-sm chip-warn">⚠ {stats.blocked}</span>}
+          {item.type && item.type !== '工程' && <span className="chip chip-sm">{item.type}</span>}
+          {(item.taskStats?.blocked || 0) > 0 && (
+            <span className="chip chip-sm chip-warn">⚠ {item.taskStats.blocked}</span>
+          )}
+          {(item.taskStats?.active || 0) > 0 && (
+            <span className="chip chip-sm chip-active">{item.taskStats.active} 活跃</span>
+          )}
         </div>
 
         <div className="req-card-foot">
           <div className="req-card-progress">
-            <div className={isBlocked ? 'bar is-blocked' : 'bar'}>
-              <span style={{ width: `${percent}%` }} />
+            <div className={(item.taskStats?.blocked || 0) > 0 ? 'bar is-blocked' : 'bar'}>
+              <span style={{ width: `${item.taskStats?.total ? Math.round((item.taskStats.done / item.taskStats.total) * 100) : 0}%` }} />
             </div>
             <span className="count">
-              {stats.done || 0}/{stats.total || 0}
+              {item.taskStats?.done || 0}/{item.taskStats?.total || 0}
             </span>
           </div>
           <div className="req-card-meta">
-            <span className="type">{item.week || '未排期'}</span>
             <span className="owner">{item.owner?.split('/')?.pop()?.trim() || '-'}</span>
           </div>
         </div>
-        {isDone && <div className="req-card-done-overlay" />}
       </div>
     );
   };
 
-  const renderFilters = () => (
-    <>
+  return (
+    <div className="view-list">
+      <div className="view-list-meta">
+        <span className="view-list-count">
+          共 <strong>{filteredItems.length}</strong> 条需求
+        </span>
+      </div>
+
       <div className="filter-tabs">
         {STATUS_TABS.map((tab) => (
           <button
@@ -203,92 +189,37 @@ export function RequirementGrid({ data, project, filters, setFilters, selectedId
           ))}
         </div>
       )}
-    </>
-  );
 
-  const renderKanban = () => (
-    <div className="kanban-board">
-      {kanbanColumns.map((col) => (
-        <div key={col.key} className="kanban-col">
-          <div className="kanban-col-head">
-            <span className="kanban-col-dot" style={{ background: col.color }} />
-            <span className="kanban-col-label">{col.label}</span>
-            <span className="kanban-col-count">{col.count}</span>
+      <div className="filtered-count-row">
+        {kanbanColumns.map((col) => (
+          <div key={col.key} className="kanban-col-indicator">
+            <span className="kanban-col-indicator-dot" style={{ background: col.color }} />
+            <span className="kanban-col-indicator-label">{col.label}</span>
+            <span className="kanban-col-indicator-count">{col.items.length}</span>
           </div>
-          <div className="kanban-col-body">
-            {col.items.length === 0 ? (
-              <div className="kanban-empty">
-                <span>暂无</span>
-              </div>
-            ) : (
-              col.items.map((item) => renderCard(item, col.key === 'done', true))
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderGrid = () => (
-    <>
-      {filteredItems.length === 0 ? (
-        <div className="dashboard-empty">
-          <div className="dashboard-empty-icon">📋</div>
-          <p>暂无匹配的需求</p>
-          <span>试试调整过滤条件或新建一个需求</span>
-        </div>
-      ) : (
-        <>
-          {pendingItems.length > 0 && (
-            <div className="req-grid">
-              {pendingItems.map((item) => renderCard(item))}
-            </div>
-          )}
-          {doneItems.length > 0 && (
-            <>
-              {pendingItems.length > 0 && (
-                <div className="req-section-divider">
-                  <span className="req-section-divider-line" />
-                  <span className="req-section-divider-label">已完成</span>
-                  <span className="req-section-divider-count">{doneItems.length}</span>
-                  <span className="req-section-divider-line" />
-                </div>
-              )}
-              <div className="req-grid">
-                {doneItems.map((item) => renderCard(item, true))}
-              </div>
-            </>
-          )}
-        </>
-      )}
-    </>
-  );
-
-  const renderList = () => (
-    <>
-      {filteredItems.length === 0 ? (
-        <div className="dashboard-empty">
-          <div className="dashboard-empty-icon">📋</div>
-          <p>暂无匹配的需求</p>
-        </div>
-      ) : (
-        <div className="req-list">
-          {filteredItems.map((item) => renderCard(item, item.status === 'done', false))}
-        </div>
-      )}
-    </>
-  );
-
-  return (
-    <div className="view-list">
-      <div className="view-list-meta">
-        <span className="view-list-count">
-          共 <strong>{filteredItems.length}</strong> 条需求
-        </span>
+        ))}
       </div>
 
-      {viewMode !== 'kanban' && renderFilters()}
-      {viewMode === 'kanban' ? renderKanban() : viewMode === 'list' ? renderList() : renderGrid()}
+      <div className="kanban-board" style={{ gridTemplateColumns: `repeat(${kanbanColumns.length}, 1fr)` }}>
+        {kanbanColumns.map((col) => (
+          <div key={col.key} className="kanban-col">
+            <div className="kanban-col-head">
+              <span className="kanban-col-dot" style={{ background: col.color }} />
+              <span className="kanban-col-label">{col.label}</span>
+              <span className="kanban-col-count">{col.items.length}</span>
+            </div>
+            <div className="kanban-col-body">
+              {col.items.length === 0 ? (
+                <div className="kanban-empty">
+                  <span>暂无</span>
+                </div>
+              ) : (
+                col.items.map((item) => renderCard(item, col.key === 'done'))
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
