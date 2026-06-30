@@ -1,15 +1,15 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Alert, Button, Input, Typography } from 'antd';
+import { Alert, Button, Input, Spin, Typography } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useAuth } from '@/components/AuthProvider';
 
 const { Text } = Typography;
 
 function LoginForm() {
-  const { login, user } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [username, setUsername] = useState('');
@@ -17,11 +17,22 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (user) {
-    const redirect = searchParams.get('redirect') || '/p/default';
-    router.replace(redirect);
-    return null;
+  useEffect(() => {
+    if (user) {
+      const redirect = searchParams.get('redirect') || '/p/default';
+      router.replace(redirect);
+    }
+  }, [user, router, searchParams]);
+
+  if (authLoading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 40 }}>
+        <Spin size="large" />
+      </div>
+    );
   }
+
+  if (user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +40,6 @@ function LoginForm() {
     setLoading(true);
     try {
       await login(username, password);
-      const redirect = searchParams.get('redirect') || '/p/default';
-      router.replace(redirect);
     } catch (err: unknown) {
       setError((err as Error).message || '登录失败');
     } finally {
