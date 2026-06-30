@@ -71,6 +71,21 @@ npm run start        # 生产模式启动
 
 ## API 路由
 
+除 `/api/health` 和登录相关接口外，受保护 API 支持两种鉴权方式：
+
+- 前端登录后自动携带的用户 JWT。
+- 服务端长期调用使用 `Authorization: Bearer <REQUIREMENTS_API_TOKEN>`。
+
+生产环境建议在服务器创建不入库的 `ecosystem.secrets.cjs`：
+
+```js
+module.exports = {
+  backendEnv: {
+    REQUIREMENTS_API_TOKEN: "使用随机生成的长 token"
+  }
+};
+```
+
 | 方法 | 路由 | 说明 |
 |---|---|---|
 | GET | `/api/health` | 健康检查 |

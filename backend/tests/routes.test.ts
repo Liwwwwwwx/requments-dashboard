@@ -54,6 +54,36 @@ describe('GET /api/projects', () => {
     expect(res.body).toEqual({ ok: true, projects: [] });
   });
 
+  it('accepts the configured long-lived API token', async () => {
+    const previous = process.env.REQUIREMENTS_API_TOKEN;
+    process.env.REQUIREMENTS_API_TOKEN = 'test-long-lived-token';
+    try {
+      const res = await request(makeApp())
+        .get('/api/projects')
+        .set('Authorization', 'Bearer test-long-lived-token');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ok: true, projects: [] });
+    } finally {
+      if (previous === undefined) delete process.env.REQUIREMENTS_API_TOKEN;
+      else process.env.REQUIREMENTS_API_TOKEN = previous;
+    }
+  });
+
+  it('rejects an invalid API token', async () => {
+    const previous = process.env.REQUIREMENTS_API_TOKEN;
+    process.env.REQUIREMENTS_API_TOKEN = 'test-long-lived-token';
+    try {
+      const res = await request(makeApp())
+        .get('/api/projects')
+        .set('Authorization', 'Bearer wrong-token');
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({ ok: false, error: 'UNAUTHORIZED' });
+    } finally {
+      if (previous === undefined) delete process.env.REQUIREMENTS_API_TOKEN;
+      else process.env.REQUIREMENTS_API_TOKEN = previous;
+    }
+  });
+
   it('returns existing projects', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'alpha'), { recursive: true });
     fs.mkdirSync(path.join(tmpDir, 'data', 'beta'), { recursive: true });

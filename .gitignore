@@ -20,6 +20,9 @@ data/
 # 日志
 *.log
 
+# 本机 / 服务器私有配置
+ecosystem.secrets.cjs
+
 # Next.js / 构建产物
 .next/
 frontend/.next/
