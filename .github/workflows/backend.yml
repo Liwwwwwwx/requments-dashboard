@@ -1,16 +1,24 @@
-name: CI
+name: Backend CI/CD
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - 'package*.json'
+      - '.github/workflows/backend.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - 'package*.json'
+      - '.github/workflows/backend.yml'
 
 jobs:
   test:
-    name: Lint · Typecheck · Test · Build
+    name: Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
@@ -30,31 +38,12 @@ jobs:
       - name: Backend tests
         run: npm run test:backend
 
-      - name: Frontend typecheck
-        run: npm run typecheck
-
-      - name: Frontend lint
-        run: npm run lint
-
-      - name: Frontend tests
-        run: npm run test:frontend
-
-      - name: Frontend build
-        run: npm run build
-
-      - name: Upload frontend build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/.next/
-          retention-days: 1
-
   deploy:
-    name: Deploy to production
+    name: Deploy backend
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    timeout-minutes: 10
+    timeout-minutes: 5
 
     steps:
       - uses: actions/checkout@v4
@@ -65,23 +54,10 @@ jobs:
           node-version: 22.x
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build
-
-      - name: Install rsync and add host key
+      - name: Add server host key
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq rsync
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Save deploy key
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
 
       - name: Pull source and install production dependencies on server
         uses: appleboy/ssh-action@v1.0.3
@@ -96,14 +72,7 @@ jobs:
             git pull
             npm ci --omit=dev --no-audit --no-fund --loglevel=error
 
-      - name: Sync .next/ to server
-        run: |
-          rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key" \
-            frontend/.next/ \
-            ubuntu@${{ secrets.SSH_HOST }}:/home/ubuntu/requments-dashboard/frontend/.next/
-
-      - name: Restart services
+      - name: Restart backend
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -114,11 +83,10 @@ jobs:
             set -e
             cd /home/ubuntu/requments-dashboard
             pm2 restart req-board-backend --update-env || pm2 start ecosystem.config.cjs --only req-board-backend
-            pm2 restart req-board-frontend --update-env || pm2 start ecosystem.config.cjs --only req-board-frontend
             pm2 save
             pm2 ls --no-color
 
-      - name: Smoke test
+      - name: Backend smoke test
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -129,4 +97,3 @@ jobs:
             set -e
             sleep 3
             curl -sf http://127.0.0.1:4315/api/health && echo " (backend)"
-            curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ && echo " (frontend)"
