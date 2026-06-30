@@ -59,9 +59,42 @@ function createRoutes(rootDir) {
     if (!fs.existsSync(paths.eventsPath)) {
       return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
     }
-    res.setHeader("Content-Type", "application/jsonl; charset=utf-8");
+
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    const kind = req.query.kind ? String(req.query.kind) : null;
+    const requirementId = req.query.requirementId ? String(req.query.requirementId) : null;
+
+    const all = readEvents(paths.eventsPath).reverse(); // newest-first
+    const filtered = all.filter((event) => {
+      if (kind && (event.kind || event.type) !== kind) return false;
+      if (requirementId && event.requirementId !== requirementId) return false;
+      return true;
+    });
+
+    const events = filtered.slice(offset, offset + limit).map((event) => ({
+      eventId: event.eventId,
+      ts: event.ts,
+      kind: event.kind || event.type,
+      actor: event.actor,
+      requirementId: event.requirementId,
+      taskId: event.taskId,
+      status: event.status,
+      title: event.title,
+      summary: event.summary,
+      text: event.text,
+      at: event.at,
+      updatedAt: event.updatedAt
+    }));
+
     res.setHeader("Cache-Control", "no-store");
-    fs.createReadStream(paths.eventsPath).pipe(res);
+    return res.json({
+      ok: true,
+      project: paths.projectId,
+      events,
+      total: filtered.length,
+      hasMore: offset + limit < filtered.length
+    });
   });
 
   router.get("/projects/:project/requirements/:requirementId/events", (req, res, next) => {
