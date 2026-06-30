@@ -1,3 +1,4 @@
+import { UpdateNotifier } from '@/components/UpdateNotifier';
 import type { Metadata } from 'next';
 import { AntdProvider } from '@/components/AntdProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider>
             <AntdProvider>
               <AuthLayout>{children}</AuthLayout>
+              <UpdateNotifier />
             </AntdProvider>
           </ThemeProvider>
         </ErrorBoundary>

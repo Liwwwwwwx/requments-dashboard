@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const refreshToken = request.cookies.get('refresh_token')?.value;
   const { pathname } = request.nextUrl;
 
-  if (pathname === '/login' || pathname.startsWith('/_next') || pathname.startsWith('/api')) {
+  if (pathname === '/login' || pathname === '/version.json' || pathname.startsWith('/_next') || pathname.startsWith('/api')) {
     return NextResponse.next();
   }
 
@@ -19,5 +19,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)']
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api|version).*)']
 };
