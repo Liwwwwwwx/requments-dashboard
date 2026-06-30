@@ -101,6 +101,7 @@ jobs:
           command_timeout: 1m
           script: |
             set -e
+            source ~/.bashrc
             cd /home/ubuntu/requments-dashboard
             pm2 restart req-board-frontend --update-env || pm2 start ecosystem.config.cjs --only req-board-frontend
             pm2 save
