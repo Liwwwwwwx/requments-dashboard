@@ -1,15 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Layout, Spin } from 'antd';
 import { LogoutOutlined, ReloadOutlined, UserOutlined } from '@ant-design/icons';
 import { useRequirements } from '@/hooks/useRequirements';
 import { useAuth } from '@/components/AuthProvider';
+import { fetchDashboardSummary } from '@/lib/api';
 import { Sidebar } from './Sidebar';
+import { DashboardHeader } from './DashboardHeader';
+import { QuickActionBar } from './QuickActionBar';
 import { RequirementGrid } from './RequirementGrid';
 import { RequirementDetailView } from './RequirementDetailView';
-import type { Filters, Requirement } from '@/lib/types';
+import type { DashboardSummary, Filters, Requirement } from '@/lib/types';
 
 const { Content } = Layout;
 
@@ -35,6 +38,28 @@ export function AppShell({ project, reqId, children }: Props) {
   const { user, logout } = useAuth();
   const { projects, data, taskItems, loading, error, refresh } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [dashSummary, setDashSummary] = useState<DashboardSummary | null>(null);
+  const [dashLoading, setDashLoading] = useState(false);
+
+  const activeProject = project || DEFAULT_PROJECT;
+
+  const loadDashboard = useCallback(async () => {
+    if (!activeProject) return;
+    setDashLoading(true);
+    try {
+      const summary = await fetchDashboardSummary(activeProject);
+      setDashSummary(summary);
+    } catch {
+      // silently fail
+    } finally {
+      setDashLoading(false);
+    }
+  }, [activeProject]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
 
   useEffect(() => {
     if (!projects || projects.length === 0) return;
@@ -56,7 +81,6 @@ export function AppShell({ project, reqId, children }: Props) {
   const done = items.filter((i) => i.status === 'done').length;
   const blocked = items.reduce((acc, item) => acc + (item.taskStats?.blocked || 0), 0);
   const currentProject = projects.find((p) => p.id === project);
-  const activeProjectId = project || DEFAULT_PROJECT;
 
   const currentWeek = useMemo(() => {
     const now = new Date();
@@ -71,19 +95,24 @@ export function AppShell({ project, reqId, children }: Props) {
     router.push(`/p/${next}`);
   };
 
+  const handleRefresh = () => {
+    void refresh();
+    void loadDashboard();
+  };
+
   return (
     <Layout className="app">
       <header className="toolbar">
         <div className="toolbar-left">
           <div className="toolbar-brand">
             <span className="dot" />
-            需求<span className="accent">看板</span>
+            Trace<span className="accent">Board</span>
           </div>
           <div className="toolbar-divider" />
           <div className="toolbar-project">
             <span className="toolbar-project-label">项目</span>
             <span className="toolbar-project-name">
-              {currentProject?.name || activeProjectId}
+              {currentProject?.name || activeProject}
             </span>
           </div>
           <div className="toolbar-divider" />
@@ -159,9 +188,7 @@ export function AppShell({ project, reqId, children }: Props) {
           <Button
             icon={<ReloadOutlined />}
             loading={loading}
-            onClick={() => {
-              void refresh();
-            }}
+            onClick={handleRefresh}
             type="primary"
             size="middle"
           >
@@ -181,27 +208,44 @@ export function AppShell({ project, reqId, children }: Props) {
           {error && (
             <Alert message={error} type="error" showIcon style={{ margin: 24 }} />
           )}
-          <Spin spinning={loading}>
-            {children
-              ? children
-              : reqId
-                ? (
+          {children
+            ? children
+            : reqId
+              ? (
+                <Spin spinning={loading}>
                   <RequirementDetailView
                     item={selectedItem}
-                    project={activeProjectId}
+                    project={activeProject}
                     taskItems={taskItems}
                   />
-                )
-                : (
-                  <RequirementGrid
-                    data={data}
-                    project={activeProjectId}
+                </Spin>
+              )
+              : (
+                <div className="dashboard-view">
+                  <DashboardHeader
+                    summary={dashSummary}
+                    loading={dashLoading}
+                    currentProject={activeProject}
+                  />
+                  <QuickActionBar
                     filters={filters}
                     setFilters={setFilters}
-                    selectedId={selectedItem?.id || null}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    totalCount={total}
                   />
-                )}
-          </Spin>
+                  <Spin spinning={loading}>
+                    <RequirementGrid
+                      data={data}
+                      project={activeProject}
+                      filters={filters}
+                      setFilters={setFilters}
+                      selectedId={selectedItem?.id || null}
+                      viewMode={viewMode}
+                    />
+                  </Spin>
+                </div>
+              )}
         </Content>
       </div>
     </Layout>

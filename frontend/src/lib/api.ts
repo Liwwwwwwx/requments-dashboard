@@ -1,5 +1,5 @@
 import { authFetch } from './auth';
-import type { BoardState, EventInput, Project } from './types';
+import type { BoardState, DashboardSummary, EventInput, Project } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api';
 
@@ -62,6 +62,10 @@ export async function appendEvents(
     method: 'POST',
     body: JSON.stringify({ events })
   });
+}
+
+export async function fetchDashboardSummary(project: string): Promise<DashboardSummary> {
+  return fetchJson(`/dashboard/summary?project=${encodeURIComponent(project)}`);
 }
 
 export { ApiError };

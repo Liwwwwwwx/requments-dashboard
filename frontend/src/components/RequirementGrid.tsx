@@ -18,6 +18,7 @@ interface Props {
   filters: Filters;
   setFilters: (updater: (prev: Filters) => Filters) => void;
   selectedId: string | null;
+  viewMode: 'grid' | 'list';
 }
 
 const STATUS_TABS: { key: 'all' | RequirementStatus; label: string }[] = [
@@ -28,7 +29,7 @@ const STATUS_TABS: { key: 'all' | RequirementStatus; label: string }[] = [
   { key: 'done', label: '完成' }
 ];
 
-export function RequirementGrid({ data, project, filters, setFilters, selectedId }: Props) {
+export function RequirementGrid({ data, project, filters, setFilters, selectedId, viewMode }: Props) {
   const router = useRouter();
 
   const weeks = useMemo(() => unique(data.items.map((i) => i.week)).reverse(), [data.items]);
@@ -183,7 +184,7 @@ export function RequirementGrid({ data, project, filters, setFilters, selectedId
       ) : (
         <>
           {pendingItems.length > 0 && (
-            <div className="req-grid">
+            <div className={viewMode === 'grid' ? 'req-grid' : 'req-list'}>
               {pendingItems.map((item) => renderCard(item))}
             </div>
           )}
@@ -197,7 +198,7 @@ export function RequirementGrid({ data, project, filters, setFilters, selectedId
                   <span className="req-section-divider-line" />
                 </div>
               )}
-              <div className="req-grid">
+              <div className={viewMode === 'grid' ? 'req-grid' : 'req-list'}>
                 {doneItems.map((item) => renderCard(item, true))}
               </div>
             </>

@@ -10,6 +10,7 @@ const { httpError } = require("./errors");
 const { createAuthRoutes } = require("./auth/routes");
 const { authMiddleware } = require("./auth/middleware");
 const { initUsers } = require("./auth/users");
+const { createDashboardRoutes } = require("./dashboard/routes");
 
 function createRoutes(rootDir) {
   const router = express.Router();
@@ -24,6 +25,7 @@ function createRoutes(rootDir) {
   });
 
   router.use(authMiddleware(users));
+  router.use(createDashboardRoutes(rootDir));
 
   router.get("/projects", (_req, res) => {
     const projects = listProjects(rootDir).map((id) => ({ id, name: id }));
