@@ -57,7 +57,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: frontend/.next/
+          path: |
+            frontend/.next/
+            !frontend/.next/cache/**
           include-hidden-files: true
           retention-days: 1
 
@@ -122,6 +124,7 @@ jobs:
       - name: Sync frontend build to server
         run: |
           rsync -az --delete \
+            --exclude cache/ \
             -e "ssh -i ~/.ssh/deploy_key" \
             frontend/.next/ \
             ${{ env.DEPLOY_USER }}@${{ secrets.SSH_HOST }}:${{ env.DEPLOY_PATH }}/frontend/.next/
