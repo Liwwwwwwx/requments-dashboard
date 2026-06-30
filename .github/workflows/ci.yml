@@ -12,18 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [22.x]
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 22.x
           cache: npm
 
       - name: Install dependencies
@@ -47,101 +42,15 @@ jobs:
       - name: Frontend build
         run: npm run build --workspace=frontend
 
-      - name: Upload backend coverage
-        if: always() && matrix.node-version == '22.x'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-backend
-          path: backend/coverage/
-          retention-days: 7
-
-      - name: Upload frontend coverage
-        if: always() && matrix.node-version == '22.x'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-frontend
-          path: frontend/coverage/
-          retention-days: 7
-
   deploy:
     name: Deploy to production
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     timeout-minutes: 10
-    environment:
-      url: http://81.70.201.94:5173
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-
-      - name: Save deploy key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build --workspace=frontend
-
-      - name: Pull source and install deps on server
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /home/ubuntu/requments-dashboard
-            git pull
-            npm install --prefer-offline --no-audit --no-fund --loglevel=error
-
-      - name: Sync .next/ to server (rsync over SSH)
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            cd /home/ubuntu/requments-dashboard/frontend
-            rm -rf .next
-            mkdir -p .next
-            echo ".next/ cleared, ready for rsync"
-
-      - name: Upload .next via SCP
-        run: |
-          apt-get update -qq && apt-get install -y -qq openssh-client rsync
-          rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-            frontend/.next/ \
-            ubuntu@${{ secrets.SSH_HOST }}:/home/ubuntu/requments-dashboard/frontend/.next/
-
-      - name: Restart services
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            pm2 restart req-board-backend || pm2 start /home/ubuntu/requments-dashboard/ecosystem.config.cjs --only req-board-backend
-            pm2 restart req-board-frontend || pm2 start /home/ubuntu/requments-dashboard/ecosystem.config.cjs --only req-board-frontend
-            pm2 save
-
-      - name: Smoke test
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            sleep 3
-            curl -sf http://127.0.0.1:4315/api/health && echo " (backend)"
-            curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ && echo " (frontend)"
+      - name: Hello from deploy
+        run: echo "deploy job triggers"
