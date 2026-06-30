@@ -14,6 +14,11 @@ on:
       - 'package*.json'
       - '.github/workflows/frontend.yml'
 
+env:
+  DEPLOY_USER: ubuntu
+  DEPLOY_PATH: /home/ubuntu/requments-dashboard
+  PM2_PATH: /home/ubuntu/.npm-global/bin
+
 jobs:
   test:
     name: Lint · Typecheck · Test · Build
@@ -85,36 +90,57 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-      - name: Sync .next/ to server
+      - name: Prepare server checkout and dependencies
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 5m
+          script: |
+            set -e
+            export PATH="${{ env.PM2_PATH }}:$PATH"
+            flock /tmp/req-board-deploy.lock bash -lc '
+              set -e
+              cd "${{ env.DEPLOY_PATH }}"
+              git pull --ff-only
+              npm ci --omit=dev --no-audit --no-fund --loglevel=error
+            '
+
+      - name: Sync frontend build to server
         run: |
-          rsync -avz --delete \
+          rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key" \
             frontend/.next/ \
-            ubuntu@${{ secrets.SSH_HOST }}:/home/ubuntu/requments-dashboard/frontend/.next/
+            ${{ env.DEPLOY_USER }}@${{ secrets.SSH_HOST }}:${{ env.DEPLOY_PATH }}/frontend/.next/
 
       - name: Restart frontend
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
+          username: ${{ env.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 1m
           script: |
             set -e
-            source ~/.bashrc
-            cd /home/ubuntu/requments-dashboard
-            pm2 restart req-board-frontend --update-env || pm2 start ecosystem.config.cjs --only req-board-frontend
-            pm2 save
-            pm2 ls --no-color
+            export PATH="${{ env.PM2_PATH }}:$PATH"
+            flock /tmp/req-board-deploy.lock bash -lc '
+              set -e
+              export PATH="${{ env.PM2_PATH }}:$PATH"
+              cd "${{ env.DEPLOY_PATH }}"
+              pm2 restart req-board-frontend --update-env || pm2 start ecosystem.config.cjs --only req-board-frontend
+              pm2 save
+              pm2 ls --no-color
+            '
 
       - name: Frontend smoke test
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
+          username: ${{ env.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 30s
           script: |
             set -e
             sleep 3
-            curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ && echo " (frontend)"
+            curl -fsSL -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ && echo " (frontend)"

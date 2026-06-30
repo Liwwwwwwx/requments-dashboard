@@ -14,6 +14,11 @@ on:
       - 'package*.json'
       - '.github/workflows/backend.yml'
 
+env:
+  DEPLOY_USER: ubuntu
+  DEPLOY_PATH: /home/ubuntu/requments-dashboard
+  PM2_PATH: /home/ubuntu/.npm-global/bin
+
 jobs:
   test:
     name: Test
@@ -48,12 +53,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-          cache: npm
-
       - name: Add server host key
         run: |
           mkdir -p ~/.ssh
@@ -63,38 +62,46 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
+          username: ${{ env.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 5m
           script: |
             set -e
-            cd /home/ubuntu/requments-dashboard
-            git pull
-            npm ci --omit=dev --no-audit --no-fund --loglevel=error
+            export PATH="${{ env.PM2_PATH }}:$PATH"
+            flock /tmp/req-board-deploy.lock bash -lc '
+              set -e
+              cd "${{ env.DEPLOY_PATH }}"
+              git pull --ff-only
+              npm ci --omit=dev --no-audit --no-fund --loglevel=error
+            '
 
       - name: Restart backend
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
+          username: ${{ env.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 1m
           script: |
             set -e
-            source ~/.bashrc
-            cd /home/ubuntu/requments-dashboard
-            pm2 restart req-board-backend --update-env || pm2 start ecosystem.config.cjs --only req-board-backend
-            pm2 save
-            pm2 ls --no-color
+            export PATH="${{ env.PM2_PATH }}:$PATH"
+            flock /tmp/req-board-deploy.lock bash -lc '
+              set -e
+              export PATH="${{ env.PM2_PATH }}:$PATH"
+              cd "${{ env.DEPLOY_PATH }}"
+              pm2 restart req-board-backend --update-env || pm2 start ecosystem.config.cjs --only req-board-backend
+              pm2 save
+              pm2 ls --no-color
+            '
 
       - name: Backend smoke test
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
+          username: ${{ env.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 30s
           script: |
             set -e
             sleep 3
-            curl -sf http://127.0.0.1:4315/api/health && echo " (backend)"
+            curl -fsS http://127.0.0.1:4315/api/health && echo " (backend)"
