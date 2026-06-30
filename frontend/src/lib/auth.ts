@@ -1,5 +1,3 @@
-'use client';
-
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 
