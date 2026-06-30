@@ -123,6 +123,30 @@ export interface Filters {
   week: 'all' | string;
 }
 
+/** 项目级活动事件（时间线用，后端 GET /projects/:project/events 的投影）。 */
+export interface ProjectEvent {
+  eventId: string;
+  ts: number;
+  kind: EventKind | string;
+  actor?: string;
+  requirementId?: string;
+  taskId?: string;
+  status?: string;
+  title?: string;
+  summary?: string;
+  text?: string;
+  at?: string;
+  updatedAt?: string;
+}
+
+export interface ProjectEventsResponse {
+  ok: true;
+  project: string;
+  events: ProjectEvent[];
+  total: number;
+  hasMore: boolean;
+}
+
 export interface DashboardSummary {
   ok: boolean;
   project: string;

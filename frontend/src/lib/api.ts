@@ -1,5 +1,11 @@
 import { authFetch } from './auth';
-import type { BoardState, DashboardSummary, EventInput, Project } from './types';
+import type {
+  BoardState,
+  DashboardSummary,
+  EventInput,
+  Project,
+  ProjectEventsResponse
+} from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api';
 
@@ -66,6 +72,19 @@ export async function appendEvents(
 
 export async function fetchDashboardSummary(project: string): Promise<DashboardSummary> {
   return fetchJson(`/dashboard/summary?project=${encodeURIComponent(project)}`);
+}
+
+export async function fetchProjectEvents(
+  project: string,
+  params: { limit?: number; offset?: number; kind?: string; requirementId?: string } = {}
+): Promise<ProjectEventsResponse> {
+  const qs = new URLSearchParams();
+  if (params.limit != null) qs.set('limit', String(params.limit));
+  if (params.offset != null) qs.set('offset', String(params.offset));
+  if (params.kind) qs.set('kind', params.kind);
+  if (params.requirementId) qs.set('requirementId', params.requirementId);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return fetchJson(`/projects/${encodeURIComponent(project)}/events${suffix}`);
 }
 
 export { ApiError };

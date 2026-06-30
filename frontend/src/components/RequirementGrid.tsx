@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { InboxOutlined } from '@ant-design/icons';
-import type { BoardState, Filters, Priority, RequirementStatus } from '@/lib/types';
+import type { BoardState, Filters } from '@/lib/types';
 import { BOARD_VIEWS } from '@/lib/nav';
+import { BoardColumns } from './board/BoardColumns';
+import { ListView } from './board/ListView';
+import { TimelineView } from './board/TimelineView';
 
 interface Props {
   data: BoardState;
@@ -12,18 +14,6 @@ interface Props {
   filters: Filters;
   selectedId: string | null;
   loading?: boolean;
-}
-
-const COLS: { key: RequirementStatus; label: string; tone: string }[] = [
-  { key: 'todo', label: '待开始', tone: 'todo' },
-  { key: 'doing', label: '进行中', tone: 'doing' },
-  { key: 'paused', label: '暂停', tone: 'paused' },
-  { key: 'done', label: '完成', tone: 'done' }
-];
-
-const PRIORITY_TONE: Record<string, string> = { P0: 'p0', P1: 'p1', P2: 'p2' };
-function prioTone(priority: Priority | string): string {
-  return PRIORITY_TONE[priority] || 'p3';
 }
 
 export function RequirementGrid({ data, project, filters, selectedId, loading }: Props) {
@@ -40,12 +30,7 @@ export function RequirementGrid({ data, project, filters, selectedId, loading }:
     });
   }, [data.items, filters.status, query]);
 
-  const cols = useMemo(
-    () => COLS.map((col) => ({ ...col, items: items.filter((i) => i.status === col.key) })),
-    [items]
-  );
-
-  const isInitialLoading = loading && data.items.length === 0;
+  const isInitialLoading = !!loading && data.items.length === 0;
   const open = (id: string) => router.push(`/p/${project}/r/${id}`);
 
   return (
@@ -74,78 +59,32 @@ export function RequirementGrid({ data, project, filters, selectedId, loading }:
             );
           })}
         </div>
-        <div className="board-count">
-          共 <strong>{items.length}</strong> 条需求
-        </div>
+        {activeView !== 'timeline' && (
+          <div className="board-count">
+            共 <strong>{items.length}</strong> 条需求
+          </div>
+        )}
       </div>
 
-      <div className="board">
-        {cols.map((col) => (
-          <section key={col.key} className="board-col">
-            <header className="board-col-header">
-              <span className={`board-col-dot tone-${col.tone}`} />
-              <span className="board-col-label">{col.label}</span>
-              <span className="board-col-count">{col.items.length}</span>
-            </header>
-
-            <div className="board-col-body">
-              {isInitialLoading
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="card card-skeleton" aria-hidden="true">
-                      <span className="sk-line sk-line-1" />
-                      <span className="sk-line sk-line-2" />
-                    </div>
-                  ))
-                : col.items.map((item) => {
-                    const blocked = item.taskStats?.blocked || 0;
-                    const active = item.taskStats?.active || 0;
-                    return (
-                      <article
-                        key={item.id}
-                        className={`card ${selectedId === item.id ? 'is-active' : ''}`}
-                        onClick={() => open(item.id)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            open(item.id);
-                          }
-                        }}
-                      >
-                        <h4 className="card-title">{item.title}</h4>
-                        <footer className="card-meta">
-                          <span className={`card-prio tone-${prioTone(item.priority)}`}>
-                            {item.priority || 'P3'}
-                          </span>
-                          <span className="card-id">{item.id}</span>
-                          <span className="card-badges">
-                            {blocked > 0 && (
-                              <span className="card-badge is-blocked" title={`${blocked} 个阻塞任务`}>
-                                阻塞 {blocked}
-                              </span>
-                            )}
-                            {active > 0 && (
-                              <span className="card-badge" title={`${active} 个进行中任务`}>
-                                进行 {active}
-                              </span>
-                            )}
-                          </span>
-                        </footer>
-                      </article>
-                    );
-                  })}
-
-              {!isInitialLoading && col.items.length === 0 && (
-                <div className="board-col-empty">
-                  <InboxOutlined className="board-col-empty-icon" />
-                  <span>暂无需求</span>
-                </div>
-              )}
-            </div>
-          </section>
-        ))}
-      </div>
+      {activeView === 'board' && (
+        <BoardColumns
+          items={items}
+          selectedId={selectedId}
+          isInitialLoading={isInitialLoading}
+          onOpen={open}
+        />
+      )}
+      {activeView === 'list' && (
+        <ListView
+          items={items}
+          selectedId={selectedId}
+          isInitialLoading={isInitialLoading}
+          onOpen={open}
+        />
+      )}
+      {activeView === 'timeline' && (
+        <TimelineView project={project} requirements={data.items} onOpen={open} />
+      )}
     </div>
   );
 }
