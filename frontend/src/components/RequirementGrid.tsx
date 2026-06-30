@@ -17,11 +17,11 @@ interface Props {
   selectedId: string | null;
 }
 
-const COLS: { key: RequirementStatus; label: string; icon: typeof CheckOutlined }[] = [
-  { key: 'todo', label: 'Backlog', icon: ClockCircleOutlined },
-  { key: 'doing', label: 'In Progress', icon: AimOutlined },
-  { key: 'paused', label: 'Paused', icon: ExclamationOutlined },
-  { key: 'done', label: 'Done', icon: CheckOutlined },
+const COLS: { key: RequirementStatus; label: string; icon: typeof CheckOutlined; color: string; bg: string }[] = [
+  { key: 'todo', label: 'Backlog', icon: ClockCircleOutlined, color: '#64748b', bg: 'rgba(100, 116, 139, 0.06)' },
+  { key: 'doing', label: 'In Progress', icon: AimOutlined, color: '#2563eb', bg: 'rgba(37, 99, 235, 0.06)' },
+  { key: 'paused', label: 'Paused', icon: ExclamationOutlined, color: '#d97706', bg: 'rgba(217, 119, 6, 0.06)' },
+  { key: 'done', label: 'Done', icon: CheckOutlined, color: '#16a34a', bg: 'rgba(22, 163, 74, 0.06)' },
 ];
 
 export function RequirementGrid({ data, project, filters, selectedId }: Props) {
@@ -48,17 +48,18 @@ export function RequirementGrid({ data, project, filters, selectedId }: Props) {
       {cols.map((col) => {
         const Icon = col.icon;
         return (
-          <section key={col.key} className="board-col">
-            <header className="board-col-header">
-              <Icon className="board-col-icon" />
-              <span className="board-col-label">{col.label}</span>
-              <span className="board-col-count">{col.items.length}</span>
+          <section key={col.key} className="board-col" style={{ background: col.bg }}>
+            <header className="board-col-header" style={{ borderBottomColor: col.color }}>
+              <Icon className="board-col-icon" style={{ color: col.color }} />
+              <span className="board-col-label" style={{ color: col.color }}>{col.label}</span>
+              <span className="board-col-count" style={{ background: col.color, color: '#fff' }}>{col.items.length}</span>
             </header>
             <div className="board-col-items">
               {col.items.map((item) => (
                 <article
                   key={item.id}
                   className={`board-item ${selectedId === item.id ? 'is-active' : ''}`}
+                  style={{ borderLeft: `3px solid ${item.priority === 'P0' ? '#dc2626' : item.priority === 'P1' ? '#d97706' : item.priority === 'P2' ? '#2563eb' : col.color}` }}
                   onClick={() => router.push(`/p/${project}/r/${item.id}`)}
                   role="button"
                   tabIndex={0}
