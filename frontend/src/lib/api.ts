@@ -1,3 +1,4 @@
+import { authFetch } from './auth';
 import type { BoardState, EventInput, Project } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api';
@@ -12,11 +13,7 @@ class ApiError extends Error {
 }
 
 async function fetchJson<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    cache: 'no-store',
-    ...options
-  });
+  const res = await authFetch(`${API_BASE}${path}`, options);
   const text = await res.text();
   let body: unknown = null;
   if (text) {

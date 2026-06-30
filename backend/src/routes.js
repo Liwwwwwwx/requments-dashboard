@@ -7,13 +7,23 @@ const { projectPaths, listProjects, ensureProject, isValidProjectId } = require(
 const { readEvents, appendEvents, withLock } = require("./events");
 const { render } = require("./state");
 const { httpError } = require("./errors");
+const { createAuthRoutes } = require("./auth/routes");
+const { authMiddleware } = require("./auth/middleware");
+const { initUsers } = require("./auth/users");
 
 function createRoutes(rootDir) {
   const router = express.Router();
 
+  const dbPath = path.join(rootDir, "data", "users.db");
+  const users = initUsers(dbPath);
+
+  router.use(createAuthRoutes(rootDir));
+
   router.get("/health", (_req, res) => {
     res.json({ ok: true, service: "requirements-board-backend", dataDir: path.join(rootDir, "data") });
   });
+
+  router.use(authMiddleware(users));
 
   router.get("/projects", (_req, res) => {
     const projects = listProjects(rootDir).map((id) => ({ id, name: id }));

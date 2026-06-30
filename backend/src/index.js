@@ -2,6 +2,7 @@
 
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const { createRoutes } = require("./routes");
 const { errorMiddleware } = require("./errors");
 
@@ -12,6 +13,7 @@ const PORT = Number(process.env.REQUIREMENTS_PORT || 4315);
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api", createRoutes(ROOT));
 app.use(errorMiddleware());

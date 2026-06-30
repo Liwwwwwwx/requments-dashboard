@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AntdProvider } from '@/components/AntdProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import AuthLayout from './AuthLayout';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -21,7 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <ErrorBoundary>
-          <AntdProvider>{children}</AntdProvider>
+          <AntdProvider>
+            <AuthLayout>{children}</AuthLayout>
+          </AntdProvider>
         </ErrorBoundary>
       </body>
     </html>

@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Layout, Spin } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { LogoutOutlined, ReloadOutlined, UserOutlined } from '@ant-design/icons';
 import { useRequirements } from '@/hooks/useRequirements';
+import { useAuth } from '@/components/AuthProvider';
 import { Sidebar } from './Sidebar';
 import { RequirementGrid } from './RequirementGrid';
 import { RequirementDetailView } from './RequirementDetailView';
@@ -31,6 +32,7 @@ interface Props {
 
 export function AppShell({ project, reqId, children }: Props) {
   const router = useRouter();
+  const { user, logout } = useAuth();
   const { projects, data, taskItems, loading, error, refresh } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
@@ -132,6 +134,28 @@ export function AppShell({ project, reqId, children }: Props) {
               <strong>{blocked}</strong>
             </div>
           </div>
+          <div className="toolbar-divider" />
+          {user && (
+            <div className="toolbar-user">
+              <UserOutlined style={{ color: 'var(--text-tertiary)', fontSize: 13 }} />
+              <span className="toolbar-user-name">
+                {user.displayName || user.username}
+              </span>
+              <Button
+                size="small"
+                icon={<LogoutOutlined />}
+                onClick={() => void logout()}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-tertiary)',
+                  fontSize: 12
+                }}
+              >
+                退出
+              </Button>
+            </div>
+          )}
           <Button
             icon={<ReloadOutlined />}
             loading={loading}
