@@ -2165,9 +2165,8 @@ body {
    Dashboard View
    ========================================================= */
 .dashboard-view {
-  padding: 24px 32px 40px;
-  max-width: 1680px;
-  margin: 0 auto;
+  padding: 20px 28px 40px;
+  width: 100%;
 }
 
 .dashboard-header {
@@ -2184,16 +2183,17 @@ body {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 16px 18px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  gap: 6px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .dash-stat-card:hover {
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   border-color: var(--border-default);
+  transform: translateY(-1px);
 }
 
 .dash-stat-card__top {
@@ -2210,19 +2210,19 @@ body {
 }
 
 .dash-stat-label {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text-tertiary);
   font-family: var(--font-mono);
-  letter-spacing: '0.06em';
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
 .dash-stat-value {
   font-family: var(--font-mono);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 600;
   line-height: 1;
-  letter-spacing: '-0.02em';
+  letter-spacing: -0.02em;
 }
 
 .dash-ring-card {
@@ -2234,7 +2234,7 @@ body {
 .dash-ring-card__left {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .dash-sub-label {
@@ -2247,7 +2247,7 @@ body {
 }
 
 .dash-stat-card--skeleton {
-  min-height: 80px;
+  min-height: 76px;
 }
 
 .dash-stat-skeleton {
@@ -2305,6 +2305,10 @@ body {
   font-size: 11px;
   color: var(--status-blocked-text);
   opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 400px;
 }
 
 .dash-blocked-arrow {
@@ -2320,7 +2324,7 @@ body {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -2329,7 +2333,7 @@ body {
 .qa-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -2344,12 +2348,12 @@ body {
 
 .qa-shortcuts {
   display: flex;
-  gap: 4px;
+  gap: 3px;
 }
 
 .qa-shortcut {
-  padding: 5px 12px;
-  height: 28px;
+  padding: 4px 10px;
+  height: 26px;
   border-radius: 6px;
   font-size: 12px;
   color: var(--text-tertiary);
@@ -2389,8 +2393,8 @@ body {
 }
 
 .qa-toggle-btn {
-  width: 30px;
-  height: 26px;
+  width: 28px;
+  height: 24px;
   border-radius: 5px;
   border: none;
   background: transparent;
@@ -2398,8 +2402,8 @@ body {
   cursor: pointer;
   display: grid;
   place-items: center;
-  font-size: 13px;
-  transition: all 0.12s ease;
+  font-size: 12px;
+  transition: all 0.15s ease;
 }
 
 .qa-toggle-btn:hover {
@@ -2438,10 +2442,207 @@ body {
   font-size: 11px;
   color: var(--text-quaternary);
   font-family: var(--font-mono);
-  letter-spacing: '0.04em';
+  letter-spacing: 0.04em;
 }
 
-/* —— List View —— */
+/* —— Kanban Board —— */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  min-height: 400px;
+}
+
+.kanban-col {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.kanban-col-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface-2);
+}
+
+.kanban-col-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.kanban-col-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1 1 auto;
+}
+
+.kanban-col-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  background: var(--bg-surface);
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+}
+
+.kanban-col-body {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  min-height: 120px;
+}
+
+.kanban-col-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.kanban-col-body::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: var(--radius-pill);
+}
+
+.kanban-empty {
+  display: grid;
+  place-items: center;
+  min-height: 60px;
+  color: var(--text-quaternary);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+
+/* —— Kanban compact cards —— */
+.req-card.compact {
+  padding: 10px 12px 10px 14px;
+  gap: 6px;
+  min-height: auto;
+}
+
+.req-card.compact .req-card-head {
+  gap: 6px;
+}
+
+.req-card.compact .req-card-id {
+  font-size: 10px;
+}
+
+.req-card.compact .req-card-title {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.req-card.compact .req-card-chips {
+  gap: 4px;
+}
+
+.req-card.compact .req-card-foot {
+  gap: 6px;
+}
+
+.req-card.compact .req-card-progress .bar {
+  height: 2px;
+}
+
+/* —— Card improvements —— */
+.req-card {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.req-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.req-card-summary {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.chip-sm {
+  height: 20px;
+  padding: 0 6px;
+  font-size: 10.5px;
+  border-radius: var(--radius-xs);
+}
+
+.chip-warn {
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked-text);
+  border-color: transparent;
+  font-weight: 500;
+}
+
+.req-card .owner {
+  font-size: 10.5px;
+  color: var(--text-quaternary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+/* —— Empty state —— */
+.dashboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 8px;
+}
+
+.dashboard-empty-icon {
+  font-size: 36px;
+  opacity: 0.4;
+  margin-bottom: 4px;
+}
+
+.dashboard-empty p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.dashboard-empty span {
+  font-size: 12px;
+  color: var(--text-quaternary);
+}
+
+/* —— View meta —— */
+.view-list-meta {
+  margin-bottom: 12px;
+}
+
+.view-list-count {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.view-list-count strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* —— List View (improved) —— */
 .req-list {
   display: flex;
   flex-direction: column;
@@ -2451,9 +2652,9 @@ body {
 .req-list .req-card {
   flex-direction: row;
   align-items: center;
-  min-height: 56px;
-  padding: 12px 16px;
-  gap: 16px;
+  min-height: 52px;
+  padding: 10px 14px 10px 16px;
+  gap: 14px;
 }
 
 .req-list .req-card::before {
@@ -2463,28 +2664,72 @@ body {
   border-radius: 3px 0 0 3px;
 }
 
+.req-list .req-card:hover {
+  transform: translateX(2px);
+}
+
 .req-list .req-card-head {
   flex: 0 0 auto;
-  min-width: 90px;
+  min-width: 85px;
 }
 
 .req-list .req-card-title {
   flex: 1 1 auto;
   -webkit-line-clamp: 1;
-  font-size: 15px;
+  font-size: 14px;
+}
+
+.req-list .req-card-summary {
+  display: none;
 }
 
 .req-list .req-card-chips {
   flex: 0 0 auto;
-  min-width: 100px;
+  min-width: 90px;
 }
 
 .req-list .req-card-foot {
   flex: 0 0 auto;
   margin-top: 0;
-  min-width: 120px;
+  min-width: 110px;
 }
 
 .req-list .req-card-progress .bar {
-  width: 60px;
+  width: 50px;
+}
+
+.req-list .req-card-meta {
+  display: none;
+}
+
+/* —— Dashboard welcome (empty state) —— */
+.dash-welcome {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, var(--accent-softer) 0%, rgba(37, 99, 235, 0.02) 100%);
+  border-color: var(--accent-border);
+}
+
+.dash-welcome-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.dash-welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dash-welcome-text strong {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.dash-welcome-text span {
+  font-size: 12px;
+  color: var(--text-tertiary);
 }

@@ -38,7 +38,7 @@ export function AppShell({ project, reqId, children }: Props) {
   const { user, logout } = useAuth();
   const { projects, data, taskItems, loading, error, refresh } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'kanban' | 'grid' | 'list'>('kanban');
   const [dashSummary, setDashSummary] = useState<DashboardSummary | null>(null);
   const [dashLoading, setDashLoading] = useState(false);
 

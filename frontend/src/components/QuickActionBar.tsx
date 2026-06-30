@@ -1,14 +1,14 @@
 'use client';
 
 import { Input, Button, Tooltip } from 'antd';
-import { AppstoreOutlined, UnorderedListOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, UnorderedListOutlined, PlusOutlined, SearchOutlined, ProjectOutlined } from '@ant-design/icons';
 import type { Filters, RequirementStatus } from '@/lib/types';
 
 interface Props {
   filters: Filters;
   setFilters: (f: Filters) => void;
-  viewMode: 'grid' | 'list';
-  setViewMode: (m: 'grid' | 'list') => void;
+  viewMode: 'kanban' | 'grid' | 'list';
+  setViewMode: (m: 'kanban' | 'grid' | 'list') => void;
   totalCount: number;
 }
 
@@ -54,6 +54,15 @@ export function QuickActionBar({ filters, setFilters, viewMode, setViewMode, tot
           新建需求
         </Button>
         <div className="qa-view-toggle">
+          <Tooltip title="看板视图">
+            <button
+              type="button"
+              className={`qa-toggle-btn ${viewMode === 'kanban' ? 'active' : ''}`}
+              onClick={() => setViewMode('kanban')}
+            >
+              <ProjectOutlined />
+            </button>
+          </Tooltip>
           <Tooltip title="网格视图">
             <button
               type="button"
