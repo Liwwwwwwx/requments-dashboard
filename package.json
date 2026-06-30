@@ -1,7 +1,7 @@
 {
   "name": "requirements-board",
-  "version": "0.3.0",
-  "description": "多项目需求看板：Next.js + TypeScript 前端，Express + JSONL 事件流后端",
+  "version": "0.2.0",
+  "description": "多项目需求看板：React + Ant Design 前端，Express + JSONL 事件流后端",
   "private": true,
   "workspaces": [
     "backend",
@@ -9,23 +9,15 @@
   ],
   "scripts": {
     "install:all": "npm install",
-    "dev": "REQUIREMENTS_HOST=0.0.0.0 npm run dev --workspace=backend & npm run dev --workspace=frontend",
+    "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend",
-    "start": "REQUIREMENTS_HOST=0.0.0.0 npm run start:backend & npm run start --workspace=frontend",
-    "start:backend": "node backend/src/index.js",
-    "start:prod": "REQUIREMENTS_HOST=0.0.0.0 node backend/src/index.js & npm run start --workspace=frontend",
+    "start": "npm run start --workspace=backend",
     "migrate": "node backend/scripts/migrate.js",
     "test:schema": "npm run test:schema --workspace=backend",
-    "test": "npm run test --workspaces --if-present",
-    "test:backend": "npm run test --workspace=backend",
-    "test:frontend": "npm run test --workspace=frontend",
-    "test:coverage": "npm run test:coverage --workspaces --if-present",
-    "lint": "npm run lint --workspace=frontend",
-    "format": "npm run format --workspace=frontend",
-    "typecheck": "npm run typecheck --workspace=frontend",
-    "req": "node backend/cli.js"
+    "req": "node backend/cli.js",
+    "req:remote": "node backend/cli-remote.js"
   },
   "engines": {
     "node": ">=18"
@@ -36,9 +28,7 @@
     "board",
     "event-sourcing",
     "jsonl",
-    "multi-project",
-    "nextjs",
-    "typescript"
+    "multi-project"
   ],
   "license": "MIT"
 }

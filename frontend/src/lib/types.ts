@@ -13,9 +13,6 @@ export type Role =
 
 export type WorkflowStatus = string;
 
-export type Provider = 'kimi' | 'minimax' | 'deepseek' | string;
-export type AccountType = 'balance' | 'plan';
-
 export interface Endpoint {
   method?: string;
   path: string;
@@ -117,95 +114,6 @@ export interface EventInput {
   [key: string]: unknown;
 }
 
-export interface IntervalMetric {
-  total: number | null;
-  remaining: number | null;
-  remainingPercent: number | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  remainsTime?: string | null;
-  resetTime?: string | null;
-  status?: number | null;
-}
-
-export interface KimiMetrics {
-  level?: string | null;
-  subType?: string | null;
-  authenticationScope?: string | null;
-  interval: IntervalMetric & { used?: number | null; duration?: number | null; timeUnit?: string | null };
-  period: IntervalMetric & { used?: number | null };
-  totalQuota: { total: number | null; remaining: number | null; remainingPercent: number | null };
-}
-
-export interface MiniMaxMetrics {
-  modelName?: string;
-  interval: IntervalMetric;
-  weekly: IntervalMetric;
-}
-
-export interface SnapshotMetrics {
-  kimi?: KimiMetrics;
-  minimax?: MiniMaxMetrics;
-}
-
-export interface Snapshot {
-  accountId: string;
-  balanceAmount?: number | null;
-  quotaTotal?: number | null;
-  quotaRemaining?: number | null;
-  quotaUsed?: number | null;
-  quotaUnit?: string;
-  metrics?: SnapshotMetrics;
-  sourceType?: string;
-  status?: string;
-  note?: string;
-  collectedAt?: string;
-}
-
-export interface AccountUsage {
-  quotaTotal: number | null;
-  quotaRemaining: number | null;
-  remainingPercent: number | null;
-}
-
-export interface AiUsageAccount {
-  id: string;
-  accountName: string;
-  provider: Provider;
-  accountType: AccountType;
-  enabled?: boolean;
-  hasApiKey?: boolean;
-  baseUrl?: string;
-  modelId?: string;
-  quotaUnit?: string;
-  risk?: 'ok' | 'warning' | 'stale';
-  latestSnapshot?: Snapshot | null;
-  usage?: AccountUsage;
-}
-
-export interface AiUsageSummary {
-  totalAccounts: number;
-  warningAccounts: number;
-  staleAccounts: number;
-  snapshotCount: number;
-  lastCollectedAt: string | null;
-}
-
-export interface AiUsageState {
-  summary: AiUsageSummary;
-  accounts: AiUsageAccount[];
-  recentSnapshots?: Snapshot[];
-  dailyUsage?: {
-    today?: Record<string, number>;
-  };
-}
-
-export interface ApiError {
-  ok: false;
-  error: string;
-  code?: string;
-}
-
 export interface Filters {
   query: string;
   type: 'all' | string;
@@ -214,5 +122,3 @@ export interface Filters {
   priority: 'all' | Priority;
   week: 'all' | string;
 }
-
-export type Workspace = 'requirements' | 'ai-usage';

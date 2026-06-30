@@ -6,5 +6,5 @@ interface Props {
 
 export default async function RequirementDetailPage({ params }: Props) {
   const { project, reqId } = await params;
-  return <AppShell workspace="requirements" project={project} reqId={reqId} />;
+  return <AppShell project={project} reqId={reqId} />;
 }

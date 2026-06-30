@@ -1,28 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, usePathname, useRouter } from 'next/navigation';
-import { BarChartOutlined, UnorderedListOutlined, FolderOutlined } from '@ant-design/icons';
-import type { Project, Requirement, Workspace } from '@/lib/types';
+import { useParams, usePathname } from 'next/navigation';
+import { UnorderedListOutlined, FolderOutlined } from '@ant-design/icons';
+import type { Project, Requirement } from '@/lib/types';
 
 interface SidebarProps {
   projects: Project[];
-  workspace: Workspace;
   selectedItem: Requirement | null;
-  onWorkspaceChange: (ws: Workspace) => void;
+  onProjectChange?: (project: string) => void;
 }
 
-export function Sidebar({ projects, workspace, selectedItem, onWorkspaceChange }: SidebarProps) {
-  const router = useRouter();
+export function Sidebar({ projects, selectedItem, onProjectChange }: SidebarProps) {
   const pathname = usePathname();
   const params = useParams<{ project?: string }>();
   const currentProjectId = params?.project;
 
   const handleProjectClick = (projectId: string) => {
-    if (workspace !== 'requirements') {
-      onWorkspaceChange('requirements');
-    }
-    router.push(`/p/${projectId}`);
+    onProjectChange?.(projectId);
   };
 
   return (
@@ -35,24 +30,12 @@ export function Sidebar({ projects, workspace, selectedItem, onWorkspaceChange }
           <nav className="sidebar-nav">
             <button
               type="button"
-              className={`sidebar-nav-item ${workspace === 'requirements' ? 'active' : ''}`}
-              onClick={() => onWorkspaceChange('requirements')}
+              className="sidebar-nav-item active"
             >
               <span className="icon nav-icon" style={{ background: 'var(--accent)' }}>
                 <UnorderedListOutlined />
               </span>
               <span className="label">需求看板</span>
-            </button>
-            <button
-              type="button"
-              className={`sidebar-nav-item ${workspace === 'ai-usage' ? 'active' : ''}`}
-              onClick={() => onWorkspaceChange('ai-usage')}
-            >
-              <span className="icon nav-icon" style={{ background: 'var(--role-qa)' }}>
-                <BarChartOutlined />
-              </span>
-              <span className="label">AI 用量</span>
-              <span className="count">新</span>
             </button>
           </nav>
         </section>

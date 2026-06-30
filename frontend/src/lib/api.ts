@@ -1,4 +1,4 @@
-import type { AiUsageState, BoardState, EventInput, Project } from './types';
+import type { BoardState, EventInput, Project } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api';
 
@@ -64,48 +64,6 @@ export async function appendEvents(
   return fetchJson(`/projects/${encodeURIComponent(project)}/events`, {
     method: 'POST',
     body: JSON.stringify({ events })
-  });
-}
-
-export async function fetchAiUsageState(): Promise<AiUsageState> {
-  return fetchJson('/ai-usage/state');
-}
-
-export async function saveAiUsageAccount(
-  account: Record<string, unknown>
-): Promise<{ ok: true; account: unknown; state: AiUsageState }> {
-  return fetchJson('/ai-usage/accounts', {
-    method: 'POST',
-    body: JSON.stringify(account)
-  });
-}
-
-export async function testAiUsageConnection(
-  config: Record<string, unknown>
-): Promise<{ ok: true; status: number; models: string[]; modelCount: number }> {
-  return fetchJson('/ai-usage/test', {
-    method: 'POST',
-    body: JSON.stringify(config)
-  });
-}
-
-export async function appendAiUsageSnapshot(
-  snapshot: Record<string, unknown>
-): Promise<{ ok: true; snapshot: unknown; state: AiUsageState }> {
-  return fetchJson('/ai-usage/snapshots', {
-    method: 'POST',
-    body: JSON.stringify(snapshot)
-  });
-}
-
-export async function syncAiUsageAccount(accountId: string): Promise<{
-  ok: true;
-  snapshot: unknown;
-  syncUrl: string;
-  state: AiUsageState;
-}> {
-  return fetchJson(`/ai-usage/accounts/${encodeURIComponent(accountId)}/sync`, {
-    method: 'POST'
   });
 }
 

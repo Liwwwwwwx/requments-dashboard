@@ -8,7 +8,7 @@ import { useRequirements } from '@/hooks/useRequirements';
 import { Sidebar } from './Sidebar';
 import { RequirementGrid } from './RequirementGrid';
 import { RequirementDetailView } from './RequirementDetailView';
-import type { Filters, Requirement, Workspace } from '@/lib/types';
+import type { Filters, Requirement } from '@/lib/types';
 
 const { Content } = Layout;
 
@@ -24,24 +24,22 @@ const DEFAULT_FILTERS: Filters = {
 const DEFAULT_PROJECT = 'default';
 
 interface Props {
-  workspace: Workspace;
   project?: string;
   reqId?: string;
   children?: ReactNode;
 }
 
-export function AppShell({ workspace, project, reqId, children }: Props) {
+export function AppShell({ project, reqId, children }: Props) {
   const router = useRouter();
   const { projects, data, taskItems, loading, error, refresh } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   useEffect(() => {
     if (!projects || projects.length === 0) return;
-    if (workspace === 'ai-usage') return;
     if (!project || !projects.find((p) => p.id === project)) {
       router.replace(`/p/${projects[0].id}`, { scroll: false });
     }
-  }, [projects, project, workspace, router]);
+  }, [projects, project, router]);
 
   const selectedItem: Requirement | null = useMemo(() => {
     if (!reqId) return null;
@@ -67,12 +65,8 @@ export function AppShell({ workspace, project, reqId, children }: Props) {
     return `${year}-W${String(week).padStart(2, '0')}`;
   }, []);
 
-  const handleWorkspaceChange = (next: Workspace) => {
-    if (next === 'ai-usage') {
-      router.push('/ai-usage');
-    } else {
-      router.push(`/p/${activeProjectId}`);
-    }
+  const handleProjectChange = (next: string) => {
+    router.push(`/p/${next}`);
   };
 
   return (
@@ -85,16 +79,14 @@ export function AppShell({ workspace, project, reqId, children }: Props) {
           </div>
           <div className="toolbar-divider" />
           <div className="toolbar-project">
-            <span className="toolbar-project-label">
-              {workspace === 'ai-usage' ? '工作台' : '项目'}
-            </span>
+            <span className="toolbar-project-label">项目</span>
             <span className="toolbar-project-name">
-              {workspace === 'ai-usage' ? 'AI 用量' : currentProject?.name || activeProjectId}
+              {currentProject?.name || activeProjectId}
             </span>
           </div>
           <div className="toolbar-divider" />
           <span className="toolbar-week">{currentWeek}</span>
-          {workspace === 'requirements' && selectedItem && (
+          {selectedItem && (
             <>
               <div className="toolbar-divider" />
               <span
@@ -108,69 +100,64 @@ export function AppShell({ workspace, project, reqId, children }: Props) {
         </div>
 
         <div className="toolbar-right">
-          {workspace === 'requirements' && (
-            <div className="toolbar-stats">
-              <div className="toolbar-stat">
-                <span className="dot" style={{ background: 'var(--text-tertiary)' }} />
-                <span>全部</span>
-                <strong>{total}</strong>
-              </div>
-              <div className="toolbar-stat">
-                <span className="dot" style={{ background: 'var(--status-doing-dot)' }} />
-                <span>进行中</span>
-                <strong>{doing}</strong>
-              </div>
-              <div className="toolbar-stat">
-                <span className="dot" style={{ background: 'var(--status-todo-dot)' }} />
-                <span>待开始</span>
-                <strong>{todo}</strong>
-              </div>
-              <div className="toolbar-stat">
-                <span className="dot" style={{ background: 'var(--status-paused-dot)' }} />
-                <span>暂停</span>
-                <strong>{paused}</strong>
-              </div>
-              <div className="toolbar-stat">
-                <span className="dot" style={{ background: 'var(--status-done-dot)' }} />
-                <span>完成</span>
-                <strong>{done}</strong>
-              </div>
-              <div className={`toolbar-stat ${blocked > 0 ? 'is-blocked' : ''}`}>
-                <span className="dot" style={{ background: 'var(--status-blocked-dot)' }} />
-                <span>阻塞</span>
-                <strong>{blocked}</strong>
-              </div>
+          <div className="toolbar-stats">
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--text-tertiary)' }} />
+              <span>全部</span>
+              <strong>{total}</strong>
             </div>
-          )}
-          {workspace === 'requirements' && (
-            <Button
-              icon={<ReloadOutlined />}
-              loading={loading}
-              onClick={() => {
-                void refresh();
-              }}
-              type="primary"
-              size="middle"
-            >
-              刷新
-            </Button>
-          )}
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--status-doing-dot)' }} />
+              <span>进行中</span>
+              <strong>{doing}</strong>
+            </div>
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--status-todo-dot)' }} />
+              <span>待开始</span>
+              <strong>{todo}</strong>
+            </div>
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--status-paused-dot)' }} />
+              <span>暂停</span>
+              <strong>{paused}</strong>
+            </div>
+            <div className="toolbar-stat">
+              <span className="dot" style={{ background: 'var(--status-done-dot)' }} />
+              <span>完成</span>
+              <strong>{done}</strong>
+            </div>
+            <div className={`toolbar-stat ${blocked > 0 ? 'is-blocked' : ''}`}>
+              <span className="dot" style={{ background: 'var(--status-blocked-dot)' }} />
+              <span>阻塞</span>
+              <strong>{blocked}</strong>
+            </div>
+          </div>
+          <Button
+            icon={<ReloadOutlined />}
+            loading={loading}
+            onClick={() => {
+              void refresh();
+            }}
+            type="primary"
+            size="middle"
+          >
+            刷新
+          </Button>
         </div>
       </header>
 
       <div className="layout">
         <Sidebar
           projects={projects}
-          workspace={workspace}
           selectedItem={selectedItem}
-          onWorkspaceChange={handleWorkspaceChange}
+          onProjectChange={handleProjectChange}
         />
 
         <Content className="main">
-          {workspace === 'requirements' && error && (
+          {error && (
             <Alert message={error} type="error" showIcon style={{ margin: 24 }} />
           )}
-          <Spin spinning={workspace === 'requirements' && loading}>
+          <Spin spinning={loading}>
             {children
               ? children
               : reqId
