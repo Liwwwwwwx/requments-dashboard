@@ -35,7 +35,7 @@ export function Sidebar({ projects, selectedItem, onProjectChange }: SidebarProp
               <span className="icon nav-icon" style={{ background: 'var(--accent)' }}>
                 <UnorderedListOutlined />
               </span>
-              <span className="label">需求看板</span>
+              <span className="label">TraceBoard</span>
             </button>
           </nav>
         </section>

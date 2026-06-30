@@ -1,7 +1,7 @@
 {
-  "name": "requirements-board-frontend",
+  "name": "traceboard-frontend",
   "version": "0.2.0",
-  "description": "需求看板前端：Next.js 15 + TypeScript + Ant Design 5",
+  "description": "TraceBoard 前端：Next.js 15 + TypeScript + Ant Design 5",
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 5173",

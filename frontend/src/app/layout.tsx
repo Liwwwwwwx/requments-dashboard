@@ -5,8 +5,8 @@ import AuthLayout from './AuthLayout';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '需求看板',
-  description: '多项目需求看板：需求、子任务、接口契约、进度统一管理'
+  title: 'TraceBoard',
+  description: 'TraceBoard — 事件溯源驱动的多项目需求管理平台'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

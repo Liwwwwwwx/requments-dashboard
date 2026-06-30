@@ -1,7 +1,7 @@
 {
-  "name": "requirements-board",
+  "name": "traceboard",
   "version": "0.2.0",
-  "description": "多项目需求看板：React + Ant Design 前端，Express + JSONL 事件流后端",
+  "description": "TraceBoard — 事件溯源驱动的多项目需求管理平台",
   "private": true,
   "workspaces": [
     "backend",
