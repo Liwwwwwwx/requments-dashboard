@@ -52,16 +52,62 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
       - name: Save deploy key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-      - name: Test SSH
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build --workspace=frontend
+
+      - name: Install rsync
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq rsync
+
+      - name: Pull source and install deps on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: whoami && hostname && uptime
+          script: |
+            cd /home/ubuntu/requments-dashboard
+            git pull
+            npm install --prefer-offline --no-audit --no-fund --loglevel=error
+
+      - name: Sync .next/ to server
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            frontend/.next/ \
+            ubuntu@${{ secrets.SSH_HOST }}:/home/ubuntu/requments-dashboard/frontend/.next/
+
+      - name: Restart services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            pm2 restart req-board-backend || pm2 start /home/ubuntu/requments-dashboard/ecosystem.config.cjs --only req-board-backend
+            pm2 restart req-board-frontend || pm2 start /home/ubuntu/requments-dashboard/ecosystem.config.cjs --only req-board-frontend
+            pm2 save
+
+      - name: Smoke test
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sleep 3
+            curl -sf http://127.0.0.1:4315/api/health && echo " (backend)"
+            curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ && echo " (frontend)"
