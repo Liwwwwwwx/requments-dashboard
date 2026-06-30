@@ -1,0 +1,5 @@
+module.exports = {
+  backendEnv: {
+    REQUIREMENTS_API_TOKEN: "replace-with-a-random-token"
+  }
+};

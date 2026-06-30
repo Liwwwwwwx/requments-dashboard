@@ -10,6 +10,13 @@
  * 注意：不要碰名为 ai-usage-backend 的进程（其他项目专用）。
  */
 
+const fs = require("node:fs");
+const path = require("node:path");
+
+const secretsPath = path.join(__dirname, "ecosystem.secrets.cjs");
+const secrets = fs.existsSync(secretsPath) ? require(secretsPath) : {};
+const backendSecrets = secrets.backendEnv || {};
+
 module.exports = {
   apps: [
     {
@@ -20,7 +27,8 @@ module.exports = {
       env: {
         REQUIREMENTS_HOST: "0.0.0.0",
         NODE_ENV: "production",
-        COOKIE_SECURE: "false"
+        COOKIE_SECURE: "false",
+        ...backendSecrets
       },
       max_memory_restart: "300M",
       out_file: "/home/ubuntu/.pm2/logs/req-board-backend-out.log",
