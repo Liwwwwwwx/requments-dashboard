@@ -19,7 +19,8 @@ module.exports = {
       interpreter: "node",
       env: {
         REQUIREMENTS_HOST: "0.0.0.0",
-        NODE_ENV: "production"
+        NODE_ENV: "production",
+        COOKIE_SECURE: "false"
       },
       max_memory_restart: "300M",
       out_file: "/home/ubuntu/.pm2/logs/req-board-backend-out.log",
