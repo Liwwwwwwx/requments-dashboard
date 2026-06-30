@@ -2,17 +2,22 @@ name: Backend CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'backend/**'
       - 'package*.json'
       - '.github/workflows/backend.yml'
   pull_request:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'backend/**'
       - 'package*.json'
       - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   DEPLOY_USER: ubuntu
