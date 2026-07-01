@@ -1,7 +1,13 @@
 'use client';
 
 import { Avatar, Button, Dropdown, Input, Tooltip, type MenuProps } from 'antd';
-import { LogoutOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  LogoutOutlined,
+  ReloadOutlined,
+  RobotOutlined,
+  SearchOutlined
+} from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -12,10 +18,21 @@ interface TopBarProps {
   onQueryChange: (q: string) => void;
   loading: boolean;
   onRefresh: () => void;
+  /** 当前项目 id，用于「AI 对话」按钮跳转 */
+  projectId?: string;
 }
 
-export function TopBar({ total, showSearch, query, onQueryChange, loading, onRefresh }: TopBarProps) {
+export function TopBar({ total, showSearch, query, onQueryChange, loading, onRefresh, projectId }: TopBarProps) {
   const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+  const shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
+
+  const openAi = () => {
+    const id = projectId || 'default';
+    router.push(`/p/${id}/ai`);
+  };
 
   const displayName = user?.displayName || user?.username || '';
   const initial = displayName ? displayName.slice(0, 1).toUpperCase() : 'U';
@@ -61,7 +78,7 @@ export function TopBar({ total, showSearch, query, onQueryChange, loading, onRef
           />
         )}
 
-        <Tooltip title="刷新" placement="bottom">
+        <Tooltip title={`刷新`} placement="bottom">
           <Button
             className="topbar-icon-btn"
             icon={<ReloadOutlined />}
@@ -70,6 +87,18 @@ export function TopBar({ total, showSearch, query, onQueryChange, loading, onRef
             type="text"
             aria-label="刷新"
           />
+        </Tooltip>
+
+        <Tooltip title={`AI 对话 (${shortcutLabel})`} placement="bottom">
+          <Button
+            className="topbar-icon-btn"
+            icon={<RobotOutlined />}
+            onClick={openAi}
+            type="text"
+            aria-label="AI 对话"
+          >
+            <span className="topbar-ai-shortcut">{shortcutLabel}</span>
+          </Button>
         </Tooltip>
 
         <ThemeToggle />

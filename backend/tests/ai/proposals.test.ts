@@ -1,0 +1,234 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import express from 'express';
+import request from 'supertest';
+import jwt from 'jsonwebtoken';
+import { createRoutes } from '@/routes';
+import { errorMiddleware } from '@/errors';
+import { readEvents } from '@/events';
+import { projectPaths } from '@/projects';
+
+let tmpDir: string;
+
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'requirements-board-access-secret-dev';
+
+function makeToken(userId = 'u1', username = 'test-admin') {
+  return jwt.sign({ sub: userId, username, type: 'access' }, ACCESS_SECRET, { expiresIn: '15m' });
+}
+
+function authReq(base: request.Test, token = makeToken()) {
+  return base.set('Authorization', `Bearer ${token}`);
+}
+
+function makeApp() {
+  const app = express();
+  app.use(express.json());
+  app.use('/api', createRoutes(tmpDir));
+  app.use(errorMiddleware());
+  return app;
+}
+
+function seedDeepSeekAccount() {
+  const accountsPath = path.join(tmpDir, 'data', 'ai-usage', 'accounts.json');
+  fs.mkdirSync(path.dirname(accountsPath), { recursive: true });
+  fs.writeFileSync(
+    accountsPath,
+    JSON.stringify(
+      [
+        {
+          id: 'deepseek-balance',
+          provider: 'deepseek',
+          accountName: 'DeepSeek 余额',
+          accountType: 'balance',
+          dataSource: 'api',
+          baseUrl: 'https://api.deepseek.com/v1',
+          modelId: '',
+          extraHeadersJson: '',
+          quotaUnit: 'CNY',
+          warningThreshold: 50,
+          enabled: true,
+          notes: '',
+          apiKey: 'sk-test',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ],
+      null,
+      2
+    )
+  );
+}
+
+function makeStreamWithToolCall() {
+  // 模型先流式输出文字 "好的，我帮你建一个任务"，再发出 tool_call
+  // 整段 arguments 是一个合法 JSON，分多次片段发出，模拟真实流式
+  const argsObject = {
+    rationale: '新建任务',
+    events: [
+      {
+        kind: 'task.new',
+        requirementId: 'REQ-0001',
+        taskId: 'FE-1',
+        role: 'frontend',
+        title: '实现按钮',
+        status: 'todo'
+      }
+    ]
+  };
+  const fullArgs = JSON.stringify(argsObject);
+  // 切分成几个片段
+  const splitAt = Math.floor(fullArgs.length / 3);
+  const parts = [
+    fullArgs.slice(0, splitAt),
+    fullArgs.slice(splitAt, splitAt * 2),
+    fullArgs.slice(splitAt * 2)
+  ];
+
+  const encoder = new TextEncoder();
+  const lines = [
+    'data: {"choices":[{"delta":{"content":"好"}}]}\n\n',
+    'data: {"choices":[{"delta":{"content":"的"}}]}\n\n',
+    `data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"propose_events"}}]}}]}\n\n`,
+    `data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":${JSON.stringify(parts[0])}}}]}}]}\n\n`,
+    `data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":${JSON.stringify(parts[1])}}}]}}]}\n\n`,
+    `data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":${JSON.stringify(parts[2])}}}]}}]}\n\n`,
+    'data: {"choices":[{"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":20,"completion_tokens":30,"total_tokens":50}}\n\n',
+    'data: [DONE]\n\n'
+  ].join('');
+
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(lines));
+      controller.close();
+    }
+  });
+  return stream;
+}
+
+describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-sprint3-test-'));
+    seedDeepSeekAccount();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('流式：模型返回 tool_calls 时写入 ai_proposals 并发送 event: proposal', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      body: makeStreamWithToolCall()
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    // 准备一个需求和 task 占位（让 task.new 事件合法）
+    const create = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=default').send({})
+    );
+    const convId = create.body.conversation.id;
+
+    const stream = await authReq(
+      request(makeApp())
+        .post(`/api/ai/conversations/${convId}/messages/stream?project=default`)
+        .send({ text: '帮我给 REQ-0001 加一个前端任务' })
+    );
+
+    expect(stream.status).toBe(200);
+    const body = stream.text;
+    expect(body).toContain('event: proposal');
+    expect(body).toContain('"proposalId"');
+    expect(body).toContain('"events"');
+    expect(body).toContain('task.new');
+    expect(body).toContain('FE-1');
+
+    // 提取 proposalId（不依赖严格 JSON 解析，做简单字符串匹配）
+    const match = body.match(/"proposalId":"([^"]+)"/);
+    expect(match).not.toBeNull();
+    const proposalId = match![1];
+
+    // list 接口能列出这个 proposal
+    const list = await authReq(
+      request(makeApp()).get(`/api/ai/conversations/${convId}/proposals?project=default`)
+    );
+    expect(list.body.proposals).toHaveLength(1);
+    expect(list.body.proposals[0].id).toBe(proposalId);
+    expect(list.body.proposals[0].status).toBe('pending');
+  });
+
+  it('apply 提案：事件写入 events.db，state.json 重新生成', async () => {
+    // 先建一个 req.new 事件让 REQ-0001 存在（让 task.new 合法）
+    const newReq = await authReq(
+      request(makeApp()).post('/api/projects/default/events?project=default').send({
+        events: [
+          {
+            kind: 'req.new',
+            actor: 'test',
+            requirementId: 'REQ-0001',
+            title: '测试需求',
+            summary: '用于 Sprint 3 集成测试',
+            priority: 'P1'
+          }
+        ]
+      })
+    );
+    expect(newReq.status).toBe(200);
+
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      body: makeStreamWithToolCall()
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const create = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=default').send({})
+    );
+    const convId = create.body.conversation.id;
+
+    const stream = await authReq(
+      request(makeApp())
+        .post(`/api/ai/conversations/${convId}/messages/stream?project=default`)
+        .send({ text: '帮我加任务' })
+    );
+    const match = stream.text.match(/"proposalId":"([^"]+)"/);
+    const proposalId = match![1];
+
+    // 应用提案
+    const apply = await authReq(
+      request(makeApp())
+        .post(`/api/ai/proposals/${proposalId}/apply?project=default`)
+        .send({})
+    );
+    expect(apply.status).toBe(200);
+    expect(apply.body.applied).toBe(1);
+
+    // 验证 events.db 里有 task.new
+    const paths = projectPaths(tmpDir, 'default');
+    const events = readEvents(paths.eventsPath);
+    const taskEvents = events.filter((e) => e.kind === 'task.new' && e.taskId === 'FE-1');
+    expect(taskEvents.length).toBe(1);
+    expect(taskEvents[0].requirementId).toBe('REQ-0001');
+    expect(taskEvents[0].actor).toMatch(/^ai:/);
+
+    // 验证 state.json 已重新生成
+    expect(fs.existsSync(paths.stateJsonPath)).toBe(true);
+    const state = JSON.parse(fs.readFileSync(paths.stateJsonPath, 'utf8'));
+    const reqItem = state.items.find((i: { id: string }) => i.id === 'REQ-0001');
+    expect(reqItem).toBeDefined();
+    const feTask = reqItem.tasks.find((t: { taskId: string }) => t.taskId === 'FE-1');
+    expect(feTask).toBeDefined();
+    expect(feTask.role).toBe('frontend');
+
+    // 二次 apply 应该返回 409（已 applied）
+    const apply2 = await authReq(
+      request(makeApp())
+        .post(`/api/ai/proposals/${proposalId}/apply?project=default`)
+        .send({})
+    );
+    expect(apply2.status).toBe(409);
+  });
+});

@@ -97,7 +97,8 @@ function usagePaths(rootDir) {
   return {
     dataDir,
     accountsPath: path.join(dataDir, "accounts.json"),
-    snapshotsPath: path.join(dataDir, "snapshots.jsonl")
+    snapshotsPath: path.join(dataDir, "snapshots.jsonl"),
+    chatUsagePath: path.join(dataDir, "chat-usage.jsonl")
   };
 }
 
@@ -114,6 +115,9 @@ function ensureStore(rootDir) {
   }
   if (!fs.existsSync(paths.snapshotsPath)) {
     fs.writeFileSync(paths.snapshotsPath, "", "utf8");
+  }
+  if (!fs.existsSync(paths.chatUsagePath)) {
+    fs.writeFileSync(paths.chatUsagePath, "", "utf8");
   }
   return paths;
 }
@@ -530,10 +534,83 @@ function appendSnapshot(rootDir, input) {
   return snapshot;
 }
 
+/**
+ * 记录一次 AI chat 调用的 token 用量。
+ * 单调追加到 data/ai-usage/chat-usage.jsonl，由 chatUsageTotals 聚合展示。
+ */
+function recordChatUsage(rootDir, input) {
+  const paths = ensureStore(rootDir);
+  const accountId = String(input.accountId || "").trim();
+  if (!accountId) throw new Error("accountId 不能为空");
+  const entry = {
+    id: createId("usage"),
+    accountId,
+    provider: String(input.provider || "").trim(),
+    model: String(input.model || "").trim(),
+    userId: input.userId ? String(input.userId) : null,
+    projectId: input.projectId ? String(input.projectId) : null,
+    conversationId: input.conversationId ? String(input.conversationId) : null,
+    inputTokens: Number(input.inputTokens) || 0,
+    outputTokens: Number(input.outputTokens) || 0,
+    totalTokens: Number(input.totalTokens) || ((Number(input.inputTokens) || 0) + (Number(input.outputTokens) || 0)),
+    collectedAt: input.collectedAt || nowIso()
+  };
+  fs.appendFileSync(paths.chatUsagePath, `${JSON.stringify(entry)}\n`, "utf8");
+  return entry;
+}
+
+function readChatUsage(rootDir, { sinceMs } = {}) {
+  const paths = ensureStore(rootDir);
+  if (!fs.existsSync(paths.chatUsagePath)) return [];
+  const lines = fs.readFileSync(paths.chatUsagePath, "utf8").split("\n").filter(Boolean);
+  const out = [];
+  for (const line of lines) {
+    try {
+      const e = JSON.parse(line);
+      if (sinceMs && new Date(e.collectedAt).getTime() < sinceMs) continue;
+      out.push(e);
+    } catch (_err) {
+      // skip invalid lines
+    }
+  }
+  return out;
+}
+
+/**
+ * 聚合：按 accountId 汇总 token。
+ * 返回 { total, byAccount: { accountId: { inputTokens, outputTokens, totalTokens, count } } }
+ */
+function chatUsageTotals(rootDir, { sinceMs } = {}) {
+  const entries = readChatUsage(rootDir, { sinceMs });
+  const byAccount = new Map();
+  let total = { inputTokens: 0, outputTokens: 0, totalTokens: 0, count: 0 };
+  for (const e of entries) {
+    const prev = byAccount.get(e.accountId) || {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      count: 0
+    };
+    prev.inputTokens += e.inputTokens;
+    prev.outputTokens += e.outputTokens;
+    prev.totalTokens += e.totalTokens;
+    prev.count += 1;
+    byAccount.set(e.accountId, prev);
+    total.inputTokens += e.inputTokens;
+    total.outputTokens += e.outputTokens;
+    total.totalTokens += e.totalTokens;
+    total.count += 1;
+  }
+  return { total, byAccount: Object.fromEntries(byAccount) };
+}
+
 module.exports = {
   buildState,
   upsertAccount,
   appendSnapshot,
+  recordChatUsage,
+  readChatUsage,
+  chatUsageTotals,
   parseExtraHeaders,
   modelsUrl,
   sanitizeAccount,

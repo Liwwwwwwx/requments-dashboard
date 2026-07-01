@@ -1,3 +1,6 @@
+/* AI 聊天模块样式已拆到 src/styles/ai-chat.css */
+@import '../styles/ai-chat.css';
+
 /* =========================================================
    TraceBoard · Event-Sourced Requirements Platform
    设计系统 · Linear 风 · 亮 / 暗双主题
@@ -3073,3 +3076,4 @@ body {
     transition: none;
   }
 }
+

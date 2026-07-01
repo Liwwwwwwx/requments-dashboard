@@ -4,7 +4,8 @@ import {
   BarChartOutlined,
   SettingOutlined,
   TableOutlined,
-  FieldTimeOutlined
+  FieldTimeOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 
 /** 模块上线状态：ready 可用，soon 预留（导航中可见但不可进入）。 */
@@ -36,6 +37,14 @@ export const MODULE_NAV: ModuleNavItem[] = [
     status: 'ready',
     path: (p) => `/p/${p}`,
     match: (pathname, p) => pathname === `/p/${p}` || pathname.startsWith(`/p/${p}/r/`)
+  },
+  {
+    key: 'ai',
+    label: 'AI 对话',
+    icon: RobotOutlined,
+    status: 'ready',
+    path: (p) => `/p/${p}/ai`,
+    match: (pathname, p) => pathname.startsWith(`/p/${p}/ai`)
   },
   {
     key: 'dashboard',

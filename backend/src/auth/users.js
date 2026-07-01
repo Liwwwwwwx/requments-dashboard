@@ -28,11 +28,13 @@ function initUsers(dbPath) {
 
   const count = db.prepare("SELECT COUNT(*) AS n FROM users").get().n;
   if (count === 0) {
+    const defaultUsername = process.env.DEFAULT_USERNAME || "admin";
+    const defaultPasswordHash = process.env.DEFAULT_PASSWORD_HASH || bcrypt.hashSync("admin123", 10);
     db.prepare("INSERT INTO users (id, username, password, display_name, created_at) VALUES (?, ?, ?, ?, ?)").run(
       "u1",
-      "admin",
-      bcrypt.hashSync("admin123", 10),
-      "管理员",
+      defaultUsername,
+      defaultPasswordHash,
+      process.env.DEFAULT_DISPLAY_NAME || "管理员",
       new Date().toISOString()
     );
   }

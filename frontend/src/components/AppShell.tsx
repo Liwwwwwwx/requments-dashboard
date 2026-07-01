@@ -41,6 +41,18 @@ export function AppShell({ project, reqId, children }: Props) {
     }
   }, [projects, project, router]);
 
+  // Cmd/Ctrl + K：跳到当前项目的 AI 对话页
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        router.push(`/p/${activeProject}/ai`);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeProject, router]);
+
   const selectedItem: Requirement | null = useMemo(() => {
     if (!reqId) return null;
     return data.items.find((i) => i.id === reqId) || null;
@@ -61,6 +73,7 @@ export function AppShell({ project, reqId, children }: Props) {
         onQueryChange={(query) => setFilters((f) => ({ ...f, query }))}
         loading={loading}
         onRefresh={() => void refresh()}
+        projectId={activeProject}
       />
 
       <div className="layout">
