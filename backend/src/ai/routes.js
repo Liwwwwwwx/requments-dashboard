@@ -15,7 +15,7 @@
  */
 
 const express = require("express");
-const { chatUsageTotals, readAccounts } = require("../ai-usage/store");
+const { readAccounts } = require("../ai-usage/store");
 const { pickProvider, selectAccount } = require("./provider");
 const store = require("./store");
 const { buildSystemPrompt } = require("./context");
@@ -57,19 +57,6 @@ function createAiRoutes(rootDir) {
         hasApiKey: Boolean(a.apiKey)
       }))
     });
-  });
-
-  // Sprint 4：chat 调用 token 聚合（last 24h / last 7d）
-  router.get("/usage", (req, res, next) => {
-    try {
-      const range = String(req.query.range || "24h");
-      const hours = range === "7d" ? 24 * 7 : 24;
-      const sinceMs = Date.now() - hours * 3600 * 1000;
-      const totals = chatUsageTotals(rootDir, { sinceMs });
-      res.json({ ok: true, range, hours, ...totals });
-    } catch (err) {
-      next(httpError(500, "AI_USAGE_TOTALS_FAILED", err.message));
-    }
   });
 
   router.post("/conversations", express.json(), (req, res, next) => {
@@ -218,12 +205,13 @@ function createAiRoutes(rootDir) {
       const { mod: provider } = pickProvider(providerKey);
 
       const accounts = readAccounts(rootDir);
+      // 用户私有 key（per-user 隔离）：带了 header key 时账号不必预置 key
+      const userKey = String(req.headers["x-ai-api-key"] || "").trim();
       const account = selectAccount(accounts, {
         provider: providerKey,
-        accountId: req.body?.accountId || conv.accountId
+        accountId: req.body?.accountId || conv.accountId,
+        requireApiKey: !userKey
       });
-      // 用户私有 key（per-user 隔离）
-      const userKey = String(req.headers["x-ai-api-key"] || "").trim();
       if (userKey) {
         account.apiKey = userKey;
       }

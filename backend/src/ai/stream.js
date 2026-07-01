@@ -15,7 +15,7 @@
  * 客户端断线 / `req.on('close')` 会通过 AbortController 中止 DeepSeek 调用，避免浪费 token。
  */
 
-const { readAccounts, recordChatUsage } = require("../ai-usage/store");
+const { readAccounts } = require("../ai-usage/store");
 const { pickProvider, selectAccount } = require("./provider");
 const store = require("./store");
 const { buildSystemPrompt } = require("./context");
@@ -38,14 +38,15 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
   const { mod: provider, key: resolvedProviderKey } = pickProvider(providerKey);
 
   const accounts = readAccounts(rootDir);
+  // 用户私有 key（per-user 隔离）：前端从 localStorage 读出，通过 X-AI-Api-Key 头传入。
+  // 优先于 accounts.json 里的 key。带了 header key 时账号不必预置 key，
+  // baseUrl / modelId 仍从 accounts.json 拿。
+  const userKey = String(req.headers["x-ai-api-key"] || "").trim();
   const account = selectAccount(accounts, {
     provider: providerKey,
-    accountId: body?.accountId || conv.accountId
+    accountId: body?.accountId || conv.accountId,
+    requireApiKey: !userKey
   });
-
-  // 用户私有 key（per-user 隔离）：前端从 localStorage 读出，通过 X-AI-Api-Key 头传入。
-  // 优先于 accounts.json 里的 key。baseUrl / modelId 仍从 accounts.json 拿。
-  const userKey = String(req.headers["x-ai-api-key"] || "").trim();
   if (userKey) {
     account.apiKey = userKey;
   }
@@ -113,27 +114,6 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
   let usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
   let resolvedModel = body.model || conv.model;
   const stopHeartbeat = sse.heartbeat(res);
-
-  function recordUsageSafe() {
-    if (usage.totalTokens <= 0 && usage.inputTokens <= 0 && usage.outputTokens <= 0) return;
-    try {
-      recordChatUsage(rootDir, {
-        accountId: account.id,
-        provider: providerKey,
-        model: resolvedModel,
-        userId: req.user?.id || "anonymous",
-        projectId,
-        conversationId: conv.id,
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        totalTokens: usage.totalTokens
-      });
-    } catch (err) {
-      // usage 记录失败不影响主流程
-      // eslint-disable-next-line no-console
-      console.warn(`[ai] recordChatUsage failed: ${err.message}`);
-    }
-  }
 
   try {
     const result = await provider.chatStream(messages, {
@@ -212,7 +192,6 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
       toolCalls,
       proposalId: proposalSummary?.proposalId || null
     });
-    recordUsageSafe();
     sse.endSse(res);
   } catch (err) {
     const code = err.code || "AI_CHAT_FAILED";
@@ -234,7 +213,6 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
         });
         store.touchConversation(rootDir, projectId, conv.id);
       }
-      recordUsageSafe();
       sse.send(res, "aborted", { reason: err.message || "aborted" });
       sse.endSse(res);
       return;

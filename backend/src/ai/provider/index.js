@@ -6,7 +6,7 @@
  * 当前只接 DeepSeek。后续要加 OpenAI / Kimi / 自托管，在 switch 里加 case 即可。
  * 选账号的规则：
  *   1. 调用方显式传 accountId -> 精确匹配
- *   2. 否则从 ai-usage 中挑 provider 匹配 + enabled + apiKey 存在的第一个
+ *   2. 否则挑 provider 匹配 + enabled 的第一个（requireApiKey=true 时还要求账号自带 apiKey）
  */
 
 const deepseek = require("./deepseek");
@@ -26,10 +26,12 @@ function pickProvider(provider) {
   return { key, mod };
 }
 
-function selectAccount(accounts, { provider = "deepseek", accountId } = {}) {
+function selectAccount(accounts, { provider = "deepseek", accountId, requireApiKey = true } = {}) {
   const targetProvider = String(provider).toLowerCase();
+  // requireApiKey=false 用于：调用方会通过 X-AI-Api-Key 头带入用户私有 key，
+  // 此时账号本身不需要预置 apiKey（baseUrl / modelId 仍从账号取）。
   const usable = accounts.filter(
-    (a) => a.provider === targetProvider && a.enabled !== false && a.apiKey
+    (a) => a.provider === targetProvider && a.enabled !== false && (!requireApiKey || a.apiKey)
   );
   if (accountId) {
     const found = usable.find((a) => a.id === accountId);
@@ -39,7 +41,7 @@ function selectAccount(accounts, { provider = "deepseek", accountId } = {}) {
     return found;
   }
   if (usable.length === 0) {
-    throw new Error(`没有可用的 ${targetProvider} 账号（请先在 AI 用量里配置并启用）`);
+    throw new Error(`没有可用的 ${targetProvider} 账号（请在对话界面右上角配置 API Key）`);
   }
   // 优先取 baseUrl=官方默认的
   const official = usable.find((a) =>
