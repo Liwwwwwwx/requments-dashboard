@@ -494,6 +494,68 @@ describe('V2 requirement REST APIs', () => {
     expect(invalidPriority.body.code).toBe('INVALID_PRIORITY');
   });
 
+  it('returns only V2 events for requirement history', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录'
+      },
+      {
+        kind: 'task.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        taskId: 'FE-1',
+        title: '旧任务'
+      },
+      {
+        kind: 'contract.set',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        endpoints: [{ method: 'GET', path: '/api/legacy' }]
+      },
+      {
+        kind: 'note.add',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        text: '保留最小登录'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp()).get('/api/projects/v2/requirements/REQ-0001/events')
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.events.map((event: { kind: string }) => event.kind)).toEqual([
+      'req.new',
+      'note.add'
+    ]);
+  });
+
+  it('returns 404 when requirement history target is missing', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp()).get('/api/projects/v2/requirements/REQ-9999/events')
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('REQUIREMENT_NOT_FOUND');
+  });
+
   it('adds a requirement note through the requirement event API', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
     const paths = projectPaths(tmpDir, 'v2');

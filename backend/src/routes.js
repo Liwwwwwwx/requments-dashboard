@@ -22,6 +22,7 @@ const { createAiRoutes } = require("./ai/routes");
 
 const V2_REQUIREMENT_STATUSES = new Set(["todo", "doing", "blocked", "done"]);
 const V2_PRIORITIES = new Set(["P0", "P1", "P2"]);
+const V2_REQUIREMENT_HISTORY_KINDS = new Set(["req.new", "req.status", "req.patch", "note.add"]);
 const V2_REQUIREMENT_EVENT_KINDS = new Set(["req.status", "req.patch", "note.add"]);
 
 function createRoutes(rootDir) {
@@ -334,11 +335,18 @@ function createRoutes(rootDir) {
 
   router.get("/projects/:project/requirements/:requirementId/events", (req, res, next) => {
     const paths = projectPaths(rootDir, req.params.project);
-    if (!fs.existsSync(paths.eventsPath)) {
+    const state = getProjectState(rootDir, req.params.project);
+    if (!state) {
       return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
     }
+    if (!(state.items || []).some((item) => item.id === req.params.requirementId)) {
+      return next(httpError(404, "REQUIREMENT_NOT_FOUND", `需求不存在：${req.params.requirementId}`));
+    }
     const events = readEvents(paths.eventsPath)
-      .filter((event) => event.requirementId === req.params.requirementId)
+      .filter((event) => {
+        const kind = event.kind || event.type;
+        return event.requirementId === req.params.requirementId && V2_REQUIREMENT_HISTORY_KINDS.has(kind);
+      })
       .map((event) => ({
         eventId: event.eventId,
         ts: event.ts,
