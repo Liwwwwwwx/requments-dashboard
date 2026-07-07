@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ProposalCard } from '@/components/ai/ProposalCard';
+import { applyAiProposal } from '@/lib/ai-api';
 import type { AiProposal } from '@/lib/ai-types';
 
 vi.mock('@/lib/ai-api', () => ({
@@ -20,6 +21,10 @@ function proposal(events: AiProposal['events']): AiProposal {
 }
 
 describe('ProposalCard', () => {
+  beforeEach(() => {
+    vi.mocked(applyAiProposal).mockReset();
+  });
+
   it('只为 V2 允许的提案事件展示产品化标签', () => {
     render(
       <ProposalCard
@@ -42,5 +47,38 @@ describe('ProposalCard', () => {
     expect(screen.getByText(/请重新生成提案/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /应用到看板/ })).toBeDisabled();
     expect(screen.queryByText('新建任务')).not.toBeInTheDocument();
+  });
+
+  it('用户确认后才应用 AI 提案到看板', async () => {
+    const onApplied = vi.fn();
+    vi.mocked(applyAiProposal).mockResolvedValue({
+      ok: true,
+      applied: 1,
+      proposalId: 'proposal-1',
+      items: 1,
+      updatedAt: '2026-07-07T00:00:00.000Z'
+    });
+
+    render(
+      <ProposalCard
+        project="alpha"
+        proposal={proposal([
+          { kind: 'req.status', requirementId: 'REQ-0001', status: 'doing' }
+        ])}
+        onApplied={onApplied}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /应用到看板/ }));
+
+    expect(applyAiProposal).not.toHaveBeenCalled();
+    expect(await screen.findByText('应用 AI 建议？')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '确认应用' }));
+
+    await waitFor(() => {
+      expect(applyAiProposal).toHaveBeenCalledWith('alpha', 'proposal-1');
+    });
+    expect(onApplied).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Space, Tag, Typography, message as antdMessage } from 'antd';
+import { Button, Popconfirm, Space, Tag, Typography, message as antdMessage } from 'antd';
 import { ApiOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { applyAiProposal } from '@/lib/ai-api';
 import type { AiProposal, AiProposalEvent } from '@/lib/ai-types';
@@ -119,16 +119,24 @@ export function ProposalCard({ project, proposal, onApplied }: Props) {
 
           {isPending && (
             <div className="tool-call-foot">
-              <Button
-                size="small"
-                type="primary"
-                loading={applying}
+              <Popconfirm
+                title="应用 AI 建议？"
+                description="确认后会把这些事件写入当前项目看板。"
+                okText="确认应用"
+                cancelText="取消"
                 disabled={hasUnsupportedEvents}
-                onClick={handleApply}
-                icon={<CheckCircleOutlined />}
+                onConfirm={handleApply}
               >
-                应用到看板
-              </Button>
+                <Button
+                  size="small"
+                  type="primary"
+                  loading={applying}
+                  disabled={hasUnsupportedEvents}
+                  icon={<CheckCircleOutlined />}
+                >
+                  应用到看板
+                </Button>
+              </Popconfirm>
               <Button
                 size="small"
                 type="text"
