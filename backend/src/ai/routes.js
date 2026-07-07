@@ -360,6 +360,7 @@ function createAiRoutes(rootDir) {
       // 强制 actor：AI 应用 + 当前用户
       const events = validation.events.map((e) => ({
         ...e,
+        text: e.kind === "note.add" ? String(e.text || "").trim() : e.text,
         actor: e.actor || `ai:${user.id}`
       }));
 

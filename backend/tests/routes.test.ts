@@ -596,6 +596,39 @@ describe('POST /api/projects/:project/events', () => {
     expect(res.body.code).toBe('INVALID_DETAIL');
     expect(readEvents(paths.eventsPath).map((event) => event.kind)).toEqual(['req.new']);
   });
+
+  it('trims note text at project event write boundary', async () => {
+    const app = makeApp();
+    await createProject(app, 'p11');
+    const paths = projectPaths(tmpDir, 'p11');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录页'
+      }
+    ]);
+
+    const res = await authReq(
+      request(app)
+        .post('/api/projects/p11/events')
+        .send({
+          events: [
+            {
+              kind: 'note.add',
+              requirementId: 'REQ-0001',
+              text: '  先补登录错误提示  '
+            }
+          ]
+        })
+    );
+
+    expect(res.status).toBe(200);
+    const notes = readEvents(paths.eventsPath).filter((event) => event.kind === 'note.add');
+    expect(notes).toHaveLength(1);
+    expect(notes[0].text).toBe('先补登录错误提示');
+  });
 });
 
 describe('V2 requirement REST APIs', () => {

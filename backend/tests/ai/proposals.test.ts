@@ -335,6 +335,49 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
     expect(readEvents(projectPaths(tmpDir, 'default').eventsPath).filter((e) => e.kind === 'task.status')).toHaveLength(0);
   });
 
+  it('apply 提案：写入备注前会修剪文本空白', async () => {
+    const newReq = await authReq(
+      request(makeApp()).post('/api/projects/default/events?project=default').send({
+        events: [
+          {
+            kind: 'req.new',
+            actor: 'test',
+            requirementId: 'REQ-0001',
+            title: '测试需求'
+          }
+        ]
+      })
+    );
+    expect(newReq.status).toBe(200);
+
+    const create = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=default').send({})
+    );
+    const convId = create.body.conversation.id;
+    const proposal = aiStore.createProposal(tmpDir, 'default', {
+      conversationId: convId,
+      messageId: 'MSG-test',
+      events: [
+        {
+          kind: 'note.add',
+          requirementId: 'REQ-0001',
+          text: '  先补登录错误提示  '
+        }
+      ]
+    });
+
+    const apply = await authReq(
+      request(makeApp())
+        .post(`/api/ai/proposals/${proposal.id}/apply?project=default`)
+        .send({})
+    );
+
+    expect(apply.status).toBe(200);
+    const notes = readEvents(projectPaths(tmpDir, 'default').eventsPath).filter((e) => e.kind === 'note.add');
+    expect(notes).toHaveLength(1);
+    expect(notes[0].text).toBe('先补登录错误提示');
+  });
+
   it('apply 提案：拒绝指向不存在需求的事件', async () => {
     const create = await authReq(
       request(makeApp()).post('/api/ai/conversations?project=default').send({})

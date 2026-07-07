@@ -610,7 +610,11 @@ function createRoutes(rootDir) {
     if (!validateV2ProjectStatusTransitions(currentState, list, next)) return;
 
     const actor = req.headers["x-actor"] || req.user?.username || "http";
-    const stamped = list.map((e) => ({ ...e, actor: e.actor || actor }));
+    const stamped = list.map((e) => ({
+      ...e,
+      text: e.kind === "note.add" ? String(e.text || "").trim() : e.text,
+      actor: e.actor || actor
+    }));
     const state = withLock(paths.lockPath, () => {
       appendEvents(paths.eventsPath, stamped);
       return render(paths);
