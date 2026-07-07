@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { createRoutes } from '../src/routes';
 import { errorMiddleware } from '../src/errors';
+import { initUsers } from '../src/auth/users';
 
 let tmpDir: string;
 
@@ -98,5 +99,27 @@ describe('auth routes', () => {
       .put('/api/auth/password')
       .send({ oldPassword: 'admin123', newPassword: 'secret123' });
     expect(password.status).toBe(404);
+  });
+
+  it('isolates initialized users by database path', () => {
+    const oldUsername = process.env.DEFAULT_USERNAME;
+    const oldDisplayName = process.env.DEFAULT_DISPLAY_NAME;
+
+    try {
+      const storeA = initUsers(path.join(tmpDir, 'a', 'users.db'));
+      process.env.DEFAULT_USERNAME = 'owner2';
+      process.env.DEFAULT_DISPLAY_NAME = 'Owner 2';
+      const storeB = initUsers(path.join(tmpDir, 'b', 'users.db'));
+
+      expect(storeA.findByUsername('admin')).toBeTruthy();
+      expect(storeA.findByUsername('owner2')).toBeNull();
+      expect(storeB.findByUsername('owner2')).toBeTruthy();
+      expect(storeB.findByUsername('admin')).toBeNull();
+    } finally {
+      if (oldUsername === undefined) delete process.env.DEFAULT_USERNAME;
+      else process.env.DEFAULT_USERNAME = oldUsername;
+      if (oldDisplayName === undefined) delete process.env.DEFAULT_DISPLAY_NAME;
+      else process.env.DEFAULT_DISPLAY_NAME = oldDisplayName;
+    }
   });
 });

@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const path = require("path");
 const fs = require("fs");
 
-let db = null;
+const stores = new Map();
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -17,11 +17,12 @@ CREATE TABLE IF NOT EXISTS users (
 `;
 
 function initUsers(dbPath) {
-  if (db) {
-    return { findByUsername, findById, verifyPassword };
+  const resolvedPath = path.resolve(dbPath);
+  if (stores.has(resolvedPath)) {
+    return stores.get(resolvedPath);
   }
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-  db = new Database(dbPath);
+  fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+  const db = new Database(resolvedPath);
   db.pragma("journal_mode = WAL");
   db.exec(SCHEMA);
 
@@ -38,21 +39,21 @@ function initUsers(dbPath) {
     );
   }
 
-  return { findByUsername, findById, verifyPassword };
-}
-
-function findByUsername(username) {
-  const row = db.prepare("SELECT id, username, password, display_name, created_at FROM users WHERE username = ?").get(username);
-  return row || null;
-}
-
-function findById(id) {
-  const row = db.prepare("SELECT id, username, password, display_name, created_at FROM users WHERE id = ?").get(id);
-  return row || null;
-}
-
-function verifyPassword(user, password) {
-  return bcrypt.compareSync(password, user.password);
+  const store = {
+    findByUsername(username) {
+      const row = db.prepare("SELECT id, username, password, display_name, created_at FROM users WHERE username = ?").get(username);
+      return row || null;
+    },
+    findById(id) {
+      const row = db.prepare("SELECT id, username, password, display_name, created_at FROM users WHERE id = ?").get(id);
+      return row || null;
+    },
+    verifyPassword(user, password) {
+      return bcrypt.compareSync(password, user.password);
+    }
+  };
+  stores.set(resolvedPath, store);
+  return store;
 }
 
 module.exports = { initUsers };
