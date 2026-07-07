@@ -25,6 +25,7 @@ const { projectPaths } = require("../projects");
 const { appendEvents, withLock } = require("../events");
 const { render } = require("../state");
 const { httpError } = require("../errors");
+const { RequirementId } = require("../schema");
 const { createRateLimiter } = require("./rate-limit");
 const { validateProposedEvents } = require("./tools/propose-events");
 
@@ -42,6 +43,11 @@ function getOwnedConversation(rootDir, projectId, conversationId, req) {
   const user = getCurrentUser(req);
   if (conv.userId !== user.id) return null;
   return conv;
+}
+
+function readRequirementId(req) {
+  const value = String(req.body?.requirementId || "").trim();
+  return value || null;
 }
 
 function createAiRoutes(rootDir) {
@@ -74,10 +80,21 @@ function createAiRoutes(rootDir) {
       if (!isValidProjectId(projectId)) {
         return next(httpError(400, "INVALID_PROJECT", "缺少或非法的 projectId"));
       }
+      const requirementId = readRequirementId(req);
+      if (requirementId) {
+        const parsed = RequirementId.safeParse(requirementId);
+        if (!parsed.success) {
+          return next(httpError(400, "INVALID_REQUIREMENT_ID", "需求 ID 必须是 REQ-NNNN 形式"));
+        }
+        const state = render(projectPaths(rootDir, projectId));
+        if (!(state.items || []).some((item) => item.id === requirementId)) {
+          return next(httpError(404, "AI_REQUIREMENT_NOT_FOUND", `需求不存在：${requirementId}`));
+        }
+      }
       const user = getCurrentUser(req);
       const conv = store.createConversation(rootDir, projectId, {
         userId: user.id,
-        requirementId: req.body?.requirementId || null,
+        requirementId,
         title: req.body?.title || null,
         model: req.body?.model || "deepseek-chat",
         accountId: req.body?.accountId || null
@@ -234,7 +251,7 @@ function createAiRoutes(rootDir) {
         }
       }
 
-      const systemPrompt = buildSystemPrompt({
+      const systemPrompt = buildSystemPrompt(rootDir, {
         projectId,
         requirementId: conv.requirementId
       });

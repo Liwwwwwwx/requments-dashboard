@@ -6,6 +6,8 @@ import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { createRoutes } from '@/routes';
+import { appendEvents } from '@/events';
+import { projectPaths } from '@/projects';
 import { errorMiddleware } from '@/errors';
 
 let tmpDir: string;
@@ -110,6 +112,51 @@ describe('AI 对话路由（Sprint 2）', () => {
     expect(res.status).toBe(401);
   });
 
+  it('POST /api/ai/conversations 拒绝非法需求 ID', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/ai/conversations?project=default')
+        .send({ requirementId: 'BAD-001' })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_REQUIREMENT_ID');
+  });
+
+  it('POST /api/ai/conversations 拒绝绑定不存在的需求', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/ai/conversations?project=default')
+        .send({ requirementId: 'REQ-9999' })
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('AI_REQUIREMENT_NOT_FOUND');
+  });
+
+  it('POST /api/ai/conversations 允许绑定当前项目已存在需求', async () => {
+    const paths = projectPaths(tmpDir, 'default');
+    appendEvents(paths.eventsPath, [
+      {
+        eventId: 'E1',
+        ts: 100,
+        kind: 'req.new',
+        requirementId: 'REQ-0001',
+        title: '登录页',
+        summary: '最小登录体验'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/ai/conversations?project=default')
+        .send({ requirementId: 'REQ-0001' })
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.conversation.requirementId).toBe('REQ-0001');
+  });
+
   it('POST 流式：SSE 事件序列正确', async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
@@ -179,7 +226,10 @@ describe('AI 对话路由（Sprint 2）', () => {
   });
 
   it('POST 同步：返回完整 assistant 消息', async () => {
-    const fetchMock = vi.fn(async () => ({
+    let capturedBody: { messages?: Array<{ role: string; content: string }> } | undefined;
+    const fetchMock = vi.fn(async (_url: unknown, init: { body?: string }) => {
+      capturedBody = init.body ? JSON.parse(init.body) : undefined;
+      return {
       ok: true,
       status: 200,
       text: async () =>
@@ -187,7 +237,8 @@ describe('AI 对话路由（Sprint 2）', () => {
           choices: [{ message: { role: 'assistant', content: '同步答复' } }],
           usage: { prompt_tokens: 2, completion_tokens: 4, total_tokens: 6 }
         })
-    }));
+      };
+    });
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const create = await authReq(
@@ -203,6 +254,8 @@ describe('AI 对话路由（Sprint 2）', () => {
     expect(res.status).toBe(200);
     expect(res.body.assistantMessage.content).toBe('同步答复');
     expect(res.body.usage.totalTokens).toBe(6);
+    expect(capturedBody?.messages?.[0]?.content).toContain('## 当前项目');
+    expect(capturedBody?.messages?.[0]?.content).toContain('default');
   });
 
   it('流式：忽略客户端 Key 头并使用服务器账号 key', async () => {

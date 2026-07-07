@@ -93,7 +93,7 @@ function createConversation(rootDir, projectId, input) {
         (id, user_id, project_id, requirement_id, title, model, account_id, created_at, updated_at)
       VALUES (@id, @user_id, @project_id, @requirement_id, @title, @model, @account_id, @created_at, @updated_at)
     `).run(conv);
-    return conv;
+    return rowToConversation(conv);
   } finally {
     db.close();
   }
