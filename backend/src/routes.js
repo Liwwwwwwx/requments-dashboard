@@ -24,6 +24,7 @@ const V2_REQUIREMENT_STATUSES = new Set(["todo", "doing", "blocked", "done"]);
 const V2_PRIORITIES = new Set(["P0", "P1", "P2"]);
 const V2_REQUIREMENT_HISTORY_KINDS = new Set(["req.new", "req.status", "req.patch", "note.add"]);
 const V2_REQUIREMENT_EVENT_KINDS = new Set(["req.status", "req.patch", "note.add"]);
+const V2_PROJECT_EVENT_KINDS = new Set(["req.new", "req.status", "req.patch", "note.add"]);
 
 function createRoutes(rootDir) {
   const router = express.Router();
@@ -118,6 +119,43 @@ function createRoutes(rootDir) {
         }
         const status = assertV2Status(event.status, next);
         if (!status) return false;
+      }
+      if (event.kind === "req.patch") {
+        if (event.status !== undefined && !assertV2Status(event.status, next)) return false;
+        if (event.priority !== undefined && !assertV2Priority(event.priority, next)) return false;
+      }
+      if (event.kind === "note.add" && !String(event.text || "").trim()) {
+        next(httpError(400, "EMPTY_NOTE", "备注内容不能为空"));
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function validateV2ProjectEvents(events, next) {
+    for (const event of events) {
+      if (!V2_PROJECT_EVENT_KINDS.has(event.kind)) {
+        next(httpError(400, "INVALID_PROJECT_EVENT_KIND", "项目事件仅支持 req.new、req.status、req.patch、note.add"));
+        return false;
+      }
+      if (!event.requirementId) {
+        next(httpError(400, "MISSING_REQUIREMENT_ID", "项目事件必须包含 requirementId"));
+        return false;
+      }
+      if (event.kind === "req.new") {
+        if (!String(event.title || "").trim()) {
+          next(httpError(400, "MISSING_TITLE", "新建需求事件必须包含标题"));
+          return false;
+        }
+        if (event.status !== undefined && !assertV2Status(event.status, next)) return false;
+        if (event.priority !== undefined && !assertV2Priority(event.priority, next)) return false;
+      }
+      if (event.kind === "req.status") {
+        if (event.status === undefined) {
+          next(httpError(400, "MISSING_STATUS", "状态变更事件必须包含 status"));
+          return false;
+        }
+        if (!assertV2Status(event.status, next)) return false;
       }
       if (event.kind === "req.patch") {
         if (event.status !== undefined && !assertV2Status(event.status, next)) return false;
@@ -425,6 +463,7 @@ function createRoutes(rootDir) {
     if (list.length === 0) {
       return next(httpError(400, "EMPTY_EVENTS", "事件列表为空"));
     }
+    if (!validateV2ProjectEvents(list, next)) return;
 
     const actor = req.headers["x-actor"] || req.socket.remoteAddress || "http";
     const stamped = list.map((e) => ({ ...e, actor: e.actor || actor }));

@@ -291,8 +291,54 @@ describe('POST /api/projects/:project/events', () => {
     );
     expect(res.status).toBe(400);
     expect(res.body.ok).toBe(false);
-    expect(res.body.code).toBe('BAD_REQUEST');
+    expect(res.body.code).toBe('MISSING_REQUIREMENT_ID');
     expect(typeof res.body.message).toBe('string');
+  });
+
+  it('rejects non-MVP task events at project event write boundary', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/p4/events')
+        .send({
+          events: [
+            {
+              kind: 'task.new',
+              requirementId: 'REQ-0001',
+              taskId: 'FE-1',
+              title: '旧版任务'
+            }
+          ]
+        })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      ok: false,
+      code: 'INVALID_PROJECT_EVENT_KIND'
+    });
+  });
+
+  it('validates V2 fields at project event write boundary', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/p5/events')
+        .send({
+          events: [
+            {
+              kind: 'req.new',
+              requirementId: 'REQ-0001',
+              title: '登录',
+              priority: 'P9'
+            }
+          ]
+        })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      ok: false,
+      code: 'INVALID_PRIORITY'
+    });
   });
 });
 

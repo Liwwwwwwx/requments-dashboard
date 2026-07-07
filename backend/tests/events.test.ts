@@ -45,6 +45,16 @@ describe('readEvents', () => {
     const events = readEvents(p);
     expect(events.map((e) => e.eventId)).toEqual(['b', 'a']);
   });
+
+  it('preserves insert order for events with the same ts', () => {
+    const p = path.join(tmpDir, 'events.db');
+    appendEvents(p, [
+      { eventId: 'a', ts: 100, kind: 'req.new', requirementId: 'REQ-0001', title: 't', summary: 's' },
+      { eventId: 'b', ts: 100, kind: 'note.add', requirementId: 'REQ-0001', text: 'note' }
+    ]);
+    const events = readEvents(p);
+    expect(events.map((e) => e.eventId)).toEqual(['a', 'b']);
+  });
 });
 
 describe('appendEvents', () => {
