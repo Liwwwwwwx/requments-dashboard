@@ -1309,13 +1309,7 @@ describe('GET /api/projects/:project/events', () => {
 });
 
 describe('POST /api/projects/:project/render', () => {
-  it('returns 404 when project missing', async () => {
-    const res = await authReq(request(makeApp()).post('/api/projects/missing/render').send({}));
-    expect(res.status).toBe(404);
-    expect(res.body.code).toBe('PROJECT_NOT_FOUND');
-  });
-
-  it('rebuilds state.json for an existing project', async () => {
+  it('does not expose the legacy render endpoint in V2', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'p4'), { recursive: true });
     const paths = projectPaths(tmpDir, 'p4');
     appendEvents(paths.eventsPath, [
@@ -1328,8 +1322,6 @@ describe('POST /api/projects/:project/render', () => {
       }
     ]);
     const res = await authReq(request(makeApp()).post('/api/projects/p4/render').send({}));
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-    expect(res.body.items).toBe(1);
+    expect(res.status).toBe(404);
   });
 });

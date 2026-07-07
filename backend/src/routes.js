@@ -628,15 +628,6 @@ function createRoutes(rootDir) {
     return res.json({ ok: true, appended: stamped.length, items: state.items.length, updatedAt: state.updatedAt });
   });
 
-  router.post("/projects/:project/render", (req, res, next) => {
-    const paths = projectPaths(rootDir, req.params.project);
-    if (!fs.existsSync(paths.eventsPath)) {
-      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
-    }
-    const state = withLock(paths.lockPath, () => render(paths));
-    return res.json({ ok: true, items: state.items.length, updatedAt: state.updatedAt });
-  });
-
   return router;
 }
 
