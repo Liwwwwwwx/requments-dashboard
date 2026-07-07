@@ -205,7 +205,7 @@ describe('AI 对话路由（Sprint 2）', () => {
     expect(res.body.usage.totalTokens).toBe(6);
   });
 
-  it('流式：X-AI-Api-Key 头会覆盖账号里的 apiKey（per-user 隔离）', async () => {
+  it('流式：忽略客户端 Key 头并使用服务器账号 key', async () => {
     let capturedAuth: string | undefined;
     const fetchMock = vi.fn(async (_url: unknown, init: { headers: Record<string, string> }) => {
       capturedAuth = init.headers.Authorization;
@@ -232,7 +232,6 @@ describe('AI 对话路由（Sprint 2）', () => {
     );
     const convId = create.body.conversation.id;
 
-    // 用户发请求时带自己的 key
     await authReq(
       request(makeApp())
         .post(`/api/ai/conversations/${convId}/messages/stream?project=default`)
@@ -240,8 +239,7 @@ describe('AI 对话路由（Sprint 2）', () => {
         .send({ text: 'hi' })
     );
 
-    // 验证 fetch 收到的是用户的 key，而不是 accounts.json 里的 'sk-test'
-    expect(capturedAuth).toBe('Bearer sk-user-override');
+    expect(capturedAuth).toBe('Bearer sk-test');
   });
 
   it('PATCH /api/ai/conversations/:id 改名（含重名校验）', async () => {

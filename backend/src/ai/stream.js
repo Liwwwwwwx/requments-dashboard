@@ -38,18 +38,10 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
   const { mod: provider, key: resolvedProviderKey } = pickProvider(providerKey);
 
   const accounts = readAccounts(rootDir);
-  // 用户私有 key（per-user 隔离）：前端从 localStorage 读出，通过 X-AI-Api-Key 头传入。
-  // 优先于 accounts.json 里的 key。带了 header key 时账号不必预置 key，
-  // baseUrl / modelId 仍从 accounts.json 拿。
-  const userKey = String(req.headers["x-ai-api-key"] || "").trim();
   const account = selectAccount(accounts, {
     provider: providerKey,
-    accountId: body?.accountId || conv.accountId,
-    requireApiKey: !userKey
+    accountId: body?.accountId || conv.accountId
   });
-  if (userKey) {
-    account.apiKey = userKey;
-  }
 
   // 1. 落库 user 消息
   const userMsg = store.appendMessage(rootDir, projectId, {

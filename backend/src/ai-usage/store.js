@@ -3,9 +3,9 @@
 /**
  * AI 账号存储。
  *
- * 只负责持久化 chat 需要的账号配置（provider / baseUrl / modelId），
- * 供 provider.selectAccount 选账号用。API Key 走 per-user 的 X-AI-Api-Key
- * 头（存浏览器 localStorage），不在这里共享持久化。
+ * 只负责读取 chat 需要的账号配置（provider / baseUrl / modelId / apiKey），
+ * 供 provider.selectAccount 选账号用。服务器可通过 DEEPSEEK_API_KEY
+ * 为默认 DeepSeek 账号注入 key，前端不持有模型 key。
  *
  * 余额/额度同步、快照、chat 用量聚合等已移除。
  */
@@ -60,7 +60,13 @@ function readJson(filePath, fallback) {
 
 function readAccounts(rootDir) {
   const paths = ensureStore(rootDir);
-  return readJson(paths.accountsPath, []);
+  const accounts = readJson(paths.accountsPath, []);
+  const deepseekKey = String(process.env.DEEPSEEK_API_KEY || "").trim();
+  if (!deepseekKey) return accounts;
+  return accounts.map((account) => {
+    if (account.provider !== "deepseek" || account.apiKey) return account;
+    return { ...account, apiKey: deepseekKey };
+  });
 }
 
 module.exports = {

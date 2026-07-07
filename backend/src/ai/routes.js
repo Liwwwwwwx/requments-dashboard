@@ -215,16 +215,10 @@ function createAiRoutes(rootDir) {
       const { mod: provider } = pickProvider(providerKey);
 
       const accounts = readAccounts(rootDir);
-      // 用户私有 key（per-user 隔离）：带了 header key 时账号不必预置 key
-      const userKey = String(req.headers["x-ai-api-key"] || "").trim();
       const account = selectAccount(accounts, {
         provider: providerKey,
-        accountId: req.body?.accountId || conv.accountId,
-        requireApiKey: !userKey
+        accountId: req.body?.accountId || conv.accountId
       });
-      if (userKey) {
-        account.apiKey = userKey;
-      }
 
       const userMsg = store.appendMessage(rootDir, projectId, {
         conversationId: conv.id,
