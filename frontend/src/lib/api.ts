@@ -4,7 +4,10 @@ import type {
   DashboardSummary,
   EventInput,
   Project,
-  ProjectEventsResponse
+  ProjectEventsResponse,
+  Requirement,
+  RequirementStatus,
+  Priority
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api';
@@ -43,6 +46,48 @@ export async function listProjects(): Promise<{ ok: true; projects: Project[] }>
 
 export async function fetchState(project: string): Promise<BoardState> {
   return fetchJson(`/projects/${encodeURIComponent(project)}/state`);
+}
+
+export async function listRequirements(
+  project: string
+): Promise<{ ok: true; project: string; requirements: Requirement[] }> {
+  return fetchJson(`/projects/${encodeURIComponent(project)}/requirements`);
+}
+
+export async function createRequirement(
+  project: string,
+  input: {
+    title: string;
+    description?: string;
+    priority?: Priority;
+    owner?: string;
+  }
+): Promise<{ ok: true; project: string; requirement: Requirement; event?: EventInput }> {
+  return fetchJson(`/projects/${encodeURIComponent(project)}/requirements`, {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+export async function updateRequirement(
+  project: string,
+  requirementId: string,
+  input: {
+    title?: string;
+    description?: string;
+    summary?: string;
+    status?: RequirementStatus;
+    priority?: Priority;
+    owner?: string;
+  }
+): Promise<{ ok: true; project: string; requirement: Requirement; appended: number }> {
+  return fetchJson(
+    `/projects/${encodeURIComponent(project)}/requirements/${encodeURIComponent(requirementId)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input)
+    }
+  );
 }
 
 export async function renderState(

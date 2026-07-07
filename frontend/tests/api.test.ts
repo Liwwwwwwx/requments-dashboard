@@ -1,5 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { ApiError, fetchState, listProjects } from '@/lib/api';
+import {
+  ApiError,
+  createRequirement,
+  fetchState,
+  listProjects,
+  listRequirements,
+  updateRequirement
+} from '@/lib/api';
 
 const fetchMock = vi.fn();
 
@@ -64,5 +71,61 @@ describe('api client', () => {
       text: async () => 'boom'
     });
     await expect(fetchState('boom')).rejects.toThrow(/HTTP 500/);
+  });
+
+  it('lists requirements through the V2 endpoint', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      text: async () => JSON.stringify({ ok: true, project: 'default', requirements: [] })
+    });
+
+    const result = await listRequirements('default');
+
+    expect(result.requirements).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledWith('/api/projects/default/requirements', expect.any(Object));
+  });
+
+  it('creates a requirement through the V2 endpoint', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      headers: { get: () => 'application/json' },
+      text: async () => JSON.stringify({ ok: true, requirement: { id: 'REQ-0001', title: '需求' } })
+    });
+
+    await createRequirement('default', {
+      title: '需求',
+      description: '描述',
+      priority: 'P1',
+      owner: 'pm'
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/projects/default/requirements', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({
+        title: '需求',
+        description: '描述',
+        priority: 'P1',
+        owner: 'pm'
+      })
+    }));
+  });
+
+  it('updates a requirement through the V2 endpoint', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      text: async () => JSON.stringify({ ok: true, requirement: { id: 'REQ-0001', status: 'blocked' } })
+    });
+
+    await updateRequirement('default', 'REQ-0001', { status: 'blocked' });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/projects/default/requirements/REQ-0001', expect.objectContaining({
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'blocked' })
+    }));
   });
 });
