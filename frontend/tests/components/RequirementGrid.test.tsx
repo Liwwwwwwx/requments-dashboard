@@ -22,7 +22,6 @@ function makeRequirement(
 ): Requirement {
   return {
     ...input,
-    feature: 'core',
     type: 'feature',
     week: '2026-W28',
     updatedAt: '2026-07-07',

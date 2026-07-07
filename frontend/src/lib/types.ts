@@ -21,7 +21,6 @@ export interface Note {
 
 export interface Requirement {
   id: string;
-  feature?: string;
   title: string;
   type?: string;
   status: RequirementStatus;

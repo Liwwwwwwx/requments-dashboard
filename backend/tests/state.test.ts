@@ -14,6 +14,7 @@ describe('buildState', () => {
       {
         kind: 'req.new',
         requirementId: 'REQ-0001',
+        feature: 'legacy-category',
         title: '登录',
         summary: '用户登录',
         requirementType: 'feature',
@@ -34,6 +35,7 @@ describe('buildState', () => {
     expect(req.createdBy).toBe('a');
     expect(req.createdAt).toBe('2026-07-07');
     expect(req.updatedAt).toBe('2026-07-07');
+    expect(req).not.toHaveProperty('feature');
     expect(req).not.toHaveProperty('workflowStatus');
     expect(req).not.toHaveProperty('type');
     expect(req).not.toHaveProperty('week');

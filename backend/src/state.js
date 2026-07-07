@@ -233,7 +233,6 @@ function buildState(events) {
     .map((item) => {
       return {
         id: item.id,
-        feature: item.feature,
         title: item.title,
         status: item.status,
         owner: item.owner,

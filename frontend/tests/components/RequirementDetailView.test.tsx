@@ -44,7 +44,6 @@ vi.mock('@/lib/api', () => ({
 
 const requirement: Requirement = {
   id: 'REQ-0001',
-  feature: 'auth',
   title: '登录页',
   type: 'feature',
   status: 'todo',

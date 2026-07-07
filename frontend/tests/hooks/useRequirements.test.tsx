@@ -17,7 +17,6 @@ vi.mock('@/lib/api', async (importOriginal) => {
 function requirement(input: Partial<Requirement> & Pick<Requirement, 'id' | 'title'>): Requirement {
   return {
     id: input.id,
-    feature: 'core',
     title: input.title,
     type: 'feature',
     status: input.status || 'todo',

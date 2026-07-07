@@ -92,7 +92,6 @@ describe('AppShell', () => {
   it('详情深链在列表缺失时兜底加载当前需求', async () => {
     const requirement: Requirement = {
       id: 'REQ-0001',
-      feature: 'auth',
       title: '登录页',
       type: 'feature',
       status: 'todo',
