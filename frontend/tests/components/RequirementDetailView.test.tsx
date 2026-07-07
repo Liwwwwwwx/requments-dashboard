@@ -183,6 +183,23 @@ describe('RequirementDetailView', () => {
     expect(screen.queryByText('open')).not.toBeInTheDocument();
   });
 
+  it('不展示旧版类型周期和截止字段', async () => {
+    render(
+      <RequirementDetailView
+        item={{ ...requirement, dueDate: '2026-07-31' }}
+        project="alpha"
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+    expect(screen.queryByText('feature')).not.toBeInTheDocument();
+    expect(screen.queryByText('2026-W28')).not.toBeInTheDocument();
+    expect(screen.queryByText('截止')).not.toBeInTheDocument();
+    expect(screen.queryByText('2026-07-31')).not.toBeInTheDocument();
+  });
+
   it('不展示旧版任务列表和任务统计', async () => {
     render(
       <RequirementDetailView

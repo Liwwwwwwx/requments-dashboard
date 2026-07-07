@@ -291,8 +291,6 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
             <span className="chip-dot" />
             {status.label}
           </span>
-          {item.type && <span className="chip">{item.type}</span>}
-          {item.week && <span className="chip chip-mono">{item.week}</span>}
         </div>
         <div className="view-detail-meta">
           <span className="kv">
@@ -318,15 +316,6 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
             <span className="k">更新时间</span>
             <span className="v">{item.updatedAt || '-'}</span>
           </span>
-          {item.dueDate && (
-            <>
-              <span className="dot">·</span>
-              <span className="kv">
-                <span className="k">截止</span>
-                <span className="v">{item.dueDate}</span>
-              </span>
-            </>
-          )}
         </div>
       </header>
 
