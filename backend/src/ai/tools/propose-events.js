@@ -12,6 +12,8 @@ const { validateEvent } = require("../../schema");
 const ALLOWED_PROPOSAL_KINDS = new Set(["req.status", "req.patch", "note.add"]);
 const ALLOWED_REQUIREMENT_STATUSES = new Set(["todo", "doing", "blocked", "done"]);
 const ALLOWED_PRIORITIES = new Set(["P0", "P1", "P2"]);
+const DETAIL_STRING_FIELDS = ["goal", "next"];
+const DETAIL_STRING_LIST_FIELDS = ["scope", "nonGoals"];
 
 const PROPOSE_EVENTS_TOOL = {
   type: "function",
@@ -63,6 +65,27 @@ const PROPOSE_EVENTS_TOOL = {
  * 校验模型 propose 的事件，确保它们能通过 schema.js 的运行时校验。
  * 返回 { valid: boolean, events?: any[], errors?: string[] }
  */
+function isStringList(value) {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function validateDetail(detail) {
+  if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
+    return "req.patch.detail 必须是对象";
+  }
+  for (const field of DETAIL_STRING_FIELDS) {
+    if (detail[field] !== undefined && typeof detail[field] !== "string") {
+      return `req.patch.detail.${field} 必须是字符串`;
+    }
+  }
+  for (const field of DETAIL_STRING_LIST_FIELDS) {
+    if (detail[field] !== undefined && !isStringList(detail[field])) {
+      return `req.patch.detail.${field} 必须是字符串数组`;
+    }
+  }
+  return null;
+}
+
 function validateProposedEvents(events) {
   if (!Array.isArray(events)) {
     return { valid: false, errors: ["events 必须是数组"] };
@@ -95,6 +118,17 @@ function validateProposedEvents(events) {
       }
       if (raw.priority !== undefined && !ALLOWED_PRIORITIES.has(raw.priority)) {
         errors.push(`events[${i}]: req.patch.priority 必须是 P0 / P1 / P2 之一`);
+        continue;
+      }
+      if (raw.detail !== undefined) {
+        const detailError = validateDetail(raw.detail);
+        if (detailError) {
+          errors.push(`events[${i}]: ${detailError}`);
+          continue;
+        }
+      }
+      if (raw.acceptance !== undefined && !isStringList(raw.acceptance)) {
+        errors.push(`events[${i}]: req.patch.acceptance 必须是字符串数组`);
         continue;
       }
     }

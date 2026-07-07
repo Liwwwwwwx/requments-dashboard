@@ -51,6 +51,30 @@ describe('ai/tools/propose-events', () => {
     expect(r.errors[4]).toContain('title');
   });
 
+  it('validateProposedEvents 拒绝非法详情和验收点结构', () => {
+    const r = validateProposedEvents([
+      {
+        kind: 'req.patch',
+        requirementId: 'REQ-0001',
+        detail: {
+          goal: '补齐登录体验',
+          scope: ['用户名密码登录', 123],
+          nonGoals: ['注册']
+        }
+      },
+      {
+        kind: 'req.patch',
+        requirementId: 'REQ-0001',
+        acceptance: ['登录成功后进入项目页', { text: '非法验收点' }]
+      }
+    ]);
+
+    expect(r.valid).toBe(false);
+    expect(r.errors).toHaveLength(2);
+    expect(r.errors[0]).toContain('detail.scope');
+    expect(r.errors[1]).toContain('acceptance');
+  });
+
   it('validateProposedEvents 拒绝非数组', () => {
     const r = validateProposedEvents('not-array');
     expect(r.valid).toBe(false);
