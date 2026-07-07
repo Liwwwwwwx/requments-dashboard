@@ -77,6 +77,7 @@ export function RequirementGrid({
   const owners = useMemo(() => unique(data.items.map((item) => item.owner)), [data.items]);
 
   const isInitialLoading = !!loading && data.items.length === 0;
+  const isProjectEmpty = !isInitialLoading && data.items.length === 0;
   const open = (id: string) => router.push(`/p/${project}/r/${id}`);
 
   const updateFilters = (patch: Partial<Filters>) => {
@@ -180,21 +181,36 @@ export function RequirementGrid({
         </div>
       </div>
 
-      {activeView === 'board' && (
-        <BoardColumns
-          items={items}
-          selectedId={selectedId}
-          isInitialLoading={isInitialLoading}
-          onOpen={open}
-        />
-      )}
-      {activeView === 'list' && (
-        <ListView
-          items={items}
-          selectedId={selectedId}
-          isInitialLoading={isInitialLoading}
-          onOpen={open}
-        />
+      {isProjectEmpty ? (
+        <section className="requirements-empty">
+          <div className="requirements-empty-inner">
+            <div className="requirements-empty-kicker">需求看板</div>
+            <h2>这个项目还没有需求</h2>
+            <p>先创建第一条需求，后续可以在详情页维护状态、备注、变更历史，并让 AI 小助手基于当前项目提供建议。</p>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+              新建需求
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <>
+          {activeView === 'board' && (
+            <BoardColumns
+              items={items}
+              selectedId={selectedId}
+              isInitialLoading={isInitialLoading}
+              onOpen={open}
+            />
+          )}
+          {activeView === 'list' && (
+            <ListView
+              items={items}
+              selectedId={selectedId}
+              isInitialLoading={isInitialLoading}
+              onOpen={open}
+            />
+          )}
+        </>
       )}
       <Modal
         title="新建需求"

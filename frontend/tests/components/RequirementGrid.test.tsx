@@ -84,6 +84,19 @@ function GridHarness() {
   );
 }
 
+function EmptyGridHarness() {
+  const [filters, setFilters] = useState(initialFilters);
+  return (
+    <RequirementGrid
+      data={{ updatedAt: '', statuses: [], items: [] }}
+      project="alpha"
+      filters={filters}
+      onFiltersChange={setFilters}
+      selectedId={null}
+    />
+  );
+}
+
 describe('RequirementGrid', () => {
   beforeEach(() => {
     vi.mocked(createRequirement).mockReset();
@@ -160,5 +173,19 @@ describe('RequirementGrid', () => {
         owner: 'pm'
       });
     });
+  });
+
+  it('项目没有需求时展示创建第一条需求引导', () => {
+    render(<EmptyGridHarness />);
+
+    expect(screen.getByRole('heading', { name: '这个项目还没有需求' })).toBeInTheDocument();
+    expect(screen.getByText(/详情页维护状态、备注、变更历史/)).toBeInTheDocument();
+
+    const emptyState = screen.getByText('这个项目还没有需求').closest('.requirements-empty');
+    expect(emptyState).toBeTruthy();
+    fireEvent.click(within(emptyState as HTMLElement).getByRole('button', { name: /新建需求/ }));
+
+    expect(screen.getByRole('dialog', { name: '新建需求' })).toBeInTheDocument();
+    expect(screen.getByLabelText('标题')).toBeInTheDocument();
   });
 });
