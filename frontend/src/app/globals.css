@@ -490,7 +490,7 @@ body {
 
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 720px);
   gap: 16px;
 }
 
@@ -498,16 +498,6 @@ body {
   border-color: var(--border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-}
-
-.settings-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.settings-tags .ant-tag {
-  margin: 0;
 }
 
 .settings-form {
@@ -532,13 +522,6 @@ body {
 .settings-updated {
   font-size: 12px;
   color: var(--text-tertiary);
-}
-
-.settings-note {
-  margin: 14px 0 0;
-  color: var(--text-tertiary);
-  font-size: 13px;
-  line-height: 1.7;
 }
 
 /* =========================================================
