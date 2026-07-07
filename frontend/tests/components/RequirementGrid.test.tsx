@@ -1,14 +1,19 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RequirementGrid } from '@/components/RequirementGrid';
+import { createRequirement } from '@/lib/api';
 import type { BoardState, Filters, Requirement } from '@/lib/types';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn()
   })
+}));
+
+vi.mock('@/lib/api', () => ({
+  createRequirement: vi.fn()
 }));
 
 function makeRequirement(
@@ -80,6 +85,10 @@ function GridHarness() {
 }
 
 describe('RequirementGrid', () => {
+  beforeEach(() => {
+    vi.mocked(createRequirement).mockReset();
+  });
+
   it('按状态、优先级和负责人筛选需求', () => {
     render(<GridHarness />);
 
@@ -102,5 +111,54 @@ describe('RequirementGrid', () => {
     fireEvent.change(screen.getByLabelText('状态'), { target: { value: 'blocked' } });
     expect(screen.queryByText('登录')).not.toBeInTheDocument();
     expect(screen.getByText('项目列表')).toBeInTheDocument();
+  });
+
+  it('新建需求时提交状态、优先级和负责人', async () => {
+    vi.mocked(createRequirement).mockResolvedValue({
+      ok: true,
+      project: 'alpha',
+      requirement: makeRequirement({
+        id: 'REQ-0004',
+        title: '需求详情',
+        status: 'blocked',
+        priority: 'P0',
+        owner: 'pm'
+      })
+    });
+
+    render(<GridHarness />);
+
+    fireEvent.click(screen.getByRole('button', { name: /新建需求/ }));
+    const dialog = screen.getByRole('dialog', { name: '新建需求' });
+
+    fireEvent.change(within(dialog).getByLabelText('标题'), {
+      target: { value: '需求详情' }
+    });
+    fireEvent.change(within(dialog).getByLabelText('描述'), {
+      target: { value: '编辑基础字段和备注' }
+    });
+    fireEvent.change(within(dialog).getByLabelText('负责人'), {
+      target: { value: 'pm' }
+    });
+
+    fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[0]);
+    const blockedOptions = await screen.findAllByText('阻塞');
+    fireEvent.click(blockedOptions[blockedOptions.length - 1]);
+
+    fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[1]);
+    const p0Options = await screen.findAllByText('P0');
+    fireEvent.click(p0Options[p0Options.length - 1]);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /创\s*建/ }));
+
+    await waitFor(() => {
+      expect(createRequirement).toHaveBeenCalledWith('alpha', {
+        title: '需求详情',
+        description: '编辑基础字段和备注',
+        status: 'blocked',
+        priority: 'P0',
+        owner: 'pm'
+      });
+    });
   });
 });

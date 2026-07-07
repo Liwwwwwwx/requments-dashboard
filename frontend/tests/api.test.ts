@@ -210,6 +210,7 @@ describe('api client', () => {
     await createRequirement('default', {
       title: '需求',
       description: '描述',
+      status: 'doing',
       priority: 'P1',
       owner: 'pm'
     });
@@ -219,6 +220,7 @@ describe('api client', () => {
       body: JSON.stringify({
         title: '需求',
         description: '描述',
+        status: 'doing',
         priority: 'P1',
         owner: 'pm'
       })

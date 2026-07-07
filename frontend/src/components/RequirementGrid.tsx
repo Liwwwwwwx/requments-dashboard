@@ -24,6 +24,7 @@ interface Props {
 interface CreateRequirementForm {
   title: string;
   description?: string;
+  status: RequirementStatus;
   priority: Priority;
   owner?: string;
 }
@@ -208,7 +209,7 @@ export function RequirementGrid({
         <Form
           form={form}
           layout="vertical"
-          initialValues={{ priority: 'P1' }}
+          initialValues={{ status: 'todo', priority: 'P1' }}
           preserve={false}
         >
           <Form.Item
@@ -221,8 +222,24 @@ export function RequirementGrid({
           <Form.Item label="描述" name="description">
             <Input.TextArea rows={4} placeholder="补充背景、目标或范围" />
           </Form.Item>
+          <Form.Item
+            label="状态"
+            name="status"
+            rules={[{ required: true, message: '请选择状态' }]}
+          >
+            <Select
+              aria-label="状态"
+              options={[
+                { value: 'todo', label: '待开始' },
+                { value: 'doing', label: '进行中' },
+                { value: 'blocked', label: '阻塞' },
+                { value: 'done', label: '完成' }
+              ]}
+            />
+          </Form.Item>
           <Form.Item label="优先级" name="priority">
             <Select
+              aria-label="优先级"
               options={[
                 { value: 'P0', label: 'P0' },
                 { value: 'P1', label: 'P1' },
