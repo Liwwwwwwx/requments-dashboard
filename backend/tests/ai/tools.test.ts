@@ -38,15 +38,17 @@ describe('ai/tools/propose-events', () => {
       { kind: 'req.status', requirementId: 'BAD', status: 'doing' },
       { kind: 'note.add', requirementId: 'REQ-0001' },
       { kind: 'req.status', requirementId: 'REQ-0001' },
-      { kind: 'req.patch', requirementId: 'REQ-0001', priority: 'P9' }
+      { kind: 'req.patch', requirementId: 'REQ-0001', priority: 'P9' },
+      { kind: 'req.patch', requirementId: 'REQ-0001', title: '   ' }
     ];
     const r = validateProposedEvents(events);
     expect(r.valid).toBe(false);
-    expect(r.errors).toHaveLength(4);
+    expect(r.errors).toHaveLength(5);
     expect(r.errors[0]).toContain('requirementId');
     expect(r.errors[1]).toContain('text');
     expect(r.errors[2]).toContain('status');
     expect(r.errors[3]).toContain('priority');
+    expect(r.errors[4]).toContain('title');
   });
 
   it('validateProposedEvents 拒绝非数组', () => {

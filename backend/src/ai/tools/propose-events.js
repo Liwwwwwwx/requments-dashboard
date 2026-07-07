@@ -85,6 +85,10 @@ function validateProposedEvents(events) {
       continue;
     }
     if (raw.kind === "req.patch") {
+      if (raw.title !== undefined && !String(raw.title || "").trim()) {
+        errors.push(`events[${i}]: req.patch.title 不能为空`);
+        continue;
+      }
       if (raw.status !== undefined && !ALLOWED_REQUIREMENT_STATUSES.has(raw.status)) {
         errors.push(`events[${i}]: req.patch.status 必须是 todo / doing / blocked / done 之一`);
         continue;

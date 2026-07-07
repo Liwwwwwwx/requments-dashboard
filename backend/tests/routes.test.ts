@@ -571,6 +571,14 @@ describe('V2 requirement REST APIs', () => {
     );
     expect(invalidPriority.status).toBe(400);
     expect(invalidPriority.body.code).toBe('INVALID_PRIORITY');
+
+    const emptyTitle = await authReq(
+      request(makeApp())
+        .patch('/api/projects/v2/requirements/REQ-0001')
+        .send({ title: '   ' })
+    );
+    expect(emptyTitle.status).toBe(400);
+    expect(emptyTitle.body.code).toBe('MISSING_TITLE');
   });
 
   it('returns only V2 events for requirement history', async () => {
@@ -772,6 +780,14 @@ describe('V2 requirement REST APIs', () => {
     );
     expect(invalidPriority.status).toBe(400);
     expect(invalidPriority.body.code).toBe('INVALID_PRIORITY');
+
+    const emptyTitle = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({ kind: 'req.patch', title: '   ' })
+    );
+    expect(emptyTitle.status).toBe(400);
+    expect(emptyTitle.body.code).toBe('MISSING_TITLE');
   });
 });
 

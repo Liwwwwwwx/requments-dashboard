@@ -106,6 +106,15 @@ function createRoutes(rootDir) {
     return priority;
   }
 
+  function assertV2Title(value, next) {
+    const title = String(value || "").trim();
+    if (!title) {
+      next(httpError(400, "MISSING_TITLE", "需求标题不能为空"));
+      return null;
+    }
+    return title;
+  }
+
   function validateRequirementScopedEvents(events, next) {
     for (const event of events) {
       if (!V2_REQUIREMENT_EVENT_KINDS.has(event.kind)) {
@@ -121,6 +130,7 @@ function createRoutes(rootDir) {
         if (!status) return false;
       }
       if (event.kind === "req.patch") {
+        if (event.title !== undefined && !assertV2Title(event.title, next)) return false;
         if (event.status !== undefined && !assertV2Status(event.status, next)) return false;
         if (event.priority !== undefined && !assertV2Priority(event.priority, next)) return false;
       }
@@ -158,6 +168,7 @@ function createRoutes(rootDir) {
         if (!assertV2Status(event.status, next)) return false;
       }
       if (event.kind === "req.patch") {
+        if (event.title !== undefined && !assertV2Title(event.title, next)) return false;
         if (event.status !== undefined && !assertV2Status(event.status, next)) return false;
         if (event.priority !== undefined && !assertV2Priority(event.priority, next)) return false;
       }
@@ -256,7 +267,11 @@ function createRoutes(rootDir) {
     const actor = req.headers["x-actor"] || req.user?.username || "http";
     const events = [];
     const patch = {};
-    if (req.body.title !== undefined) patch.title = String(req.body.title).trim();
+    if (req.body.title !== undefined) {
+      const title = assertV2Title(req.body.title, next);
+      if (!title) return;
+      patch.title = title;
+    }
     if (req.body.description !== undefined) patch.summary = String(req.body.description).trim();
     if (req.body.summary !== undefined) patch.summary = String(req.body.summary).trim();
     if (req.body.priority !== undefined) {
