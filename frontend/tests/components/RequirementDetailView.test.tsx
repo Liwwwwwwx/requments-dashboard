@@ -112,6 +112,22 @@ describe('RequirementDetailView', () => {
     expect(screen.getByText('状态变更 → 阻塞')).toBeInTheDocument();
   });
 
+  it('不展示旧版工作流状态字段', async () => {
+    render(
+      <RequirementDetailView
+        item={requirement}
+        project="alpha"
+        taskItems={[]}
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+    expect(screen.queryByText('工作流')).not.toBeInTheDocument();
+    expect(screen.queryByText('open')).not.toBeInTheDocument();
+  });
+
   it('保存基础字段和状态后刷新详情', async () => {
     const onUpdated = vi.fn();
     vi.mocked(updateRequirement).mockResolvedValue({

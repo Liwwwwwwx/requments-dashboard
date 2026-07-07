@@ -335,15 +335,6 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
               </span>
             </>
           )}
-          {item.workflowStatus && (
-            <>
-              <span className="dot">·</span>
-              <span className="kv">
-                <span className="k">工作流</span>
-                <span className="v">{item.workflowStatus}</span>
-              </span>
-            </>
-          )}
         </div>
       </header>
 
