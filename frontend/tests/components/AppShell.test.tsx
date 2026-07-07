@@ -147,4 +147,22 @@ describe('AppShell', () => {
       expect(loadProjects).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('顶栏展示当前项目名称', () => {
+    vi.mocked(useRequirements).mockReturnValue({
+      project: 'alpha',
+      projects: [{ id: 'alpha', name: 'Alpha 项目' }],
+      data: { updatedAt: '', statuses: [], items: [] },
+      loading: false,
+      error: null,
+      refresh: vi.fn(),
+      loadState: vi.fn(),
+      loadProjects: vi.fn()
+    });
+
+    render(<AppShell project="alpha" />);
+
+    const projectScope = screen.getByLabelText('当前项目');
+    expect(within(projectScope).getByText('Alpha 项目')).toBeInTheDocument();
+  });
 });

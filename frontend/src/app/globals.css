@@ -316,6 +316,33 @@ body {
   color: var(--accent);
 }
 
+.topbar-project {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--text-tertiary);
+}
+
+.topbar-project-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.topbar-project-name {
+  min-width: 0;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
