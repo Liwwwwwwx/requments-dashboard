@@ -26,6 +26,7 @@ interface UseRequirementsResult {
   error: string | null;
   refresh: () => Promise<void>;
   loadState: () => Promise<void>;
+  loadProjects: () => Promise<void>;
 }
 
 const EMPTY_STATE: BoardState = { updatedAt: '', statuses: [], items: [] };
@@ -130,6 +131,7 @@ export function useRequirements({
     loading,
     error,
     refresh,
-    loadState
+    loadState,
+    loadProjects
   };
 }

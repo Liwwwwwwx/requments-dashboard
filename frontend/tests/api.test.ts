@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   ApiError,
+  createProject,
   createRequirement,
   fetchState,
   listProjects,
@@ -85,6 +86,23 @@ describe('api client', () => {
 
     expect(result.requirements).toEqual([]);
     expect(fetchMock).toHaveBeenCalledWith('/api/projects/default/requirements', expect.any(Object));
+  });
+
+  it('creates a project through the V2 endpoint', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      text: async () => JSON.stringify({ ok: true, project: { id: 'alpha', name: 'alpha' } })
+    });
+
+    const result = await createProject('alpha');
+
+    expect(result.project.id).toBe('alpha');
+    expect(fetchMock).toHaveBeenCalledWith('/api/projects', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ id: 'alpha' })
+    }));
   });
 
   it('creates a requirement through the V2 endpoint', async () => {

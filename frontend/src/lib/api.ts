@@ -45,6 +45,13 @@ export async function listProjects(): Promise<{ ok: true; projects: Project[] }>
   return fetchJson('/projects');
 }
 
+export async function createProject(id: string): Promise<{ ok: true; project: Project }> {
+  return fetchJson('/projects', {
+    method: 'POST',
+    body: JSON.stringify({ id })
+  });
+}
+
 export async function fetchState(project: string): Promise<BoardState> {
   return fetchJson(`/projects/${encodeURIComponent(project)}/state`);
 }

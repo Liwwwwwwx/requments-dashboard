@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
+import { Button, Form, Input, Modal, message } from 'antd';
 import type { Project, Requirement } from '@/lib/types';
 import { MODULE_NAV } from '@/lib/nav';
 
@@ -8,19 +10,48 @@ interface SidebarProps {
   projects: Project[];
   selectedItem: Requirement | null;
   onProjectChange?: (project: string) => void;
+  onProjectCreate?: (project: string) => Promise<void> | void;
 }
 
-export function Sidebar({ projects, selectedItem, onProjectChange }: SidebarProps) {
+interface ProjectForm {
+  id: string;
+}
+
+export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCreate }: SidebarProps) {
   const params = useParams<{ project?: string }>();
   const pathname = usePathname() || '';
   const router = useRouter();
+  const [form] = Form.useForm<ProjectForm>();
+  const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const currentProjectId = params?.project || 'default';
+
+  const handleCreate = async () => {
+    const values = await form.validateFields();
+    const id = values.id.trim();
+    setSaving(true);
+    try {
+      await onProjectCreate?.(id);
+      message.success('项目已创建');
+      setCreating(false);
+      form.resetFields();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '创建项目失败');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <aside className="sidenav">
       <div className="sidenav-scroll">
         <section className="sidenav-section">
-          <div className="sidenav-eyebrow">项目</div>
+          <div className="sidenav-section-head">
+            <div className="sidenav-eyebrow">项目</div>
+            <Button size="small" type="text" className="sidenav-create" onClick={() => setCreating(true)}>
+              创建项目
+            </Button>
+          </div>
           <nav className="sidenav-list">
             {projects.map((p) => {
               const active = currentProjectId === p.id;
@@ -77,6 +108,33 @@ export function Sidebar({ projects, selectedItem, onProjectChange }: SidebarProp
           </div>
         </div>
       )}
+
+      <Modal
+        title="创建项目"
+        open={creating}
+        onOk={() => void handleCreate()}
+        onCancel={() => setCreating(false)}
+        confirmLoading={saving}
+        okText="创建"
+        cancelText="取消"
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical" preserve={false}>
+          <Form.Item
+            label="项目 ID"
+            name="id"
+            rules={[
+              { required: true, whitespace: true, message: '请输入项目 ID' },
+              {
+                pattern: /^[a-zA-Z0-9_-]+$/,
+                message: '仅支持字母、数字、下划线和中划线'
+              }
+            ]}
+          >
+            <Input placeholder="例如 traceboard" autoFocus />
+          </Form.Item>
+        </Form>
+      </Modal>
     </aside>
   );
 }

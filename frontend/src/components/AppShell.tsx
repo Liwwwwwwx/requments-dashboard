@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Layout, Spin } from 'antd';
 import { useRequirements } from '@/hooks/useRequirements';
+import { createProject } from '@/lib/api';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './shell/TopBar';
 import { RequirementGrid } from './RequirementGrid';
@@ -29,7 +30,7 @@ interface Props {
 
 export function AppShell({ project, reqId, children }: Props) {
   const router = useRouter();
-  const { projects, data, taskItems, loading, error, refresh } = useRequirements({ project });
+  const { projects, data, taskItems, loading, error, refresh, loadProjects } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   const activeProject = project || 'default';
@@ -64,6 +65,12 @@ export function AppShell({ project, reqId, children }: Props) {
     router.push(`/p/${next}`);
   };
 
+  const handleProjectCreate = async (id: string) => {
+    const res = await createProject(id);
+    await loadProjects();
+    router.push(`/p/${res.project.id}`);
+  };
+
   return (
     <Layout className="app">
       <TopBar
@@ -77,7 +84,12 @@ export function AppShell({ project, reqId, children }: Props) {
       />
 
       <div className="layout">
-        <Sidebar projects={projects} selectedItem={selectedItem} onProjectChange={handleProjectChange} />
+        <Sidebar
+          projects={projects}
+          selectedItem={selectedItem}
+          onProjectChange={handleProjectChange}
+          onProjectCreate={handleProjectCreate}
+        />
         <Content className="main">
           {error && <Alert message={error} type="error" showIcon style={{ margin: 24 }} />}
           {children
