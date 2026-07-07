@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Layout, Spin } from 'antd';
+import { Alert, Button, Layout, Spin } from 'antd';
 import { useRequirements } from '@/hooks/useRequirements';
 import { createProject } from '@/lib/api';
 import { Sidebar } from './Sidebar';
@@ -30,6 +30,7 @@ export function AppShell({ project, reqId, children }: Props) {
   const router = useRouter();
   const { projects, data, loading, error, refresh, loadProjects } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [projectCreateOpen, setProjectCreateOpen] = useState(false);
 
   const activeProject = project || 'default';
 
@@ -58,6 +59,7 @@ export function AppShell({ project, reqId, children }: Props) {
   }, [data.items, reqId]);
 
   const total = (data.items || []).length;
+  const hasNoProjects = !loading && projects.length === 0;
 
   const handleProjectChange = (next: string) => {
     router.push(`/p/${next}`);
@@ -90,11 +92,26 @@ export function AppShell({ project, reqId, children }: Props) {
           selectedItem={selectedItem}
           onProjectChange={handleProjectChange}
           onProjectCreate={handleProjectCreate}
+          createOpen={projectCreateOpen}
+          onCreateOpenChange={setProjectCreateOpen}
         />
         <Content className="main">
           {error && <Alert message={error} type="error" showIcon style={{ margin: 24 }} />}
           {children
             ? children
+            : hasNoProjects
+              ? (
+                <div className="first-project-empty">
+                  <div className="first-project-empty-inner">
+                    <div className="first-project-empty-kicker">项目</div>
+                    <h2>还没有项目</h2>
+                    <p>先创建一个项目，之后需求看板、需求详情和 AI 小助手都会围绕当前项目工作。</p>
+                    <Button type="primary" onClick={() => setProjectCreateOpen(true)}>
+                      创建项目
+                    </Button>
+                  </div>
+                </div>
+              )
             : reqId
               ? (
                 <Spin spinning={loading}>

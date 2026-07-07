@@ -11,6 +11,8 @@ interface SidebarProps {
   selectedItem: Requirement | null;
   onProjectChange?: (project: string) => void;
   onProjectCreate?: (project: ProjectForm) => Promise<void> | void;
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
 }
 
 interface ProjectForm {
@@ -19,7 +21,14 @@ interface ProjectForm {
   description?: string;
 }
 
-export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCreate }: SidebarProps) {
+export function Sidebar({
+  projects,
+  selectedItem,
+  onProjectChange,
+  onProjectCreate,
+  createOpen,
+  onCreateOpenChange
+}: SidebarProps) {
   const params = useParams<{ project?: string }>();
   const pathname = usePathname() || '';
   const router = useRouter();
@@ -27,6 +36,12 @@ export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCrea
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const currentProjectId = params?.project || 'default';
+  const isCreating = createOpen ?? creating;
+
+  const setCreateOpen = (open: boolean) => {
+    if (onCreateOpenChange) onCreateOpenChange(open);
+    else setCreating(open);
+  };
 
   const handleCreate = async () => {
     const values = await form.validateFields();
@@ -39,7 +54,7 @@ export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCrea
     try {
       await onProjectCreate?.(input);
       message.success('项目已创建');
-      setCreating(false);
+      setCreateOpen(false);
       form.resetFields();
     } catch (error) {
       message.error(error instanceof Error ? error.message : '创建项目失败');
@@ -54,7 +69,7 @@ export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCrea
         <section className="sidenav-section">
           <div className="sidenav-section-head">
             <div className="sidenav-eyebrow">项目</div>
-            <Button size="small" type="text" className="sidenav-create" onClick={() => setCreating(true)}>
+            <Button size="small" type="text" className="sidenav-create" onClick={() => setCreateOpen(true)}>
               创建项目
             </Button>
           </div>
@@ -120,9 +135,9 @@ export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCrea
 
       <Modal
         title="创建项目"
-        open={creating}
+        open={isCreating}
         onOk={() => void handleCreate()}
-        onCancel={() => setCreating(false)}
+        onCancel={() => setCreateOpen(false)}
         confirmLoading={saving}
         okText="创建"
         cancelText="取消"
