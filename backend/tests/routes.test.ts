@@ -376,6 +376,13 @@ describe('POST /api/projects/:project/events', () => {
 });
 
 describe('V2 requirement REST APIs', () => {
+  it('rejects malformed requirement id in parameterized APIs', async () => {
+    const res = await authReq(request(makeApp()).get('/api/projects/v2/requirements/BAD-001'));
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_REQUIREMENT_ID');
+  });
+
   it('lists requirements for a project', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
     const paths = projectPaths(tmpDir, 'v2');

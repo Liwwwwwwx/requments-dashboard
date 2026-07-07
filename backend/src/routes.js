@@ -14,6 +14,7 @@ const {
 } = require("./projects");
 const { readEvents, appendEvents, withLock } = require("./events");
 const { render } = require("./state");
+const { RequirementId } = require("./schema");
 const { httpError } = require("./errors");
 const { createAuthRoutes } = require("./auth/routes");
 const { authMiddleware } = require("./auth/middleware");
@@ -44,6 +45,13 @@ function createRoutes(rootDir) {
   router.param("project", (req, _res, next, value) => {
     if (!isValidProjectId(value)) {
       return next(httpError(400, "INVALID_PROJECT_ID", `项目 id 非法：${value}`));
+    }
+    return next();
+  });
+
+  router.param("requirementId", (req, _res, next, value) => {
+    if (!RequirementId.safeParse(value).success) {
+      return next(httpError(400, "INVALID_REQUIREMENT_ID", `需求 id 非法：${value}`));
     }
     return next();
   });
