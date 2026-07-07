@@ -1,7 +1,7 @@
 {
   "name": "traceboard",
   "version": "0.2.0",
-  "description": "TraceBoard — 事件溯源驱动的多项目需求管理平台",
+  "description": "TraceBoard — 面向项目的轻量需求看板与 AI 小助手",
   "private": true,
   "workspaces": [
     "backend",
@@ -30,8 +30,8 @@
     "requirements",
     "kanban",
     "board",
-    "event-sourcing",
-    "jsonl",
+    "sqlite",
+    "ai-assistant",
     "multi-project"
   ],
   "license": "MIT"

@@ -1,7 +1,7 @@
 {
   "name": "requirements-board-backend",
   "version": "0.2.0",
-  "description": "需求看板后端：Express + JSONL 事件流 + 多项目隔离",
+  "description": "需求看板后端：Express + SQLite + 多项目隔离",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
