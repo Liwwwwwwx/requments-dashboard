@@ -212,6 +212,98 @@ describe('POST /api/projects/:project/events', () => {
   });
 });
 
+describe('V2 requirement REST APIs', () => {
+  it('lists requirements for a project', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录',
+        summary: '用户登录',
+        priority: 'P1'
+      }
+    ]);
+
+    const res = await authReq(request(makeApp()).get('/api/projects/v2/requirements'));
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.project).toBe('v2');
+    expect(res.body.requirements).toHaveLength(1);
+    expect(res.body.requirements[0]).toMatchObject({
+      id: 'REQ-0001',
+      title: '登录',
+      status: 'todo'
+    });
+  });
+
+  it('creates a requirement through the V2 REST API', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements')
+        .send({
+          title: '需求看板',
+          description: '按项目查看需求',
+          priority: 'P0',
+          owner: 'pm'
+        })
+    );
+
+    expect(res.status).toBe(201);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.requirement).toMatchObject({
+      id: 'REQ-0001',
+      title: '需求看板',
+      summary: '按项目查看需求',
+      priority: 'P0',
+      owner: 'pm',
+      status: 'todo'
+    });
+    expect(res.body.event.kind).toBe('req.new');
+  });
+
+  it('patches requirement fields and status through the V2 REST API', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '旧标题',
+        summary: '旧描述',
+        priority: 'P2'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .patch('/api/projects/v2/requirements/REQ-0001')
+        .send({
+          title: '新标题',
+          description: '新描述',
+          status: 'blocked',
+          priority: 'P1',
+          owner: 'dev'
+        })
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.requirement).toMatchObject({
+      id: 'REQ-0001',
+      title: '新标题',
+      summary: '新描述',
+      status: 'blocked',
+      priority: 'P1',
+      owner: 'dev'
+    });
+    expect(res.body.appended).toBe(2);
+  });
+});
+
 describe('GET /api/projects/:project/events', () => {
   function seedEvents() {
     fs.mkdirSync(path.join(tmpDir, 'data', 'pe'), { recursive: true });

@@ -43,6 +43,126 @@ function createRoutes(rootDir) {
     return res.json({ ok: true, project: { id, dataDir: paths.dataDir } });
   });
 
+  function nextRequirementId(items) {
+    const max = items.reduce((acc, item) => {
+      const match = String(item.id || "").match(/^REQ-(\d+)$/);
+      return match ? Math.max(acc, Number(match[1])) : acc;
+    }, 0);
+    return `REQ-${String(max + 1).padStart(4, "0")}`;
+  }
+
+  function getProjectState(rootDir, projectId) {
+    const paths = projectPaths(rootDir, projectId);
+    if (!fs.existsSync(paths.eventsPath) && !fs.existsSync(paths.stateJsonPath)) {
+      return null;
+    }
+    if (!fs.existsSync(paths.stateJsonPath)) {
+      return render(paths);
+    }
+    try {
+      return JSON.parse(fs.readFileSync(paths.stateJsonPath, "utf8"));
+    } catch (_err) {
+      return render(paths);
+    }
+  }
+
+  router.get("/projects/:project/requirements", (req, res, next) => {
+    const state = getProjectState(rootDir, req.params.project);
+    if (!state) {
+      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+    }
+    return res.json({
+      ok: true,
+      project: req.params.project,
+      requirements: state.items || []
+    });
+  });
+
+  router.post("/projects/:project/requirements", express.json(), (req, res, next) => {
+    const paths = ensureProject(rootDir, req.params.project);
+    const title = String(req.body.title || "").trim();
+    if (!title) {
+      return next(httpError(400, "MISSING_TITLE", "需求标题不能为空"));
+    }
+
+    const actor = req.headers["x-actor"] || req.user?.username || "http";
+    const state = getProjectState(rootDir, req.params.project) || { items: [] };
+    const event = {
+      kind: "req.new",
+      actor,
+      requirementId: nextRequirementId(state.items || []),
+      title,
+      summary: String(req.body.description || req.body.summary || "").trim(),
+      priority: req.body.priority || "P1",
+      owner: req.body.owner
+    };
+
+    const nextState = withLock(paths.lockPath, () => {
+      const appended = appendEvents(paths.eventsPath, [event]);
+      const rendered = render(paths);
+      return { appended, rendered };
+    });
+    const requirement = nextState.rendered.items.find((item) => item.id === event.requirementId);
+    return res.status(201).json({
+      ok: true,
+      project: paths.projectId,
+      requirement,
+      event: nextState.appended[0]
+    });
+  });
+
+  router.patch("/projects/:project/requirements/:requirementId", express.json(), (req, res, next) => {
+    const paths = projectPaths(rootDir, req.params.project);
+    const state = getProjectState(rootDir, req.params.project);
+    if (!state) {
+      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+    }
+    if (!(state.items || []).some((item) => item.id === req.params.requirementId)) {
+      return next(httpError(404, "REQUIREMENT_NOT_FOUND", `需求不存在：${req.params.requirementId}`));
+    }
+
+    const actor = req.headers["x-actor"] || req.user?.username || "http";
+    const events = [];
+    const patch = {};
+    if (req.body.title !== undefined) patch.title = String(req.body.title).trim();
+    if (req.body.description !== undefined) patch.summary = String(req.body.description).trim();
+    if (req.body.summary !== undefined) patch.summary = String(req.body.summary).trim();
+    if (req.body.priority !== undefined) patch.priority = req.body.priority;
+    if (req.body.owner !== undefined) patch.owner = req.body.owner;
+
+    if (Object.keys(patch).length > 0) {
+      events.push({
+        kind: "req.patch",
+        actor,
+        requirementId: req.params.requirementId,
+        ...patch
+      });
+    }
+    if (req.body.status !== undefined) {
+      events.push({
+        kind: "req.status",
+        actor,
+        requirementId: req.params.requirementId,
+        status: req.body.status
+      });
+    }
+    if (events.length === 0) {
+      return next(httpError(400, "EMPTY_PATCH", "没有可更新的需求字段"));
+    }
+
+    const nextState = withLock(paths.lockPath, () => {
+      appendEvents(paths.eventsPath, events);
+      return render(paths);
+    });
+    const requirement = nextState.items.find((item) => item.id === req.params.requirementId);
+    return res.json({
+      ok: true,
+      project: paths.projectId,
+      requirement,
+      appended: events.length
+    });
+  });
+
   router.get("/projects/:project/state", (req, res, next) => {
     const paths = projectPaths(rootDir, req.params.project);
     if (!fs.existsSync(paths.eventsPath) && !fs.existsSync(paths.stateJsonPath)) {
