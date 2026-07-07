@@ -45,9 +45,11 @@ interface Props {
 export function ProposalCard({ project, proposal, onApplied }: Props) {
   const [applying, setApplying] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const unsupportedCount = proposal.events.filter((event) => !KIND_META[event.kind]).length;
+  const hasUnsupportedEvents = unsupportedCount > 0;
 
   const handleApply = async () => {
-    if (applying || proposal.status !== 'pending') return;
+    if (applying || proposal.status !== 'pending' || hasUnsupportedEvents) return;
     setApplying(true);
     try {
       const result = await applyAiProposal(project, proposal.id);
@@ -74,6 +76,11 @@ export function ProposalCard({ project, proposal, onApplied }: Props) {
           <Text type="secondary" style={{ fontSize: 12 }}>
             {proposal.events.length} 条事件
           </Text>
+          {hasUnsupportedEvents && (
+            <Tag color="error">
+              含不支持事件
+            </Tag>
+          )}
           {isApplied && (
             <Tag color="success" icon={<CheckCircleOutlined />}>
               已应用
@@ -89,20 +96,26 @@ export function ProposalCard({ project, proposal, onApplied }: Props) {
         <>
           <ul className="tool-call-events">
             {proposal.events.map((event, i) => {
-              const meta = KIND_META[event.kind] || {
-                label: event.kind,
-                color: 'default'
-              };
+              const meta = KIND_META[event.kind] || { label: '不支持的事件', color: 'error' };
+              const description = describeEvent(event);
               return (
                 <li key={i}>
                   <Tag color={meta.color} className="tool-call-kind">
                     {meta.label}
                   </Tag>
-                  <span className="tool-call-desc">{describeEvent(event)}</span>
+                  <span className="tool-call-desc">
+                    {KIND_META[event.kind] ? description : `${event.kind}${description ? ` · ${description}` : ''}`}
+                  </span>
                 </li>
               );
             })}
           </ul>
+
+          {hasUnsupportedEvents && (
+            <Text type="danger" className="tool-call-warning">
+              包含 {unsupportedCount} 条不支持的旧事件，请重新生成提案。
+            </Text>
+          )}
 
           {isPending && (
             <div className="tool-call-foot">
@@ -110,6 +123,7 @@ export function ProposalCard({ project, proposal, onApplied }: Props) {
                 size="small"
                 type="primary"
                 loading={applying}
+                disabled={hasUnsupportedEvents}
                 onClick={handleApply}
                 icon={<CheckCircleOutlined />}
               >
