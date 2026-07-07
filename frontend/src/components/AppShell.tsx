@@ -31,7 +31,7 @@ interface Props {
 
 export function AppShell({ project, reqId, children }: Props) {
   const router = useRouter();
-  const { projects, data, taskItems, loading, error, refresh, loadProjects } = useRequirements({ project });
+  const { projects, data, loading, error, refresh, loadProjects } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   const activeProject = project || 'default';
@@ -101,7 +101,6 @@ export function AppShell({ project, reqId, children }: Props) {
                   <RequirementDetailView
                     item={selectedItem}
                     project={activeProject}
-                    taskItems={taskItems}
                     onUpdated={refresh}
                   />
                 </Spin>

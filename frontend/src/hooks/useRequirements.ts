@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { fetchState, listProjects, renderState, ApiError } from '@/lib/api';
 import type { BoardState, Project } from '@/lib/types';
 
@@ -8,20 +8,6 @@ interface UseRequirementsResult {
   project: string;
   projects: Project[];
   data: BoardState;
-  taskItems: (BoardState['items'][number]['tasks'][number] & {
-    taskKey: string;
-    requirementId: string;
-    requirementTitle: string;
-    requirementType: string;
-    requirementWeek: string;
-    requirementPriority: string;
-    requirementOwner: string;
-    requirementStatus: string;
-    requirementWorkflowStatus: string;
-    requirementUpdatedAt: string;
-    requirementSummary: string;
-    requirement: BoardState['items'][number];
-  })[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -103,31 +89,10 @@ export function useRequirements({
     loadState(activeProject);
   }, [activeProject, loadState]);
 
-  const taskItems = useMemo(() => {
-    return data.items.flatMap((item) =>
-      (item.tasks || []).map((task) => ({
-        ...task,
-        taskKey: `${item.id}::${task.taskId}`,
-        requirementId: item.id,
-        requirementTitle: item.title,
-        requirementType: item.type,
-        requirementWeek: item.week,
-        requirementPriority: item.priority,
-        requirementOwner: item.owner,
-        requirementStatus: item.status,
-        requirementWorkflowStatus: item.workflowStatus,
-        requirementUpdatedAt: item.updatedAt,
-        requirementSummary: item.summary,
-        requirement: item
-      }))
-    );
-  }, [data.items]);
-
   return {
     project: activeProject,
     projects,
     data,
-    taskItems,
     loading,
     error,
     refresh,

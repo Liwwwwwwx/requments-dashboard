@@ -12,7 +12,6 @@ const { Paragraph } = Typography;
 interface Props {
   item: Requirement | null;
   project: string;
-  taskItems?: unknown[];
   onUpdated?: () => Promise<void> | void;
 }
 

@@ -60,7 +60,6 @@ describe('RequirementDetailView', () => {
       <RequirementDetailView
         item={requirement}
         project="alpha"
-        taskItems={[]}
       />
     );
 
@@ -98,7 +97,6 @@ describe('RequirementDetailView', () => {
       <RequirementDetailView
         item={requirement}
         project="alpha"
-        taskItems={[]}
       />
     );
 
@@ -117,7 +115,6 @@ describe('RequirementDetailView', () => {
       <RequirementDetailView
         item={requirement}
         project="alpha"
-        taskItems={[]}
       />
     );
 
@@ -145,7 +142,6 @@ describe('RequirementDetailView', () => {
           taskStats: { total: 1, done: 0, active: 0, blocked: 1 }
         }}
         project="alpha"
-        taskItems={[]}
       />
     );
 
@@ -171,7 +167,6 @@ describe('RequirementDetailView', () => {
       <RequirementDetailView
         item={requirement}
         project="alpha"
-        taskItems={[]}
         onUpdated={onUpdated}
       />
     );
@@ -228,7 +223,6 @@ describe('RequirementDetailView', () => {
       <RequirementDetailView
         item={requirement}
         project="alpha"
-        taskItems={[]}
         onUpdated={onUpdated}
       />
     );
