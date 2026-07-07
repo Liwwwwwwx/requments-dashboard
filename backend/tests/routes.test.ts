@@ -153,6 +153,20 @@ describe('POST /api/projects', () => {
 });
 
 describe('Project detail APIs', () => {
+  it('rejects invalid project id in parameterized APIs', async () => {
+    const detail = await authReq(request(makeApp()).get('/api/projects/bad%20id'));
+    expect(detail.status).toBe(400);
+    expect(detail.body.code).toBe('INVALID_PROJECT_ID');
+
+    const update = await authReq(
+      request(makeApp())
+        .patch('/api/projects/bad%20id')
+        .send({ name: 'Bad' })
+    );
+    expect(update.status).toBe(400);
+    expect(update.body.code).toBe('INVALID_PROJECT_ID');
+  });
+
   it('returns project detail with metadata', async () => {
     await authReq(
       request(makeApp())

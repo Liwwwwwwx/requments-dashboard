@@ -41,6 +41,13 @@ function createRoutes(rootDir) {
   router.use(authMiddleware(users));
   router.use("/ai", createAiRoutes(rootDir));
 
+  router.param("project", (req, _res, next, value) => {
+    if (!isValidProjectId(value)) {
+      return next(httpError(400, "INVALID_PROJECT_ID", `项目 id 非法：${value}`));
+    }
+    return next();
+  });
+
   router.get("/projects", (_req, res) => {
     const projects = listProjectDetails(rootDir);
     res.json({ ok: true, projects });
