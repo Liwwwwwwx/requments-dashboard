@@ -95,6 +95,7 @@ export function AppShell({ project, reqId, children }: Props) {
                   filters={filters}
                   selectedId={selectedItem?.id || null}
                   loading={loading}
+                  onCreated={refresh}
                 />
               )}
         </Content>

@@ -1732,6 +1732,12 @@ body {
   color: var(--text-tertiary);
 }
 
+.board-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .board-count strong {
   font-family: var(--font-mono);
   color: var(--text-primary);
