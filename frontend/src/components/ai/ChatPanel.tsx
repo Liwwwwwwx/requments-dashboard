@@ -460,14 +460,14 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
             />
             <div className="ai-input-toolbar">
               <div className="ai-input-toolbar-left">
-                <Tooltip title="开启后 AI 可调用 propose_events 工具写入事件；关闭后只回答问题">
+                <Tooltip title="开启后 AI 只生成建议事件，用户确认后才会应用到看板；关闭后只回答问题">
                   <Space size={4} align="center" className="ai-input-toolswitch">
                     <Switch
                       size="small"
                       checked={toolsEnabled}
                       onChange={setToolsEnabled}
                     />
-                    <Text type="secondary" style={{ fontSize: 12 }}>工具</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>建议变更</Text>
                   </Space>
                 </Tooltip>
               </div>
