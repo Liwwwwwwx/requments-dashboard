@@ -84,16 +84,6 @@
   --p3: #64748b;
   --p3-soft: #f1f5f9;
 
-  /* —— 角色色 —— */
-  --role-contract: #4f46e5;
-  --role-frontend: #9333ea;
-  --role-backend: #0ea5e9;
-  --role-review: #ea580c;
-  --role-qa: #16a34a;
-  --role-integration: #db2777;
-  --role-infra: #6d28d9;
-  --role-general: #64748b;
-
   /* —— 间距 —— */
   --sp-1: 4px;
   --sp-2: 8px;
@@ -206,15 +196,6 @@
   --p2-soft: rgba(91, 140, 255, 0.18);
   --p3: #8b93a3;
   --p3-soft: rgba(148, 163, 184, 0.16);
-
-  --role-contract: #8b95ff;
-  --role-frontend: #c89bff;
-  --role-backend: #56c7f0;
-  --role-review: #ff9d5c;
-  --role-qa: #4fd998;
-  --role-integration: #ff8ac4;
-  --role-infra: #a78bfa;
-  --role-general: #98a0b0;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.42), 0 1px 2px rgba(0, 0, 0, 0.3);

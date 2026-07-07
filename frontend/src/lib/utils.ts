@@ -1,4 +1,4 @@
-import type { Priority, RequirementStatus, Role, TaskStatus } from './types';
+import type { Priority, RequirementStatus, TaskStatus } from './types';
 
 export const REQUIREMENT_STATUS_LABELS: Record<RequirementStatus, { label: string; color: string }> = {
   todo: { label: '待开始', color: 'default' },
@@ -16,30 +16,11 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, { label: string; color: stri
   blocked: { label: '阻塞', color: 'error' }
 };
 
-export const ROLE_META: Record<Role, { label: string; color: string }> = {
-  contract: { label: '契约', color: '#818cf8' },
-  frontend: { label: '前端', color: '#c084fc' },
-  backend: { label: '后端', color: '#22d3ee' },
-  review: { label: '审查', color: '#fb923c' },
-  qa: { label: '测试', color: '#34d399' },
-  integration: { label: '联调', color: '#f472b6' },
-  infra: { label: '基建', color: '#a78bfa' },
-  general: { label: '通用', color: '#9ca3af' }
-};
-
 export function statusLabel(status: RequirementStatus | TaskStatus | string) {
   return (
     REQUIREMENT_STATUS_LABELS[status as RequirementStatus] ||
     TASK_STATUS_LABELS[status as TaskStatus] || { label: status, color: 'default' }
   );
-}
-
-export function roleLabel(role?: Role | string): string {
-  return ROLE_META[role as Role]?.label || role || '通用';
-}
-
-export function roleColor(role?: Role | string): string {
-  return ROLE_META[role as Role]?.color || '#9ca3af';
 }
 
 export function priorityColor(priority: Priority | string): string {
