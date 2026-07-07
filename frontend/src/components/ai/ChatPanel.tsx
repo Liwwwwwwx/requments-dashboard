@@ -26,9 +26,9 @@ const { TextArea } = Input;
 const { Text } = Typography;
 
 const QUICK_PROMPTS = [
-  { label: '总结阻塞', text: '请总结当前项目里所有阻塞的任务和需求。' },
-  { label: '推进 FE-1', text: '请把当前需求 REQ-0001 的 FE-1 任务状态推进到 working，并给一句推进说明。' },
-  { label: '生成验收点', text: '请为当前需求生成 3-5 条可测试的验收点。' }
+  { label: '总结项目', text: '请总结当前项目的需求现状，按状态、优先级和负责人列出重点。' },
+  { label: '拆下一步', text: '请基于当前项目或需求上下文，给出下一步推进建议，不要直接修改数据。' },
+  { label: '需求草稿', text: '请根据我的描述生成一份需求草稿，包含标题、描述、优先级和验收点。' }
 ];
 
 const STICK_TO_BOTTOM_THRESHOLD = 80;

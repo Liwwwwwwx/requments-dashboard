@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { ChatPanel } from '@/components/ai/ChatPanel';
@@ -123,5 +123,24 @@ describe('ChatPanel', () => {
     await waitFor(() => {
       expect(getAiConversation).toHaveBeenCalledWith('alpha', 'matched');
     });
+  });
+
+  it('快捷提示只围绕项目和需求建议', async () => {
+    vi.mocked(listAiConversations).mockResolvedValue({
+      ok: true,
+      conversations: []
+    });
+
+    render(<ChatPanel project="alpha" requirementId="REQ-0001" />);
+
+    expect(await screen.findByRole('button', { name: '总结项目' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '拆下一步' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '需求草稿' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '推进 FE-1' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '拆下一步' }));
+    expect(screen.getByRole('textbox')).toHaveValue(
+      '请基于当前项目或需求上下文，给出下一步推进建议，不要直接修改数据。'
+    );
   });
 });
