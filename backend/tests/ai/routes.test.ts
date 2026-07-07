@@ -280,6 +280,73 @@ describe('AI 对话路由（Sprint 2）', () => {
     expect(empty.body.code).toBe('AI_TITLE_EMPTY');
   });
 
+  it('AI 会话按当前用户隔离访问和改名校验', async () => {
+    const previousToken = process.env.REQUIREMENTS_API_TOKEN;
+    process.env.REQUIREMENTS_API_TOKEN = 'test-api-token';
+    try {
+      const app = makeApp();
+      const ownerCreate = await authReq(
+        request(app).post('/api/ai/conversations?project=default').send({ title: '同名会话' })
+      );
+      expect(ownerCreate.status).toBe(200);
+      const ownerConvId = ownerCreate.body.conversation.id;
+
+      const apiRequest = (base: request.Test) =>
+        base.set('Authorization', 'Bearer test-api-token');
+
+      const apiList = await apiRequest(request(app).get('/api/ai/conversations?project=default'));
+      expect(apiList.status).toBe(200);
+      expect(apiList.body.conversations).toEqual([]);
+
+      const apiRead = await apiRequest(
+        request(app).get(`/api/ai/conversations/${ownerConvId}?project=default`)
+      );
+      expect(apiRead.status).toBe(404);
+      expect(apiRead.body.code).toBe('AI_CONVERSATION_NOT_FOUND');
+
+      const apiRename = await apiRequest(
+        request(app)
+          .patch(`/api/ai/conversations/${ownerConvId}?project=default`)
+          .send({ title: '不能改别人的' })
+      );
+      expect(apiRename.status).toBe(404);
+
+      const apiMessage = await apiRequest(
+        request(app)
+          .post(`/api/ai/conversations/${ownerConvId}/messages?project=default`)
+          .send({ text: 'hi' })
+      );
+      expect(apiMessage.status).toBe(404);
+
+      const apiDelete = await apiRequest(
+        request(app).delete(`/api/ai/conversations/${ownerConvId}?project=default`)
+      );
+      expect(apiDelete.status).toBe(404);
+
+      const apiCreate = await apiRequest(
+        request(app).post('/api/ai/conversations?project=default').send({})
+      );
+      expect(apiCreate.status).toBe(200);
+
+      const apiSameTitle = await apiRequest(
+        request(app)
+          .patch(`/api/ai/conversations/${apiCreate.body.conversation.id}?project=default`)
+          .send({ title: '同名会话' })
+      );
+      expect(apiSameTitle.status).toBe(200);
+      expect(apiSameTitle.body.conversation.title).toBe('同名会话');
+
+      const ownerRead = await authReq(
+        request(app).get(`/api/ai/conversations/${ownerConvId}?project=default`)
+      );
+      expect(ownerRead.status).toBe(200);
+      expect(ownerRead.body.conversation.title).toBe('同名会话');
+    } finally {
+      if (previousToken === undefined) delete process.env.REQUIREMENTS_API_TOKEN;
+      else process.env.REQUIREMENTS_API_TOKEN = previousToken;
+    }
+  });
+
   it('DELETE /api/ai/conversations/:id 级联删除', async () => {
     const create = await authReq(
       request(makeApp()).post('/api/ai/conversations?project=default').send({})

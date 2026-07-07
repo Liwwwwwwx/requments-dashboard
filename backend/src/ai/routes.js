@@ -36,6 +36,14 @@ function readProjectId(req) {
   return String(req.query.project || req.body?.projectId || "").trim();
 }
 
+function getOwnedConversation(rootDir, projectId, conversationId, req) {
+  const conv = store.getConversation(rootDir, projectId, conversationId);
+  if (!conv) return null;
+  const user = getCurrentUser(req);
+  if (conv.userId !== user.id) return null;
+  return conv;
+}
+
 function createAiRoutes(rootDir) {
   const router = express.Router();
   const messageLimiter = createRateLimiter({ limit: 30, windowMs: 60_000 });
@@ -87,17 +95,18 @@ function createAiRoutes(rootDir) {
       if (!isValidProjectId(projectId)) {
         return next(httpError(400, "INVALID_PROJECT", "缺少或非法的 projectId"));
       }
-      const conv = store.getConversation(rootDir, projectId, req.params.id);
+      const user = getCurrentUser(req);
+      const conv = getOwnedConversation(rootDir, projectId, req.params.id, req);
       if (!conv) return next(httpError(404, "AI_CONVERSATION_NOT_FOUND", "会话不存在"));
       const newTitle = String(req.body?.title || "").trim();
       if (!newTitle) return next(httpError(400, "AI_TITLE_EMPTY", "标题不能为空"));
       // 重名校验
-      const dup = store.findDuplicateTitle(rootDir, projectId, newTitle, req.params.id);
+      const dup = store.findDuplicateTitle(rootDir, projectId, newTitle, req.params.id, user.id);
       if (dup) {
         return next(httpError(409, "AI_TITLE_DUPLICATE", `已存在同名会话：${dup.title}`));
       }
       store.renameConversation(rootDir, projectId, req.params.id, newTitle);
-      const updated = store.getConversation(rootDir, projectId, req.params.id);
+      const updated = getOwnedConversation(rootDir, projectId, req.params.id, req);
       res.json({ ok: true, conversation: updated });
     } catch (err) {
       next(httpError(400, "AI_CONVERSATION_RENAME_FAILED", err.message));
@@ -111,7 +120,7 @@ function createAiRoutes(rootDir) {
       if (!isValidProjectId(projectId)) {
         return next(httpError(400, "INVALID_PROJECT", "缺少或非法的 projectId"));
       }
-      const conv = store.getConversation(rootDir, projectId, req.params.id);
+      const conv = getOwnedConversation(rootDir, projectId, req.params.id, req);
       if (!conv) return next(httpError(404, "AI_CONVERSATION_NOT_FOUND", "会话不存在"));
       const result = store.deleteConversation(rootDir, projectId, req.params.id);
       res.json({ ok: true, ...result });
@@ -140,7 +149,7 @@ function createAiRoutes(rootDir) {
       if (!isValidProjectId(projectId)) {
         return next(httpError(400, "INVALID_PROJECT", "缺少或非法的 projectId"));
       }
-      const conv = store.getConversation(rootDir, projectId, req.params.id);
+      const conv = getOwnedConversation(rootDir, projectId, req.params.id, req);
       if (!conv) return next(httpError(404, "AI_CONVERSATION_NOT_FOUND", "会话不存在"));
       const messages = store.listMessages(rootDir, projectId, req.params.id);
       res.json({ ok: true, conversation: conv, messages });
@@ -160,7 +169,7 @@ function createAiRoutes(rootDir) {
       if (!isValidProjectId(projectId)) {
         return next(httpError(400, "INVALID_PROJECT", "缺少或非法的 projectId"));
       }
-      const conv = store.getConversation(rootDir, projectId, req.params.id);
+      const conv = getOwnedConversation(rootDir, projectId, req.params.id, req);
       if (!conv) return next(httpError(404, "AI_CONVERSATION_NOT_FOUND", "会话不存在"));
 
       const text = String(req.body?.text || "").trim();
@@ -196,7 +205,7 @@ function createAiRoutes(rootDir) {
       if (!isValidProjectId(projectId)) {
         return next(httpError(400, "INVALID_PROJECT", "缺少或非法的 projectId"));
       }
-      const conv = store.getConversation(rootDir, projectId, req.params.id);
+      const conv = getOwnedConversation(rootDir, projectId, req.params.id, req);
       if (!conv) return next(httpError(404, "AI_CONVERSATION_NOT_FOUND", "会话不存在"));
 
       const text = String(req.body?.text || "").trim();
@@ -276,6 +285,8 @@ function createAiRoutes(rootDir) {
       if (!isValidProjectId(projectId)) {
         return next(httpError(400, "INVALID_PROJECT", "缺少或非法的 projectId"));
       }
+      const conv = getOwnedConversation(rootDir, projectId, req.params.id, req);
+      if (!conv) return next(httpError(404, "AI_CONVERSATION_NOT_FOUND", "会话不存在"));
       const list = store.listProposals(rootDir, projectId, req.params.id);
       res.json({ ok: true, proposals: list });
     } catch (err) {
@@ -291,6 +302,10 @@ function createAiRoutes(rootDir) {
       }
       const proposal = store.getProposal(rootDir, projectId, req.params.id);
       if (!proposal) {
+        return next(httpError(404, "AI_PROPOSAL_NOT_FOUND", "提案不存在"));
+      }
+      const conv = getOwnedConversation(rootDir, projectId, proposal.conversationId, req);
+      if (!conv) {
         return next(httpError(404, "AI_PROPOSAL_NOT_FOUND", "提案不存在"));
       }
       if (proposal.status !== "pending") {
