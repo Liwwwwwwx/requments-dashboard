@@ -454,6 +454,78 @@ body {
 }
 
 /* =========================================================
+   V2 Settings
+   ========================================================= */
+.settings-page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-quaternary);
+  margin-bottom: 6px;
+}
+
+.settings-header h1 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.settings-project-tag {
+  margin: 0;
+  font-family: var(--font-mono);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.settings-card.ant-card {
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-tags .ant-tag {
+  margin: 0;
+}
+
+.settings-note {
+  margin: 14px 0 0;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* =========================================================
    主体布局
    ========================================================= */
 .layout {
@@ -2365,4 +2437,3 @@ body {
     transition: none;
   }
 }
-

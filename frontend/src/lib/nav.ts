@@ -1,7 +1,6 @@
 import type { ComponentType } from 'react';
 import {
   ApartmentOutlined,
-  BarChartOutlined,
   SettingOutlined,
   TableOutlined,
   FieldTimeOutlined,
@@ -26,8 +25,8 @@ export interface ModuleNavItem {
 }
 
 /**
- * 应用级模块导航。新增业务模块 = 在此追加一条 + 提供对应路由页面。
- * 看板已可用；仪表盘、管理后台先占位（status: 'soon'）。
+ * V2 应用级模块导航：只保留需求看板、AI 小助手和设置。
+ * 项目入口由左侧项目列表承担，复杂后台能力不进入第一版导航。
  */
 export const MODULE_NAV: ModuleNavItem[] = [
   {
@@ -40,27 +39,19 @@ export const MODULE_NAV: ModuleNavItem[] = [
   },
   {
     key: 'ai',
-    label: 'AI 对话',
+    label: 'AI 小助手',
     icon: RobotOutlined,
     status: 'ready',
     path: (p) => `/p/${p}/ai`,
     match: (pathname, p) => pathname.startsWith(`/p/${p}/ai`)
   },
   {
-    key: 'dashboard',
-    label: '数据仪表盘',
-    icon: BarChartOutlined,
-    status: 'soon',
-    path: (p) => `/p/${p}/dashboard`,
-    match: (pathname, p) => pathname.startsWith(`/p/${p}/dashboard`)
-  },
-  {
-    key: 'admin',
-    label: '管理后台',
+    key: 'settings',
+    label: '设置',
     icon: SettingOutlined,
-    status: 'soon',
-    path: (p) => `/p/${p}/admin`,
-    match: (pathname, p) => pathname.startsWith(`/p/${p}/admin`)
+    status: 'ready',
+    path: (p) => `/p/${p}/settings`,
+    match: (pathname, p) => pathname.startsWith(`/p/${p}/settings`)
   }
 ];
 

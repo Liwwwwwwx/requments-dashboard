@@ -41,7 +41,7 @@ export function AppShell({ project, reqId, children }: Props) {
     }
   }, [projects, project, router]);
 
-  // Cmd/Ctrl + K：跳到当前项目的 AI 对话页
+  // Cmd/Ctrl + K：跳到当前项目的 AI 小助手
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {

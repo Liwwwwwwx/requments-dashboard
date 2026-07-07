@@ -18,7 +18,7 @@ interface TopBarProps {
   onQueryChange: (q: string) => void;
   loading: boolean;
   onRefresh: () => void;
-  /** 当前项目 id，用于「AI 对话」按钮跳转 */
+  /** 当前项目 id，用于「AI 小助手」按钮跳转 */
   projectId?: string;
 }
 
@@ -89,13 +89,13 @@ export function TopBar({ total, showSearch, query, onQueryChange, loading, onRef
           />
         </Tooltip>
 
-        <Tooltip title={`AI 对话 (${shortcutLabel})`} placement="bottom">
+        <Tooltip title={`AI 小助手 (${shortcutLabel})`} placement="bottom">
           <Button
             className="topbar-icon-btn"
             icon={<RobotOutlined />}
             onClick={openAi}
             type="text"
-            aria-label="AI 对话"
+            aria-label="AI 小助手"
           >
             <span className="topbar-ai-shortcut">{shortcutLabel}</span>
           </Button>
