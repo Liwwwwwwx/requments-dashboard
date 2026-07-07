@@ -247,6 +247,57 @@ function createRoutes(rootDir) {
     return res.json({ ok: true, project: paths.projectId, requirementId: req.params.requirementId, events });
   });
 
+  router.post("/projects/:project/requirements/:requirementId/events", express.json(), (req, res, next) => {
+    const paths = projectPaths(rootDir, req.params.project);
+    const state = getProjectState(rootDir, req.params.project);
+    if (!state) {
+      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+    }
+    if (!(state.items || []).some((item) => item.id === req.params.requirementId)) {
+      return next(httpError(404, "REQUIREMENT_NOT_FOUND", `需求不存在：${req.params.requirementId}`));
+    }
+
+    const body = req.body;
+    const list = Array.isArray(body.events)
+      ? body.events
+      : Array.isArray(body)
+        ? body
+        : [body];
+
+    if (list.length === 0) {
+      return next(httpError(400, "EMPTY_EVENTS", "事件列表为空"));
+    }
+    if (list.some((event) => event.requirementId && event.requirementId !== req.params.requirementId)) {
+      return next(httpError(400, "REQUIREMENT_EVENT_MISMATCH", "事件 requirementId 与路径不一致"));
+    }
+    if (list.some((event) => event.kind === "note.add" && !String(event.text || "").trim())) {
+      return next(httpError(400, "EMPTY_NOTE", "备注内容不能为空"));
+    }
+
+    const actor = req.headers["x-actor"] || req.user?.username || "http";
+    const stamped = list.map((event) => ({
+      ...event,
+      requirementId: req.params.requirementId,
+      actor: event.actor || actor
+    }));
+
+    const result = withLock(paths.lockPath, () => {
+      const appended = appendEvents(paths.eventsPath, stamped);
+      const rendered = render(paths);
+      return { appended, rendered };
+    });
+    const requirement = result.rendered.items.find((item) => item.id === req.params.requirementId);
+
+    return res.status(201).json({
+      ok: true,
+      project: paths.projectId,
+      requirementId: req.params.requirementId,
+      appended: result.appended.length,
+      events: result.appended,
+      requirement
+    });
+  });
+
   router.post("/projects/:project/events", express.json({ limit: "10mb" }), (req, res, next) => {
     const paths = projectPaths(rootDir, req.params.project);
     ensureProject(rootDir, req.params.project);

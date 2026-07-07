@@ -4,6 +4,7 @@ import {
   createProject,
   createRequirement,
   fetchState,
+  addRequirementNote,
   listProjects,
   listRequirements,
   updateRequirement
@@ -144,6 +145,29 @@ describe('api client', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/projects/default/requirements/REQ-0001', expect.objectContaining({
       method: 'PATCH',
       body: JSON.stringify({ status: 'blocked' })
+    }));
+  });
+
+  it('adds a requirement note through the requirement event endpoint', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      headers: { get: () => 'application/json' },
+      text: async () => JSON.stringify({
+        ok: true,
+        requirementId: 'REQ-0001',
+        appended: 1,
+        events: [{ kind: 'note.add', text: '备注' }],
+        requirement: { id: 'REQ-0001', notes: [{ text: '备注' }] }
+      })
+    });
+
+    const result = await addRequirementNote('default', 'REQ-0001', '备注');
+
+    expect(result.appended).toBe(1);
+    expect(fetchMock).toHaveBeenCalledWith('/api/projects/default/requirements/REQ-0001/events', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ kind: 'note.add', text: '备注' })
     }));
   });
 });

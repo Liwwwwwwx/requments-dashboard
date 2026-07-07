@@ -317,6 +317,82 @@ describe('V2 requirement REST APIs', () => {
     });
     expect(res.body.appended).toBe(2);
   });
+
+  it('adds a requirement note through the requirement event API', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录',
+        summary: '用户登录'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({ kind: 'note.add', text: '先保持最简单登录' })
+    );
+
+    expect(res.status).toBe(201);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.appended).toBe(1);
+    expect(res.body.events[0]).toMatchObject({
+      kind: 'note.add',
+      requirementId: 'REQ-0001',
+      text: '先保持最简单登录',
+      actor: 'admin'
+    });
+    expect(res.body.requirement.notes).toHaveLength(1);
+    expect(res.body.requirement.notes[0].text).toBe('先保持最简单登录');
+  });
+
+  it('rejects empty requirement notes', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({ kind: 'note.add', text: '   ' })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('EMPTY_NOTE');
+  });
+
+  it('rejects requirement event id mismatch', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({ kind: 'note.add', requirementId: 'REQ-0002', text: 'wrong' })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('REQUIREMENT_EVENT_MISMATCH');
+  });
 });
 
 describe('GET /api/projects/:project/events', () => {

@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RequirementDetailView } from '@/components/RequirementDetailView';
-import { fetchRequirementEvents, updateRequirement } from '@/lib/api';
+import { addRequirementNote, fetchRequirementEvents, updateRequirement } from '@/lib/api';
 import type { Requirement } from '@/lib/types';
 
 const routerPush = vi.fn();
@@ -14,6 +14,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/lib/api', () => ({
+  addRequirementNote: vi.fn(),
   fetchRequirementEvents: vi.fn(),
   updateRequirement: vi.fn()
 }));
@@ -48,6 +49,7 @@ describe('RequirementDetailView', () => {
   beforeEach(() => {
     vi.mocked(fetchRequirementEvents).mockReset();
     vi.mocked(fetchRequirementEvents).mockResolvedValue({ ok: true, events: [] });
+    vi.mocked(addRequirementNote).mockReset();
     vi.mocked(updateRequirement).mockReset();
     routerPush.mockReset();
   });
@@ -157,5 +159,46 @@ describe('RequirementDetailView', () => {
       });
     });
     await waitFor(() => expect(onUpdated).toHaveBeenCalledTimes(1));
+  });
+
+  it('添加备注后刷新详情和变更历史', async () => {
+    const onUpdated = vi.fn();
+    vi.mocked(addRequirementNote).mockResolvedValue({
+      ok: true,
+      project: 'alpha',
+      requirementId: 'REQ-0001',
+      appended: 1,
+      events: [{ kind: 'note.add', requirementId: 'REQ-0001', text: '先保持最小登录' }],
+      requirement: {
+        ...requirement,
+        notes: [{ text: '先保持最小登录', at: '2026-07-07T00:00:00.000Z', agent: null }]
+      }
+    });
+
+    render(
+      <RequirementDetailView
+        item={requirement}
+        project="alpha"
+        taskItems={[]}
+        onUpdated={onUpdated}
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '添加备注' }));
+    fireEvent.change(screen.getByLabelText('备注内容'), {
+      target: { value: '先保持最小登录' }
+    });
+    const dialog = screen.getByRole('dialog', { name: '添加备注' });
+    fireEvent.click(within(dialog).getByRole('button', { name: /添\s*加/ }));
+
+    await waitFor(() => {
+      expect(addRequirementNote).toHaveBeenCalledWith('alpha', 'REQ-0001', '先保持最小登录');
+    });
+    await waitFor(() => expect(onUpdated).toHaveBeenCalledTimes(1));
+    expect(fetchRequirementEvents).toHaveBeenCalledTimes(2);
   });
 });

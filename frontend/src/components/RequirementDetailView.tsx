@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Empty, Form, Input, Modal, Progress, Select, Space, Typography, message } from 'antd';
-import { fetchRequirementEvents, updateRequirement } from '@/lib/api';
+import { addRequirementNote, fetchRequirementEvents, updateRequirement } from '@/lib/api';
 import { priorityChipClass, roleLabel, statusChipClass, statusLabel } from '@/lib/utils';
 import { TaskDrawer } from './TaskDrawer';
 import type { Priority, Requirement, RequirementEvent, RequirementStatus, Task } from '@/lib/types';
@@ -109,6 +109,9 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
   const [history, setHistory] = useState<RequirementEvent[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -117,6 +120,8 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
     setDrawerTask(null);
     setRoleFilter('all');
     setEditing(false);
+    setNoteOpen(false);
+    setNoteText('');
   }, [item?.id]);
 
   const loadHistory = async () => {
@@ -231,6 +236,28 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
       message.error(error instanceof Error ? error.message : '更新需求失败');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!item) return;
+    const text = noteText.trim();
+    if (!text) {
+      message.warning('请输入备注内容');
+      return;
+    }
+    setNoteSaving(true);
+    try {
+      await addRequirementNote(project, item.id, text);
+      message.success('备注已添加');
+      setNoteText('');
+      setNoteOpen(false);
+      await onUpdated?.();
+      await loadHistory();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '添加备注失败');
+    } finally {
+      setNoteSaving(false);
     }
   };
 
@@ -500,6 +527,42 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
           )}
 
           <section className="view-detail-section">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 12
+              }}
+            >
+              <h3 className="view-detail-section-title" style={{ marginBottom: 0 }}>
+                <span>备注</span>
+                {(item.notes?.length || 0) > 0 && (
+                  <span className="count">· {item.notes.length}</span>
+                )}
+              </h3>
+              <Button size="small" onClick={() => setNoteOpen(true)}>
+                添加备注
+              </Button>
+            </div>
+            <div className="view-detail-section-body">
+              {(item.notes?.length || 0) === 0 ? (
+                <div className="history-empty">暂无备注</div>
+              ) : (
+                <ol className="history-list">
+                  {item.notes.map((note, index) => (
+                    <li key={`${note.at}-${index}`} className="history-item">
+                      <div className="history-detail">{note.text}</div>
+                      <time className="history-time">{note.at || '-'}</time>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </section>
+
+          <section className="view-detail-section">
             <h3 className="view-detail-section-title">
               <span>变更历史</span>
               {history.length > 0 && <span className="count">· {history.length}</span>}
@@ -667,6 +730,24 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
             <Input placeholder="负责人" />
           </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title="添加备注"
+        open={noteOpen}
+        onOk={() => void handleAddNote()}
+        onCancel={() => setNoteOpen(false)}
+        confirmLoading={noteSaving}
+        okText="添加"
+        cancelText="取消"
+        destroyOnHidden
+      >
+        <Input.TextArea
+          aria-label="备注内容"
+          rows={4}
+          value={noteText}
+          onChange={(event) => setNoteText(event.target.value)}
+          placeholder="记录当前需求的背景、决策或后续跟进"
+        />
       </Modal>
     </div>
   );

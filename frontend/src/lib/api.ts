@@ -113,6 +113,27 @@ export async function fetchRequirementEvents(
   );
 }
 
+export async function addRequirementNote(
+  project: string,
+  requirementId: string,
+  text: string
+): Promise<{
+  ok: true;
+  project: string;
+  requirementId: string;
+  appended: number;
+  events: EventInput[];
+  requirement: Requirement;
+}> {
+  return fetchJson(
+    `/projects/${encodeURIComponent(project)}/requirements/${encodeURIComponent(requirementId)}/events`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ kind: 'note.add', text })
+    }
+  );
+}
+
 export async function appendEvents(
   project: string,
   events: EventInput[]
