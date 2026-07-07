@@ -13,7 +13,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { projectPaths } = require("../projects");
+const { getProject, projectPaths } = require("../projects");
 const { readEvents } = require("../events");
 const { render } = require("../state");
 
@@ -49,6 +49,14 @@ function safeRender(paths) {
   }
 }
 
+function safeProject(rootDir, projectId) {
+  try {
+    return getProject(rootDir, projectId);
+  } catch (_err) {
+    return null;
+  }
+}
+
 function eventSummary(event) {
   const kind = event.kind || event.type || "?";
   const parts = [`[${kind}]`];
@@ -76,6 +84,7 @@ function requirementSummary(requirement) {
 
 function buildContext({ rootDir, projectId, requirementId }) {
   const paths = projectPaths(rootDir, projectId);
+  const project = safeProject(rootDir, projectId);
   const state = safeRender(paths);
   const requirement = requirementId && state
     ? state.items.find((item) => item.id === requirementId) || null
@@ -96,20 +105,27 @@ function buildContext({ rootDir, projectId, requirementId }) {
     eventTail = allEvents.filter((e) => CONTEXT_EVENT_KINDS.has(e.kind)).slice(-MAX_EVENT_TAIL);
   }
 
-  return { state, requirement, eventTail };
+  return { project, state, requirement, eventTail };
 }
 
 function buildSystemPrompt(rootDir, { projectId, requirementId } = {}) {
   const parts = [SYSTEM_BASE];
   if (!projectId) return parts.join("\n");
 
-  const { state, requirement, eventTail } = buildContext({
+  const { project, state, requirement, eventTail } = buildContext({
     rootDir,
     projectId,
     requirementId
   });
 
-  parts.push(`\n## 当前项目\n${projectId}`);
+  if (project) {
+    parts.push(`\n## 当前项目\n${project.id} · ${project.name || project.id}`);
+    if (project.description) {
+      parts.push(`- 描述: ${project.description}`);
+    }
+  } else {
+    parts.push(`\n## 当前项目\n${projectId}`);
+  }
 
   const items = state?.items || [];
   if (!requirementId && items.length > 0) {

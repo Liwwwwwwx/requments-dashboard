@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { buildSystemPrompt } from '@/ai/context';
 import { appendEvents } from '@/events';
-import { projectPaths } from '@/projects';
+import { ensureProjectMetadata, projectPaths } from '@/projects';
 
 let tmpDir: string;
 
@@ -19,6 +19,10 @@ afterEach(() => {
 describe('ai/context', () => {
   it('项目级上下文包含当前需求列表概览', () => {
     const paths = projectPaths(tmpDir, 'default');
+    ensureProjectMetadata(tmpDir, 'default', {
+      name: 'TraceBoard V2',
+      description: '第一阶段只做项目、需求和 AI 上下文主链'
+    });
     appendEvents(paths.eventsPath, [
       {
         eventId: 'E1',
@@ -54,6 +58,8 @@ describe('ai/context', () => {
     });
 
     expect(prompt).toContain('项目需求概览（2 条）');
+    expect(prompt).toContain('default · TraceBoard V2');
+    expect(prompt).toContain('描述: 第一阶段只做项目、需求和 AI 上下文主链');
     expect(prompt).toContain('REQ-0001 · 登录页 · 状态=todo · 优先级=P0 · 负责人=pm · 最小登录体验');
     expect(prompt).toContain('REQ-0002 · AI 小助手 · 状态=doing · 优先级=P1 · 负责人=dev · 基于项目上下文回答问题');
   });
