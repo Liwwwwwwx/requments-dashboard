@@ -473,7 +473,7 @@ function createRoutes(rootDir) {
     }
     if (!validateV2ProjectEvents(list, next)) return;
 
-    const actor = req.headers["x-actor"] || req.socket.remoteAddress || "http";
+    const actor = req.headers["x-actor"] || req.user?.username || "http";
     const stamped = list.map((e) => ({ ...e, actor: e.actor || actor }));
     const state = withLock(paths.lockPath, () => {
       appendEvents(paths.eventsPath, stamped);

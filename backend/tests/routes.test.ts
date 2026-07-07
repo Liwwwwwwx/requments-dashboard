@@ -7,7 +7,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { createRoutes } from '../src/routes';
 import { errorMiddleware } from '../src/errors';
-import { appendEvents } from '../src/events';
+import { appendEvents, readEvents } from '../src/events';
 import { projectPaths } from '../src/projects';
 
 let tmpDir: string;
@@ -295,7 +295,9 @@ describe('POST /api/projects/:project/events', () => {
     expect(res.body.ok).toBe(true);
     expect(res.body.appended).toBe(1);
     expect(res.body.items).toBe(1);
-    expect(fs.existsSync(path.join(tmpDir, 'data', 'p2', 'events.db'))).toBe(true);
+    const paths = projectPaths(tmpDir, 'p2');
+    expect(fs.existsSync(paths.eventsPath)).toBe(true);
+    expect(readEvents(paths.eventsPath)[0].actor).toBe('admin');
   });
 
   it('rejects invalid event with structured error', async () => {
