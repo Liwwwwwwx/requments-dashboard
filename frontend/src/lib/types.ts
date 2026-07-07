@@ -17,10 +17,7 @@ export interface Note {
 export interface Requirement {
   id: string;
   title: string;
-  type?: string;
   status: RequirementStatus;
-  week?: string;
-  dueDate?: string;
   owner: string;
   priority: Priority;
   createdBy?: string;

@@ -45,9 +45,7 @@ vi.mock('@/lib/api', () => ({
 const requirement: Requirement = {
   id: 'REQ-0001',
   title: '登录页',
-  type: 'feature',
   status: 'todo',
-  week: '2026-W28',
   owner: 'pm',
   priority: 'P1',
   createdBy: 'test-admin',
@@ -198,7 +196,12 @@ describe('RequirementDetailView', () => {
   it('不展示旧版类型周期和截止字段', async () => {
     render(
       <RequirementDetailView
-        item={{ ...requirement, dueDate: '2026-07-31' }}
+        item={{
+          ...requirement,
+          type: 'feature',
+          week: '2026-W28',
+          dueDate: '2026-07-31'
+        }}
         project="alpha"
       />
     );

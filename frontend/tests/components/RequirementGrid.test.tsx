@@ -22,8 +22,6 @@ function makeRequirement(
 ): Requirement {
   return {
     ...input,
-    type: 'feature',
-    week: '2026-W28',
     updatedAt: '2026-07-07',
     summary: input.summary || '',
     detail: { scope: [], nonGoals: [] },

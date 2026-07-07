@@ -18,9 +18,7 @@ function requirement(input: Partial<Requirement> & Pick<Requirement, 'id' | 'tit
   return {
     id: input.id,
     title: input.title,
-    type: 'feature',
     status: input.status || 'todo',
-    week: '2026-W28',
     owner: input.owner || 'pm',
     priority: input.priority || 'P1',
     createdAt: input.createdAt,

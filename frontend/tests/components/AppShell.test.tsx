@@ -93,9 +93,7 @@ describe('AppShell', () => {
     const requirement: Requirement = {
       id: 'REQ-0001',
       title: '登录页',
-      type: 'feature',
       status: 'todo',
-      week: '2026-W28',
       owner: 'pm',
       priority: 'P1',
       createdAt: '2026-07-06',

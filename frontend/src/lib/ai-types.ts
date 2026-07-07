@@ -51,8 +51,6 @@ export interface AiProposalEvent {
   verify?: string;
   notes?: string;
   role?: string;
-  week?: string;
-  dueDate?: string;
   detail?: Record<string, unknown>;
   acceptance?: string[];
   endpoints?: Array<Record<string, unknown>>;
