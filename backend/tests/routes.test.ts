@@ -721,6 +721,30 @@ describe('V2 requirement REST APIs', () => {
     expect(emptyTitle.body.code).toBe('MISSING_TITLE');
   });
 
+  it('rejects terminal requirement status rollback before appending events', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '已完成需求',
+        status: 'done'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .patch('/api/projects/v2/requirements/REQ-0001')
+        .send({ status: 'todo' })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_STATUS_TRANSITION');
+    expect(readEvents(paths.eventsPath).map((event) => event.kind)).toEqual(['req.new']);
+  });
+
   it('returns only V2 events for requirement history', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
     const paths = projectPaths(tmpDir, 'v2');

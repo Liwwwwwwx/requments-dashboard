@@ -14,6 +14,7 @@ const {
 } = require("./projects");
 const { readEvents, appendEvents, withLock } = require("./events");
 const { render } = require("./state");
+const { assertRequirementTransition } = require("./state-machine");
 const { RequirementId } = require("./schema");
 const { httpError } = require("./errors");
 const { createAuthRoutes } = require("./auth/routes");
@@ -126,6 +127,16 @@ function createRoutes(rootDir) {
       return null;
     }
     return priority;
+  }
+
+  function assertV2StatusTransition(prevStatus, nextStatus, requirementId, next) {
+    try {
+      assertRequirementTransition(prevStatus, nextStatus, requirementId);
+      return true;
+    } catch (err) {
+      next(httpError(400, "INVALID_STATUS_TRANSITION", err.message));
+      return false;
+    }
   }
 
   function assertV2Title(value, next) {
@@ -285,7 +296,8 @@ function createRoutes(rootDir) {
     if (!state) {
       return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
     }
-    if (!(state.items || []).some((item) => item.id === req.params.requirementId)) {
+    const currentRequirement = (state.items || []).find((item) => item.id === req.params.requirementId);
+    if (!currentRequirement) {
       return next(httpError(404, "REQUIREMENT_NOT_FOUND", `需求不存在：${req.params.requirementId}`));
     }
 
@@ -317,6 +329,7 @@ function createRoutes(rootDir) {
     if (req.body.status !== undefined) {
       const status = assertV2Status(req.body.status, next);
       if (!status) return;
+      if (!assertV2StatusTransition(currentRequirement.status, status, req.params.requirementId, next)) return;
       events.push({
         kind: "req.status",
         actor,
