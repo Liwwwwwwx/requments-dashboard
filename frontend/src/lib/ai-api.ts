@@ -43,6 +43,17 @@ export async function getAiConversation(
   );
 }
 
+export async function getAiMessages(
+  project: string,
+  conversationId: string
+): Promise<{ ok: true; conversationId: string; messages: AiMessage[] }> {
+  return fetchJson(
+    `/ai/conversations/${encodeURIComponent(
+      conversationId
+    )}/messages?project=${encodeURIComponent(project)}`
+  );
+}
+
 export async function createAiConversation(
   project: string,
   body: { requirementId?: string; title?: string; model?: string; accountId?: string } = {}
