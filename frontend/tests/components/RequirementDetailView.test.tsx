@@ -128,6 +128,36 @@ describe('RequirementDetailView', () => {
     expect(screen.queryByText('open')).not.toBeInTheDocument();
   });
 
+  it('不展示旧版任务列表和任务统计', async () => {
+    render(
+      <RequirementDetailView
+        item={{
+          ...requirement,
+          tasks: [
+            {
+              taskId: 'FE-1',
+              role: 'frontend',
+              title: '实现登录表单',
+              status: 'blocked',
+              agent: 'agent-a'
+            }
+          ],
+          taskStats: { total: 1, done: 0, active: 0, blocked: 1 }
+        }}
+        project="alpha"
+        taskItems={[]}
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+    expect(screen.queryByText('任务统计')).not.toBeInTheDocument();
+    expect(screen.queryByText('阻塞任务')).not.toBeInTheDocument();
+    expect(screen.queryByText('FE-1')).not.toBeInTheDocument();
+    expect(screen.queryByText('实现登录表单')).not.toBeInTheDocument();
+  });
+
   it('保存基础字段和状态后刷新详情', async () => {
     const onUpdated = vi.fn();
     vi.mocked(updateRequirement).mockResolvedValue({
