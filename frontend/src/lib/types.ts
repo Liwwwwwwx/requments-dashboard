@@ -120,6 +120,7 @@ export interface Filters {
   role: 'all' | string;
   status: 'all' | RequirementStatus;
   priority: 'all' | Priority;
+  owner: 'all' | string;
   week: 'all' | string;
 }
 

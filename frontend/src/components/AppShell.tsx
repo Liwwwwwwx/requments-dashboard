@@ -19,6 +19,7 @@ const DEFAULT_FILTERS: Filters = {
   role: 'all',
   status: 'all',
   priority: 'all',
+  owner: 'all',
   week: 'all'
 };
 
@@ -110,6 +111,7 @@ export function AppShell({ project, reqId, children }: Props) {
                   data={data}
                   project={activeProject}
                   filters={filters}
+                  onFiltersChange={setFilters}
                   selectedId={selectedItem?.id || null}
                   loading={loading}
                   onCreated={refresh}

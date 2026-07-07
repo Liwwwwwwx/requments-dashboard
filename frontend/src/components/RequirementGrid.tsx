@@ -5,7 +5,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Modal, Select, message } from 'antd';
 import { useRouter } from 'next/navigation';
 import { createRequirement } from '@/lib/api';
-import type { BoardState, Filters, Priority } from '@/lib/types';
+import { statusLabel, unique } from '@/lib/utils';
+import type { BoardState, Filters, Priority, RequirementStatus } from '@/lib/types';
 import { BOARD_VIEWS } from '@/lib/nav';
 import { BoardColumns } from './board/BoardColumns';
 import { ListView } from './board/ListView';
@@ -15,6 +16,7 @@ interface Props {
   data: BoardState;
   project: string;
   filters: Filters;
+  onFiltersChange?: (filters: Filters) => void;
   selectedId: string | null;
   loading?: boolean;
   onCreated?: () => Promise<void> | void;
@@ -27,7 +29,30 @@ interface CreateRequirementForm {
   owner?: string;
 }
 
-export function RequirementGrid({ data, project, filters, selectedId, loading, onCreated }: Props) {
+const STATUS_OPTIONS: { value: 'all' | RequirementStatus; label: string }[] = [
+  { value: 'all', label: '全部状态' },
+  { value: 'todo', label: statusLabel('todo').label },
+  { value: 'doing', label: statusLabel('doing').label },
+  { value: 'blocked', label: statusLabel('blocked').label },
+  { value: 'done', label: statusLabel('done').label }
+];
+
+const PRIORITY_OPTIONS: { value: 'all' | Priority; label: string }[] = [
+  { value: 'all', label: '全部优先级' },
+  { value: 'P0', label: 'P0' },
+  { value: 'P1', label: 'P1' },
+  { value: 'P2', label: 'P2' }
+];
+
+export function RequirementGrid({
+  data,
+  project,
+  filters,
+  onFiltersChange,
+  selectedId,
+  loading,
+  onCreated
+}: Props) {
   const router = useRouter();
   const [activeView, setActiveView] = useState('board');
   const [createOpen, setCreateOpen] = useState(false);
@@ -35,17 +60,28 @@ export function RequirementGrid({ data, project, filters, selectedId, loading, o
   const [form] = Form.useForm<CreateRequirementForm>();
 
   const query = filters.query.toLowerCase();
+  const ownerFilter = filters.owner || 'all';
   const items = useMemo(() => {
     return data.items.filter((item) => {
       if (filters.status !== 'all' && item.status !== filters.status) return false;
-      if (query && !item.title.toLowerCase().includes(query) && !item.id.toLowerCase().includes(query))
-        return false;
+      if (filters.priority !== 'all' && item.priority !== filters.priority) return false;
+      if (ownerFilter !== 'all' && item.owner !== ownerFilter) return false;
+      if (query) {
+        const text = [item.id, item.title, item.summary, item.owner].join(' ').toLowerCase();
+        if (!text.includes(query)) return false;
+      }
       return true;
     });
-  }, [data.items, filters.status, query]);
+  }, [data.items, filters.priority, filters.status, ownerFilter, query]);
+
+  const owners = useMemo(() => unique(data.items.map((item) => item.owner)), [data.items]);
 
   const isInitialLoading = !!loading && data.items.length === 0;
   const open = (id: string) => router.push(`/p/${project}/r/${id}`);
+
+  const updateFilters = (patch: Partial<Filters>) => {
+    onFiltersChange?.({ ...filters, ...patch });
+  };
 
   const handleCreate = async () => {
     const values = await form.validateFields();
@@ -93,6 +129,48 @@ export function RequirementGrid({ data, project, filters, selectedId, loading, o
           })}
         </div>
         <div className="board-toolbar-actions">
+          <div className="board-filters" aria-label="需求筛选">
+            <label>
+              <span>状态</span>
+              <select
+                value={filters.status}
+                onChange={(e) => updateFilters({ status: e.target.value as Filters['status'] })}
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>优先级</span>
+              <select
+                value={filters.priority}
+                onChange={(e) => updateFilters({ priority: e.target.value as Filters['priority'] })}
+              >
+                {PRIORITY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>负责人</span>
+              <select
+                value={ownerFilter}
+                onChange={(e) => updateFilters({ owner: e.target.value })}
+              >
+                <option value="all">全部负责人</option>
+                {owners.map((owner) => (
+                  <option key={owner} value={owner}>
+                    {owner}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           {activeView !== 'timeline' && (
             <div className="board-count">
               共 <strong>{items.length}</strong> 条需求
@@ -132,7 +210,7 @@ export function RequirementGrid({ data, project, filters, selectedId, loading, o
         confirmLoading={creating}
         okText="创建"
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}
