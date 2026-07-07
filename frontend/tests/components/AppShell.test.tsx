@@ -107,8 +107,6 @@ describe('AppShell', () => {
         nonGoals: []
       },
       acceptance: [],
-      links: [],
-      sources: [],
       notes: []
     };
     vi.mocked(fetchRequirement).mockResolvedValue({

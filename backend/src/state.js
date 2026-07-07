@@ -243,8 +243,6 @@ function buildState(events) {
         summary: item.summary,
         detail: clone(item.detail),
         acceptance: clone(normalizeArray(item.acceptance)),
-        links: clone(normalizeArray(item.links)),
-        sources: clone(normalizeArray(item.sources)),
         notes: clone(normalizeArray(item.notes))
       };
     })

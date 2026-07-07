@@ -28,8 +28,6 @@ function makeRequirement(
     summary: input.summary || '',
     detail: { scope: [], nonGoals: [] },
     acceptance: [],
-    links: [],
-    sources: [],
     notes: []
   };
 }

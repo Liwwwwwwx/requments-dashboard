@@ -20,6 +20,8 @@ describe('buildState', () => {
         requirementType: 'feature',
         week: '2026-W28',
         dueDate: '2026-07-31',
+        links: [{ href: 'https://example.com/spec', label: '旧文档' }],
+        sources: ['legacy-doc'],
         priority: 'P1',
         updatedAt: '2026-07-07',
         actor: 'a'
@@ -40,6 +42,8 @@ describe('buildState', () => {
     expect(req).not.toHaveProperty('type');
     expect(req).not.toHaveProperty('week');
     expect(req).not.toHaveProperty('dueDate');
+    expect(req).not.toHaveProperty('links');
+    expect(req).not.toHaveProperty('sources');
     expect(req).not.toHaveProperty('tasks');
     expect(req).not.toHaveProperty('taskStats');
     expect(req).not.toHaveProperty('contract');

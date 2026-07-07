@@ -60,8 +60,6 @@ const requirement: Requirement = {
     nonGoals: []
   },
   acceptance: [],
-  links: [],
-  sources: [],
   notes: []
 };
 
@@ -212,6 +210,25 @@ describe('RequirementDetailView', () => {
     expect(screen.queryByText('2026-W28')).not.toBeInTheDocument();
     expect(screen.queryByText('截止')).not.toBeInTheDocument();
     expect(screen.queryByText('2026-07-31')).not.toBeInTheDocument();
+  });
+
+  it('不展示旧版关联文档字段', async () => {
+    render(
+      <RequirementDetailView
+        item={{
+          ...requirement,
+          links: [{ href: 'https://example.com/spec', label: '旧版文档' }],
+          sources: ['legacy-doc']
+        }}
+        project="alpha"
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+    expect(screen.queryByText('关联文档')).not.toBeInTheDocument();
+    expect(screen.queryByText('旧版文档')).not.toBeInTheDocument();
   });
 
   it('不展示旧版任务列表和任务统计', async () => {

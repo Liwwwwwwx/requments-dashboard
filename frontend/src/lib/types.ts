@@ -8,11 +8,6 @@ export interface RequirementDetail {
   next?: string;
 }
 
-export interface RequirementLink {
-  href: string;
-  label: string;
-}
-
 export interface Note {
   text: string;
   at: string;
@@ -34,8 +29,6 @@ export interface Requirement {
   summary: string;
   detail: RequirementDetail;
   acceptance: string[];
-  links: RequirementLink[];
-  sources: string[];
   notes: Note[];
 }
 

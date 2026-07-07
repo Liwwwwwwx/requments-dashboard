@@ -28,8 +28,6 @@ function requirement(input: Partial<Requirement> & Pick<Requirement, 'id' | 'tit
     summary: input.summary || '',
     detail: { scope: [], nonGoals: [] },
     acceptance: [],
-    links: [],
-    sources: [],
     notes: []
   };
 }

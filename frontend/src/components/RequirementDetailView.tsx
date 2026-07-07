@@ -386,23 +386,6 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
             </section>
           )}
 
-          {(item.links?.length || 0) > 0 && (
-            <section className="view-detail-section">
-              <h3 className="view-detail-section-title">关联文档</h3>
-              <div className="view-detail-section-body">
-                <ul>
-                  {item.links.map((link, i) => (
-                    <li key={i}>
-                      <a href={link.href} target="_blank" rel="noreferrer">
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </section>
-          )}
-
           <section className="view-detail-section">
             <div
               style={{
