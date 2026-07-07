@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Progress, Typography, Empty, Select } from 'antd';
+import { Button, Empty, Form, Input, Modal, Progress, Select, Space, Typography, message } from 'antd';
+import { updateRequirement } from '@/lib/api';
 import { priorityChipClass, roleLabel, statusChipClass, statusLabel } from '@/lib/utils';
 import { TaskDrawer } from './TaskDrawer';
-import type { Requirement, Task } from '@/lib/types';
+import type { Priority, Requirement, RequirementStatus, Task } from '@/lib/types';
 
 const { Paragraph, Text } = Typography;
 
@@ -39,16 +40,29 @@ interface Props {
   item: Requirement | null;
   project: string;
   taskItems: TaskWithContext[];
+  onUpdated?: () => Promise<void> | void;
 }
 
-export function RequirementDetailView({ item, project, taskItems }: Props) {
+interface RequirementEditForm {
+  title: string;
+  description?: string;
+  status: RequirementStatus;
+  priority: Priority;
+  owner?: string;
+}
+
+export function RequirementDetailView({ item, project, taskItems, onUpdated }: Props) {
   const router = useRouter();
+  const [form] = Form.useForm<RequirementEditForm>();
   const [drawerTask, setDrawerTask] = useState<TaskWithContext | null>(null);
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setDrawerTask(null);
     setRoleFilter('all');
+    setEditing(false);
   }, [item?.id]);
 
   const tasks = useMemo(() => item?.tasks || [], [item?.tasks]);
@@ -78,6 +92,40 @@ export function RequirementDetailView({ item, project, taskItems }: Props) {
     router.push(`/p/${project}`);
   };
 
+  const openEdit = () => {
+    if (!item) return;
+    form.setFieldsValue({
+      title: item.title,
+      description: item.summary || item.detail?.goal || '',
+      status: item.status,
+      priority: item.priority || 'P1',
+      owner: item.owner || ''
+    });
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!item) return;
+    const values = await form.validateFields();
+    setSaving(true);
+    try {
+      await updateRequirement(project, item.id, {
+        title: values.title.trim(),
+        description: values.description?.trim() || '',
+        status: values.status,
+        priority: values.priority,
+        owner: values.owner?.trim() || ''
+      });
+      message.success('需求已更新');
+      setEditing(false);
+      await onUpdated?.();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '更新需求失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!item) {
     return (
       <div className="empty-state">
@@ -100,10 +148,15 @@ export function RequirementDetailView({ item, project, taskItems }: Props) {
             <span>·</span>
             <span>需求详情</span>
           </div>
-          <button type="button" className="view-detail-back" onClick={handleBack}>
-            <span className="arrow">←</span>
-            <span>返回列表</span>
-          </button>
+          <Space className="view-detail-actions" size={8}>
+            <Button size="small" onClick={openEdit}>
+              编辑需求
+            </Button>
+            <button type="button" className="view-detail-back" onClick={handleBack}>
+              <span className="arrow">←</span>
+              <span>返回列表</span>
+            </button>
+          </Space>
         </div>
         <h1 className="view-detail-title">{item.title}</h1>
         <div className="view-detail-chips">
@@ -420,6 +473,61 @@ export function RequirementDetailView({ item, project, taskItems }: Props) {
       </div>
 
       <TaskDrawer task={drawerTask} onClose={() => setDrawerTask(null)} />
+      <Modal
+        title="编辑需求"
+        open={editing}
+        onOk={() => void handleSave()}
+        onCancel={() => setEditing(false)}
+        confirmLoading={saving}
+        okText="保存"
+        cancelText="取消"
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical" preserve={false}>
+          <Form.Item
+            label="标题"
+            name="title"
+            rules={[{ required: true, whitespace: true, message: '请输入需求标题' }]}
+          >
+            <Input placeholder="需求标题" />
+          </Form.Item>
+          <Form.Item label="描述" name="description">
+            <Input.TextArea rows={4} placeholder="需求描述" />
+          </Form.Item>
+          <Form.Item
+            label="状态"
+            name="status"
+            rules={[{ required: true, message: '请选择状态' }]}
+          >
+            <Select
+              aria-label="状态"
+              options={[
+                { value: 'todo', label: '待开始' },
+                { value: 'doing', label: '进行中' },
+                { value: 'blocked', label: '阻塞' },
+                { value: 'done', label: '完成' }
+              ]}
+            />
+          </Form.Item>
+          <Form.Item
+            label="优先级"
+            name="priority"
+            rules={[{ required: true, message: '请选择优先级' }]}
+          >
+            <Select
+              aria-label="优先级"
+              options={[
+                { value: 'P0', label: 'P0' },
+                { value: 'P1', label: 'P1' },
+                { value: 'P2', label: 'P2' }
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="负责人" name="owner">
+            <Input placeholder="负责人" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

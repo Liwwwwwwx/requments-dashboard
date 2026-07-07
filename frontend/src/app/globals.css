@@ -1081,6 +1081,10 @@ body {
   margin-bottom: 14px;
 }
 
+.view-detail-actions {
+  flex: 0 0 auto;
+}
+
 .view-detail-header {
   padding-bottom: 28px;
   margin-bottom: 32px;

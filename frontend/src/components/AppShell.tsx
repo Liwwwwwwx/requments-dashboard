@@ -85,7 +85,12 @@ export function AppShell({ project, reqId, children }: Props) {
             : reqId
               ? (
                 <Spin spinning={loading}>
-                  <RequirementDetailView item={selectedItem} project={activeProject} taskItems={taskItems} />
+                  <RequirementDetailView
+                    item={selectedItem}
+                    project={activeProject}
+                    taskItems={taskItems}
+                    onUpdated={refresh}
+                  />
                 </Spin>
               )
               : (
