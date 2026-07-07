@@ -17,6 +17,7 @@ describe('buildState', () => {
         title: '登录',
         summary: '用户登录',
         priority: 'P1',
+        updatedAt: '2026-07-07',
         actor: 'a'
       }
     ];
@@ -27,6 +28,8 @@ describe('buildState', () => {
     expect(req.title).toBe('登录');
     expect(req.priority).toBe('P1');
     expect(req.status).toBe('todo');
+    expect(req.createdAt).toBe('2026-07-07');
+    expect(req.updatedAt).toBe('2026-07-07');
     expect(req.tasks).toEqual([]);
     expect(req.taskStats).toEqual({ total: 0, done: 0, active: 0, blocked: 0 });
     expect(req.contract).toEqual({ ready: false, endpoints: [] });

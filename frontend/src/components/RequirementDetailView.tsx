@@ -318,6 +318,11 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
           </span>
           <span className="dot">·</span>
           <span className="kv">
+            <span className="k">创建时间</span>
+            <span className="v">{item.createdAt || '-'}</span>
+          </span>
+          <span className="dot">·</span>
+          <span className="kv">
             <span className="k">更新时间</span>
             <span className="v">{item.updatedAt || '-'}</span>
           </span>

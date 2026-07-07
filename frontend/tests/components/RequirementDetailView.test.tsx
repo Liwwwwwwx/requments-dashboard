@@ -29,6 +29,7 @@ const requirement: Requirement = {
   week: '2026-W28',
   owner: 'pm',
   priority: 'P1',
+  createdAt: '2026-07-06',
   updatedAt: '2026-07-07',
   summary: '补齐最简单的登录体验',
   detail: {
@@ -105,6 +106,8 @@ describe('RequirementDetailView', () => {
       expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
     });
     expect(await screen.findByText('变更历史')).toBeInTheDocument();
+    expect(screen.getByText('创建时间')).toBeInTheDocument();
+    expect(screen.getByText('2026-07-06')).toBeInTheDocument();
     expect(screen.getByText('新建需求')).toBeInTheDocument();
     expect(screen.getByText('状态变更 → 阻塞')).toBeInTheDocument();
   });

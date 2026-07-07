@@ -70,6 +70,7 @@ export interface Requirement {
   dueDate?: string;
   owner: string;
   priority: Priority;
+  createdAt?: string;
   updatedAt: string;
   summary: string;
   detail: RequirementDetail;
