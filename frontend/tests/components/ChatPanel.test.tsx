@@ -2,8 +2,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { ChatPanel } from '@/components/ai/ChatPanel';
-import { getAiConversation, listAiConversations } from '@/lib/ai-api';
-import type { AiConversation } from '@/lib/ai-types';
+import {
+  createAiConversation,
+  getAiConversation,
+  listAiConversations,
+  sendAiMessageStream
+} from '@/lib/ai-api';
+import type { AiConversation, AiMessage } from '@/lib/ai-types';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -44,10 +49,6 @@ vi.mock('antd', async (importOriginal) => {
   return { ...actual, Input };
 });
 
-vi.mock('@/lib/ai-key-store', () => ({
-  getDeepSeekApiKey: () => 'sk-test'
-}));
-
 vi.mock('@/lib/ai-api', () => ({
   listAiConversations: vi.fn(),
   getAiConversation: vi.fn(),
@@ -61,10 +62,6 @@ vi.mock('@/components/ai/ConversationList', () => ({
 
 vi.mock('@/components/ai/MessageItem', () => ({
   MessageItem: () => <div>消息</div>
-}));
-
-vi.mock('@/components/ai/ApiKeySettingsModal', () => ({
-  ApiKeySettingsModal: () => null
 }));
 
 function conversation(input: Partial<AiConversation>): AiConversation {
@@ -85,6 +82,8 @@ describe('ChatPanel', () => {
   beforeEach(() => {
     vi.mocked(listAiConversations).mockReset();
     vi.mocked(getAiConversation).mockReset();
+    vi.mocked(createAiConversation).mockReset();
+    vi.mocked(sendAiMessageStream).mockReset();
     vi.mocked(getAiConversation).mockResolvedValue({
       ok: true,
       conversation: conversation({ id: 'matched', requirementId: 'REQ-0001' }),
@@ -141,6 +140,57 @@ describe('ChatPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '拆下一步' }));
     expect(screen.getByRole('textbox')).toHaveValue(
       '请基于当前项目或需求上下文，给出下一步推进建议，不要直接修改数据。'
+    );
+  });
+
+  it('发送消息时使用后端账号且不传前端 API Key', async () => {
+    vi.mocked(listAiConversations).mockResolvedValue({
+      ok: true,
+      conversations: []
+    });
+    vi.mocked(createAiConversation).mockResolvedValue({
+      ok: true,
+      conversation: conversation({ id: 'conv-new', requirementId: null })
+    });
+    const assistantMessage: AiMessage = {
+      id: 'msg-a',
+      conversationId: 'conv-new',
+      role: 'assistant',
+      content: '收到',
+      tokensIn: 1,
+      tokensOut: 1,
+      ts: 1000
+    };
+    vi.mocked(sendAiMessageStream).mockReturnValue({
+      abort: vi.fn(),
+      promise: Promise.resolve({
+        message: assistantMessage,
+        usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 }
+      })
+    });
+
+    render(<ChatPanel project="alpha" />);
+
+    await waitFor(() => {
+      expect(listAiConversations).toHaveBeenCalledWith('alpha');
+    });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '总结一下' }
+    });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(sendAiMessageStream).toHaveBeenCalled();
+    });
+    expect(sendAiMessageStream).toHaveBeenCalledWith(
+      'alpha',
+      'conv-new',
+      {
+        text: '总结一下',
+        model: 'deepseek-chat',
+        toolsEnabled: true
+      },
+      expect.any(Object)
     );
   });
 });

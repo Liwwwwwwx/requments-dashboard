@@ -1393,7 +1393,6 @@ body {
   border-bottom: 1px solid var(--border-hairline);
 }
 
-.view-detail-aside .ai-panel-compact .ai-key-chip span,
 .view-detail-aside .ai-panel-compact .ai-toolbar-label {
   max-width: 140px;
   overflow: hidden;

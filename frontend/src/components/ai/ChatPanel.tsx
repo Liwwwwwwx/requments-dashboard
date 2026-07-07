@@ -6,7 +6,6 @@ import { Button, Input, Space, Spin, Switch, Tooltip, Typography } from 'antd';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
-  KeyOutlined,
   RedoOutlined,
   StopOutlined
 } from '@ant-design/icons';
@@ -17,10 +16,8 @@ import {
   sendAiMessageStream
 } from '@/lib/ai-api';
 import type { AiMessage, AiProposal } from '@/lib/ai-types';
-import { getDeepSeekApiKey } from '@/lib/ai-key-store';
 import { MessageItem } from './MessageItem';
 import { ConversationList } from './ConversationList';
-import { ApiKeySettingsModal } from './ApiKeySettingsModal';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -52,23 +49,10 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
   const [stickToBottom, setStickToBottom] = useState(true);
   /** 强制触发 ConversationList 重新拉取（用 counter 做依赖） */
   const [convListTick, setConvListTick] = useState(0);
-  const [keyModalOpen, setKeyModalOpen] = useState(false);
-  /** 本地是否有 user key（决定 toolbar 上 Key 按钮的状态点） */
-  const [hasUserKey, setHasUserKey] = useState<boolean | null>(null);
 
   const streamAbortRef = useRef<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastUserTextRef = useRef<string | null>(null);
-
-  // 检查本地是否有 user key
-  useEffect(() => {
-    setHasUserKey(Boolean(getDeepSeekApiKey()));
-    // key modal 关闭时再查一次
-    if (!keyModalOpen) {
-      const id = setTimeout(() => setHasUserKey(Boolean(getDeepSeekApiKey())), 100);
-      return () => clearTimeout(id);
-    }
-  }, [keyModalOpen]);
 
   // 进入项目/需求时自动选会话：需求级入口只复用同一需求的历史会话。
   useEffect(() => {
@@ -150,15 +134,6 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
 
   const sendMessage = useCallback(
     async (textToSend: string) => {
-      const userKey = getDeepSeekApiKey();
-      if (!userKey) {
-        setKeyModalOpen(true);
-        setLastError({
-          code: 'AI_KEY_MISSING',
-          message: '请先在右上角配置 DeepSeek API Key'
-        });
-        return;
-      }
       setLastError(null);
       setSending(true);
       try {
@@ -190,8 +165,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
           {
             text: textToSend,
             model: 'deepseek-chat',
-            toolsEnabled,
-            apiKey: userKey
+            toolsEnabled
           },
           {
             onUser: (msg) => {
@@ -339,9 +313,6 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
   };
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
-  const showKeyAlert =
-    hasUserKey === false &&
-    (messages.length > 0 || lastError?.code === 'AI_KEY_MISSING');
 
   return (
     <div className={`ai-panel ${compact ? 'ai-panel-compact' : ''}`}>
@@ -373,42 +344,8 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
           <Space size={6} align="center">
             <span className="ai-model-dot" />
             <Text className="ai-toolbar-label">deepseek-chat</Text>
-            <span className="ai-toolbar-sep" />
-            <Tooltip
-              title={
-                hasUserKey
-                  ? '已配置 Key · 点击修改'
-                  : '点击配置 DeepSeek API Key'
-              }
-            >
-              <button
-                type="button"
-                className={`ai-key-chip ${hasUserKey ? 'is-set' : 'is-empty'}`}
-                onClick={() => setKeyModalOpen(true)}
-                aria-label="配置 Key"
-              >
-                <KeyOutlined />
-                <span>{hasUserKey ? 'Key 已配置' : '配置 Key'}</span>
-              </button>
-            </Tooltip>
           </Space>
         </div>
-
-        {showKeyAlert && (
-          <div className="ai-key-banner">
-            <Text type="warning">
-              你还没有配置 DeepSeek API Key。AI 对话需要它才能工作。
-            </Text>
-            <Button
-              size="small"
-              type="primary"
-              icon={<KeyOutlined />}
-              onClick={() => setKeyModalOpen(true)}
-            >
-              立即配置
-            </Button>
-          </div>
-        )}
 
         <div className="ai-panel-scroll" ref={scrollRef}>
           {messages.length === 0 ? (
@@ -418,28 +355,24 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
               </div>
               <div className="ai-panel-empty-title">开始与 DeepSeek 对话</div>
               <Text type="secondary" style={{ fontSize: 13 }}>
-                {hasUserKey === false
-                  ? '请先点击右上角"配置 Key"，粘贴你的 DeepSeek API Key。'
-                  : requirementId
-                    ? `已自动绑定到 ${requirementId}`
-                    : '支持自然语言提问、需求摘要、推进建议'}
+                {requirementId
+                  ? `已自动绑定到 ${requirementId}`
+                  : '支持自然语言提问、需求摘要、推进建议'}
               </Text>
-              {hasUserKey && (
-                <Space wrap style={{ marginTop: 16, justifyContent: 'center' }}>
-                  {QUICK_PROMPTS.map((p) => (
-                    <Button
-                      key={p.label}
-                      size="small"
-                      disabled={sending}
-                      onClick={() => {
-                        setText(p.text);
-                      }}
-                    >
-                      {p.label}
-                    </Button>
-                  ))}
-                </Space>
-              )}
+              <Space wrap style={{ marginTop: 16, justifyContent: 'center' }}>
+                {QUICK_PROMPTS.map((p) => (
+                  <Button
+                    key={p.label}
+                    size="small"
+                    disabled={sending}
+                    onClick={() => {
+                      setText(p.text);
+                    }}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </Space>
             </div>
           ) : (
             <div className="msg-list" role="log" aria-live="polite">
@@ -520,11 +453,9 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
               placeholder={
                 sending
                   ? '正在生成中…'
-                  : hasUserKey === false
-                    ? '请先配置 Key…'
-                    : '发消息给 DeepSeek'
+                  : '发消息给 DeepSeek'
               }
-              disabled={sending || hasUserKey === false}
+              disabled={sending}
               variant="borderless"
             />
             <div className="ai-input-toolbar">
@@ -558,7 +489,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
                       shape="circle"
                       className="ai-input-action"
                       icon={<RedoOutlined />}
-                      disabled={!lastUserTextRef.current || hasUserKey === false}
+                      disabled={!lastUserTextRef.current}
                       onClick={handleRetry}
                     />
                   </Tooltip>
@@ -569,7 +500,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
                       shape="circle"
                       className="ai-input-action"
                       icon={<ArrowUpOutlined />}
-                      disabled={!text.trim() || hasUserKey === false}
+                      disabled={!text.trim()}
                       onClick={handleSend}
                     />
                   </Tooltip>
@@ -582,11 +513,6 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
           </div>
         </div>
       </div>
-
-      <ApiKeySettingsModal
-        open={keyModalOpen}
-        onClose={() => setKeyModalOpen(false)}
-      />
     </div>
   );
 }
