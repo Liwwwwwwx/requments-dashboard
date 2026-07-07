@@ -20,6 +20,9 @@ const { authMiddleware } = require("./auth/middleware");
 const { initUsers } = require("./auth/users");
 const { createAiRoutes } = require("./ai/routes");
 
+const V2_REQUIREMENT_STATUSES = new Set(["todo", "doing", "blocked", "done"]);
+const V2_PRIORITIES = new Set(["P0", "P1", "P2"]);
+
 function createRoutes(rootDir) {
   const router = express.Router();
 
@@ -80,6 +83,26 @@ function createRoutes(rootDir) {
     return `REQ-${String(max + 1).padStart(4, "0")}`;
   }
 
+  function assertV2Status(value, next) {
+    if (value === undefined) return null;
+    const status = String(value);
+    if (!V2_REQUIREMENT_STATUSES.has(status)) {
+      next(httpError(400, "INVALID_STATUS", "需求状态仅支持 todo、doing、blocked、done"));
+      return null;
+    }
+    return status;
+  }
+
+  function assertV2Priority(value, next) {
+    if (value === undefined) return "P1";
+    const priority = String(value);
+    if (!V2_PRIORITIES.has(priority)) {
+      next(httpError(400, "INVALID_PRIORITY", "需求优先级仅支持 P0、P1、P2"));
+      return null;
+    }
+    return priority;
+  }
+
   function getProjectState(rootDir, projectId) {
     const paths = projectPaths(rootDir, projectId);
     if (!fs.existsSync(paths.eventsPath) && !fs.existsSync(paths.stateJsonPath)) {
@@ -116,6 +139,10 @@ function createRoutes(rootDir) {
     if (!title) {
       return next(httpError(400, "MISSING_TITLE", "需求标题不能为空"));
     }
+    const priority = assertV2Priority(req.body.priority, next);
+    if (!priority) return;
+    const status = assertV2Status(req.body.status, next);
+    if (req.body.status !== undefined && !status) return;
 
     const actor = req.headers["x-actor"] || req.user?.username || "http";
     const state = getProjectState(rootDir, req.params.project) || { items: [] };
@@ -125,9 +152,10 @@ function createRoutes(rootDir) {
       requirementId: nextRequirementId(state.items || []),
       title,
       summary: String(req.body.description || req.body.summary || "").trim(),
-      priority: req.body.priority || "P1",
-      owner: req.body.owner
+      priority,
+      owner: req.body.owner !== undefined ? String(req.body.owner).trim() : undefined
     };
+    if (status) event.status = status;
 
     const nextState = withLock(paths.lockPath, () => {
       const appended = appendEvents(paths.eventsPath, [event]);
@@ -175,8 +203,12 @@ function createRoutes(rootDir) {
     if (req.body.title !== undefined) patch.title = String(req.body.title).trim();
     if (req.body.description !== undefined) patch.summary = String(req.body.description).trim();
     if (req.body.summary !== undefined) patch.summary = String(req.body.summary).trim();
-    if (req.body.priority !== undefined) patch.priority = req.body.priority;
-    if (req.body.owner !== undefined) patch.owner = req.body.owner;
+    if (req.body.priority !== undefined) {
+      const priority = assertV2Priority(req.body.priority, next);
+      if (!priority) return;
+      patch.priority = priority;
+    }
+    if (req.body.owner !== undefined) patch.owner = String(req.body.owner).trim();
 
     if (Object.keys(patch).length > 0) {
       events.push({
@@ -187,11 +219,13 @@ function createRoutes(rootDir) {
       });
     }
     if (req.body.status !== undefined) {
+      const status = assertV2Status(req.body.status, next);
+      if (!status) return;
       events.push({
         kind: "req.status",
         actor,
         requirementId: req.params.requirementId,
-        status: req.body.status
+        status
       });
     }
     if (events.length === 0) {

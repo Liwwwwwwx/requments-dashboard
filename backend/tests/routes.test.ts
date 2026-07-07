@@ -398,6 +398,34 @@ describe('V2 requirement REST APIs', () => {
     expect(res.body.event.kind).toBe('req.new');
   });
 
+  it('rejects invalid priority when creating a requirement', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements')
+        .send({
+          title: '需求看板',
+          priority: 'P9'
+        })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_PRIORITY');
+  });
+
+  it('rejects invalid status when creating a requirement', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements')
+        .send({
+          title: '需求看板',
+          status: 'reviewing'
+        })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_STATUS');
+  });
+
   it('patches requirement fields and status through the V2 REST API', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
     const paths = projectPaths(tmpDir, 'v2');
@@ -435,6 +463,35 @@ describe('V2 requirement REST APIs', () => {
       owner: 'dev'
     });
     expect(res.body.appended).toBe(2);
+  });
+
+  it('rejects invalid status and priority when patching a requirement', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '旧标题'
+      }
+    ]);
+
+    const invalidStatus = await authReq(
+      request(makeApp())
+        .patch('/api/projects/v2/requirements/REQ-0001')
+        .send({ status: 'reviewing' })
+    );
+    expect(invalidStatus.status).toBe(400);
+    expect(invalidStatus.body.code).toBe('INVALID_STATUS');
+
+    const invalidPriority = await authReq(
+      request(makeApp())
+        .patch('/api/projects/v2/requirements/REQ-0001')
+        .send({ priority: 'P9' })
+    );
+    expect(invalidPriority.status).toBe(400);
+    expect(invalidPriority.body.code).toBe('INVALID_PRIORITY');
   });
 
   it('adds a requirement note through the requirement event API', async () => {
