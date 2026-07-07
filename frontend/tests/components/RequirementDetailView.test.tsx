@@ -131,6 +131,19 @@ describe('RequirementDetailView', () => {
           kind: 'note.add',
           actor: 'pm',
           event: { text: '先保持最小登录' }
+        },
+        {
+          eventId: 'E5',
+          ts: 5000,
+          kind: 'req.patch',
+          actor: 'pm',
+          event: {
+            detail: {
+              next: '确认错误提示文案',
+              scope: ['用户名密码登录']
+            },
+            acceptance: ['登录成功后进入项目页']
+          }
         }
       ]
     });
@@ -152,6 +165,7 @@ describe('RequirementDetailView', () => {
     expect(screen.getByText('状态变更 → 阻塞')).toBeInTheDocument();
     expect(screen.getByText('标题：登录页 V2；描述：只保留用户名密码登录；优先级：P0；负责人：owner-a')).toBeInTheDocument();
     expect(screen.getByText('先保持最小登录')).toBeInTheDocument();
+    expect(screen.getByText('下一步：确认错误提示文案；范围：用户名密码登录；验收点：登录成功后进入项目页')).toBeInTheDocument();
   });
 
   it('不展示旧版工作流状态字段', async () => {

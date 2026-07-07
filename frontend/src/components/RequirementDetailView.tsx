@@ -40,6 +40,11 @@ function formatHistoryValue(value: unknown): string {
   return String(value);
 }
 
+function objectValue(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
 function historyTitle(event: RequirementEvent): string {
   const kind = event.kind || eventPayload(event).kind;
   if (kind === 'req.new') return '新建需求';
@@ -64,12 +69,18 @@ function historyDetail(event: RequirementEvent): string {
   if (kind === 'req.status') return `状态更新为 ${statusLabel(eventStatus(event) || '').label}`;
   if (kind === 'note.add') return String(payload.text || event.text || '添加了一条备注');
   if (kind === 'req.patch') {
+    const detail = objectValue(payload.detail);
     const fields = [
       payload.title !== undefined ? `标题：${formatHistoryValue(payload.title)}` : '',
       payload.summary !== undefined ? `描述：${formatHistoryValue(payload.summary)}` : '',
       payload.priority !== undefined ? `优先级：${formatHistoryValue(payload.priority)}` : '',
       payload.owner !== undefined ? `负责人：${formatHistoryValue(payload.owner)}` : '',
-      payload.status !== undefined ? `状态：${statusLabel(formatHistoryValue(payload.status)).label}` : ''
+      payload.status !== undefined ? `状态：${statusLabel(formatHistoryValue(payload.status)).label}` : '',
+      detail?.goal !== undefined ? `目标：${formatHistoryValue(detail.goal)}` : '',
+      detail?.next !== undefined ? `下一步：${formatHistoryValue(detail.next)}` : '',
+      detail?.scope !== undefined ? `范围：${formatHistoryValue(detail.scope)}` : '',
+      detail?.nonGoals !== undefined ? `不做范围：${formatHistoryValue(detail.nonGoals)}` : '',
+      payload.acceptance !== undefined ? `验收点：${formatHistoryValue(payload.acceptance)}` : ''
     ].filter(Boolean);
     return fields.length > 0 ? fields.join('；') : '更新了需求信息';
   }
