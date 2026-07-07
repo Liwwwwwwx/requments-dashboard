@@ -492,6 +492,12 @@ describe('V2 requirement REST APIs', () => {
   });
 
   it('creates a requirement through the V2 REST API', async () => {
+    await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({ id: 'v2', name: 'V2 项目' })
+    );
+
     const res = await authReq(
       request(makeApp())
         .post('/api/projects/v2/requirements')
@@ -517,7 +523,24 @@ describe('V2 requirement REST APIs', () => {
     expect(res.body.event.kind).toBe('req.new');
   });
 
+  it('rejects requirement creation when project is missing', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/missing/requirements')
+        .send({ title: '需求看板' })
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('PROJECT_NOT_FOUND');
+  });
+
   it('rejects invalid priority when creating a requirement', async () => {
+    await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({ id: 'v2', name: 'V2 项目' })
+    );
+
     const res = await authReq(
       request(makeApp())
         .post('/api/projects/v2/requirements')
@@ -532,6 +555,12 @@ describe('V2 requirement REST APIs', () => {
   });
 
   it('rejects invalid status when creating a requirement', async () => {
+    await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({ id: 'v2', name: 'V2 项目' })
+    );
+
     const res = await authReq(
       request(makeApp())
         .post('/api/projects/v2/requirements')

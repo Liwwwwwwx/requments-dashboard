@@ -219,7 +219,10 @@ function createRoutes(rootDir) {
   });
 
   router.post("/projects/:project/requirements", express.json(), (req, res, next) => {
-    const paths = ensureProject(rootDir, req.params.project);
+    const paths = projectPaths(rootDir, req.params.project);
+    if (!fs.existsSync(paths.dataDir)) {
+      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+    }
     const title = String(req.body.title || "").trim();
     if (!title) {
       return next(httpError(400, "MISSING_TITLE", "需求标题不能为空"));
