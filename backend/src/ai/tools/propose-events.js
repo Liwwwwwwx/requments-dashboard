@@ -9,6 +9,8 @@
 
 const { validateEvent } = require("../../schema");
 
+const ALLOWED_PROPOSAL_KINDS = new Set(["req.status", "req.patch", "note.add"]);
+
 const PROPOSE_EVENTS_TOOL = {
   type: "function",
   function: {
@@ -19,41 +21,29 @@ const PROPOSE_EVENTS_TOOL = {
       properties: {
         rationale: {
           type: "string",
-          description: "用一句话说明你打算做什么、对哪个需求/任务有影响"
+          description: "用一句话说明你打算做什么、对哪个需求有影响"
         },
         events: {
           type: "array",
-          description: "要写入的事件列表，每条与 events.jsonl 同构（kind / requirementId / taskId / 字段…）",
+          description: "要建议写入的需求级事件列表，只允许 req.status / req.patch / note.add",
           items: {
             type: "object",
             properties: {
               kind: {
                 type: "string",
                 enum: [
-                  "req.new",
                   "req.status",
                   "req.patch",
-                  "task.new",
-                  "task.status",
-                  "contract.set",
                   "note.add"
                 ]
               },
               requirementId: { type: "string" },
-              taskId: { type: "string" },
               status: { type: "string" },
               title: { type: "string" },
               summary: { type: "string" },
               priority: { type: "string", enum: ["P0", "P1", "P2"] },
               owner: { type: "string" },
-              week: { type: "string" },
-              dueDate: { type: "string" },
               text: { type: "string" },
-              agent: { type: "string" },
-              verify: { type: "string" },
-              notes: { type: "string" },
-              role: { type: "string" },
-              endpoints: { type: "array" },
               detail: { type: "object" },
               acceptance: { type: "array" }
             },
@@ -84,6 +74,14 @@ function validateProposedEvents(events) {
       continue;
     }
     // 不在这里改 actor —— 由 apply 阶段用真实 user 拼 `ai:<userId>`
+    if (!ALLOWED_PROPOSAL_KINDS.has(raw.kind)) {
+      errors.push(`events[${i}]: 不允许的提案事件类型 ${raw.kind}`);
+      continue;
+    }
+    if (raw.kind === "note.add" && !String(raw.text || "").trim()) {
+      errors.push(`events[${i}]: note.add 必须包含 text`);
+      continue;
+    }
     try {
       const validated = validateEvent(raw);
       cleaned.push(validated);
@@ -97,4 +95,4 @@ function validateProposedEvents(events) {
   return { valid: true, events: cleaned };
 }
 
-module.exports = { PROPOSE_EVENTS_TOOL, validateProposedEvents };
+module.exports = { PROPOSE_EVENTS_TOOL, validateProposedEvents, ALLOWED_PROPOSAL_KINDS };

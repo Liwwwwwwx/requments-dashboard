@@ -62,18 +62,15 @@ function seedDeepSeekAccount() {
 }
 
 function makeStreamWithToolCall() {
-  // 模型先流式输出文字 "好的，我帮你建一个任务"，再发出 tool_call
+  // 模型先流式输出文字，再发出需求级 tool_call
   // 整段 arguments 是一个合法 JSON，分多次片段发出，模拟真实流式
   const argsObject = {
-    rationale: '新建任务',
+    rationale: '推进需求状态',
     events: [
       {
-        kind: 'task.new',
+        kind: 'req.status',
         requirementId: 'REQ-0001',
-        taskId: 'FE-1',
-        role: 'frontend',
-        title: '实现按钮',
-        status: 'todo'
+        status: 'doing'
       }
     ]
   };
@@ -125,7 +122,6 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
     }));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    // 准备一个需求和 task 占位（让 task.new 事件合法）
     const create = await authReq(
       request(makeApp()).post('/api/ai/conversations?project=default').send({})
     );
@@ -134,7 +130,7 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
     const stream = await authReq(
       request(makeApp())
         .post(`/api/ai/conversations/${convId}/messages/stream?project=default`)
-        .send({ text: '帮我给 REQ-0001 加一个前端任务' })
+        .send({ text: '帮我推进 REQ-0001 的状态' })
     );
 
     expect(stream.status).toBe(200);
@@ -142,8 +138,8 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
     expect(body).toContain('event: proposal');
     expect(body).toContain('"proposalId"');
     expect(body).toContain('"events"');
-    expect(body).toContain('task.new');
-    expect(body).toContain('FE-1');
+    expect(body).toContain('req.status');
+    expect(body).toContain('doing');
 
     // 提取 proposalId（不依赖严格 JSON 解析，做简单字符串匹配）
     const match = body.match(/"proposalId":"([^"]+)"/);
@@ -159,8 +155,8 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
     expect(list.body.proposals[0].status).toBe('pending');
   });
 
-  it('apply 提案：事件写入 events.db，state.json 重新生成', async () => {
-    // 先建一个 req.new 事件让 REQ-0001 存在（让 task.new 合法）
+  it('apply 提案：需求级事件写入 events.db，state.json 重新生成', async () => {
+    // 先建一个 req.new 事件让 REQ-0001 存在
     const newReq = await authReq(
       request(makeApp()).post('/api/projects/default/events?project=default').send({
         events: [
@@ -192,7 +188,7 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
     const stream = await authReq(
       request(makeApp())
         .post(`/api/ai/conversations/${convId}/messages/stream?project=default`)
-        .send({ text: '帮我加任务' })
+        .send({ text: '帮我推进状态' })
     );
     const match = stream.text.match(/"proposalId":"([^"]+)"/);
     const proposalId = match![1];
@@ -206,22 +202,20 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
     expect(apply.status).toBe(200);
     expect(apply.body.applied).toBe(1);
 
-    // 验证 events.db 里有 task.new
+    // 验证 events.db 里有 req.status
     const paths = projectPaths(tmpDir, 'default');
     const events = readEvents(paths.eventsPath);
-    const taskEvents = events.filter((e) => e.kind === 'task.new' && e.taskId === 'FE-1');
-    expect(taskEvents.length).toBe(1);
-    expect(taskEvents[0].requirementId).toBe('REQ-0001');
-    expect(taskEvents[0].actor).toMatch(/^ai:/);
+    const statusEvents = events.filter((e) => e.kind === 'req.status' && e.requirementId === 'REQ-0001');
+    expect(statusEvents.length).toBe(1);
+    expect(statusEvents[0].status).toBe('doing');
+    expect(statusEvents[0].actor).toMatch(/^ai:/);
 
     // 验证 state.json 已重新生成
     expect(fs.existsSync(paths.stateJsonPath)).toBe(true);
     const state = JSON.parse(fs.readFileSync(paths.stateJsonPath, 'utf8'));
     const reqItem = state.items.find((i: { id: string }) => i.id === 'REQ-0001');
     expect(reqItem).toBeDefined();
-    const feTask = reqItem.tasks.find((t: { taskId: string }) => t.taskId === 'FE-1');
-    expect(feTask).toBeDefined();
-    expect(feTask.role).toBe('frontend');
+    expect(reqItem.status).toBe('doing');
 
     // 二次 apply 应该返回 409（已 applied）
     const apply2 = await authReq(
