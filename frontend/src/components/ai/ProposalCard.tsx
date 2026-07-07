@@ -30,7 +30,7 @@ function describeEvent(event: AiProposalEvent): string {
 interface Props {
   project: string;
   proposal: AiProposal;
-  onApplied?: () => void;
+  onApplied?: (proposalId: string) => void;
 }
 
 /**
@@ -54,7 +54,7 @@ export function ProposalCard({ project, proposal, onApplied }: Props) {
     try {
       const result = await applyAiProposal(project, proposal.id);
       antdMessage.success(`已应用 ${result.applied} 条事件到看板`);
-      onApplied?.();
+      onApplied?.(proposal.id);
     } catch (e) {
       const err = e instanceof Error ? e : new Error('应用失败');
       antdMessage.error(err.message);

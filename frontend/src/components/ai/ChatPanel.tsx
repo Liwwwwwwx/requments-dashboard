@@ -400,12 +400,10 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
                         ? handleRegenerate
                         : undefined
                     }
-                    onProposalApplied={() => {
+                    onProposalApplied={(proposalId) => {
                       setProposals((prev) => ({
                         ...prev,
-                        ...Object.fromEntries(
-                          Object.entries(prev).map(([k, v]) => [k, { ...v, status: 'applied' as const }])
-                        )
+                        [proposalId]: { ...prev[proposalId], status: 'applied' as const }
                       }));
                       try {
                         router.refresh();

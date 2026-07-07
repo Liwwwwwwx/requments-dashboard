@@ -61,10 +61,25 @@ vi.mock('@/components/ai/ConversationList', () => ({
 }));
 
 vi.mock('@/components/ai/MessageItem', () => ({
-  MessageItem: (props: { error?: { code: string; message: string } | null }) => (
+  MessageItem: (props: {
+    error?: { code: string; message: string } | null;
+    relatedProposals?: Array<{ id: string; status: string }>;
+    onProposalApplied?: (proposalId: string) => void;
+  }) => (
     <div>
       消息
       {props.error && <span>{`${props.error.code}:${props.error.message}`}</span>}
+      {props.relatedProposals?.map((proposal) => (
+        <div key={proposal.id}>{`${proposal.id}:${proposal.status}`}</div>
+      ))}
+      {props.relatedProposals?.[0] && (
+        <button
+          type="button"
+          onClick={() => props.onProposalApplied?.(props.relatedProposals?.[0].id || '')}
+        >
+          应用第一条提案
+        </button>
+      )}
     </div>
   )
 }));
@@ -245,5 +260,74 @@ describe('ChatPanel', () => {
     });
     expect(await screen.findByText(/AI_PROPOSAL_INVALID:/)).toBeInTheDocument();
     expect(screen.queryByText(/AI_NETWORK_ERROR:/)).not.toBeInTheDocument();
+  });
+
+  it('只把用户确认应用的 AI 提案标记为已应用', async () => {
+    vi.mocked(listAiConversations).mockResolvedValue({
+      ok: true,
+      conversations: []
+    });
+    vi.mocked(createAiConversation).mockResolvedValue({
+      ok: true,
+      conversation: conversation({ id: 'conv-new', requirementId: null })
+    });
+    const assistantMessage: AiMessage = {
+      id: 'msg-a',
+      conversationId: 'conv-new',
+      role: 'assistant',
+      content: '这里有两个建议',
+      tokensIn: 1,
+      tokensOut: 1,
+      ts: 1000
+    };
+    vi.mocked(sendAiMessageStream).mockImplementation(
+      (_project, conversationId, _body, handlers) => ({
+        abort: vi.fn(),
+        promise: new Promise((resolve) => {
+          setTimeout(() => {
+            handlers.onStart?.({
+              messageId: 'msg-a',
+              conversationId,
+              model: 'deepseek-chat'
+            });
+            handlers.onProposal?.({
+              proposalId: 'proposal-1',
+              rationale: '推进状态',
+              events: [{ kind: 'req.status', requirementId: 'REQ-0001', status: 'doing' }],
+              errors: null
+            });
+            handlers.onProposal?.({
+              proposalId: 'proposal-2',
+              rationale: '补充备注',
+              events: [{ kind: 'note.add', requirementId: 'REQ-0001', text: '补充验收口径' }],
+              errors: null
+            });
+            handlers.onDone?.({ message: assistantMessage });
+            resolve({
+              message: assistantMessage,
+              usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 }
+            });
+          }, 0);
+        })
+      })
+    );
+
+    render(<ChatPanel project="alpha" />);
+
+    await waitFor(() => {
+      expect(listAiConversations).toHaveBeenCalledWith('alpha');
+    });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '给我两个建议' }
+    });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+
+    expect(await screen.findByText('proposal-1:pending')).toBeInTheDocument();
+    expect(screen.getByText('proposal-2:pending')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '应用第一条提案' }));
+
+    expect(await screen.findByText('proposal-1:applied')).toBeInTheDocument();
+    expect(screen.getByText('proposal-2:pending')).toBeInTheDocument();
   });
 });
