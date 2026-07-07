@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { setAccessToken, authFetchJson } from '@/lib/auth';
 
 interface User {
@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    let active = true;
     (async () => {
       try {
         const res = await fetch('/api/auth/refresh', {
@@ -41,15 +42,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (data.ok) {
             setAccessToken(data.accessToken);
             const meRes = await authFetchJson<{ ok: boolean; user: User }>('/api/auth/me');
-            if (meRes.ok) setUser(meRes.user);
+            if (active && meRes.ok) setUser(meRes.user);
           }
+        } else {
+          setAccessToken(null);
         }
       } catch {
-        //
+        setAccessToken(null);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     })();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
@@ -81,4 +88,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+export function RouteGuard({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+  const isLoginPage = pathname === '/login';
+
+  useEffect(() => {
+    if (loading || user || isLoginPage) return;
+    const current = `${window.location.pathname}${window.location.search}`;
+    router.replace(`/login?redirect=${encodeURIComponent(current)}`);
+  }, [isLoginPage, loading, pathname, router, user]);
+
+  if (isLoginPage) return <>{children}</>;
+
+  if (loading || !user) {
+    return (
+      <main className="auth-loading" aria-label="正在检查登录状态">
+        <span>正在检查登录状态</span>
+      </main>
+    );
+  }
+
+  return <>{children}</>;
 }

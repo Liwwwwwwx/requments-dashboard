@@ -230,6 +230,15 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+.auth-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg-canvas);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   body {
     transition: none;
