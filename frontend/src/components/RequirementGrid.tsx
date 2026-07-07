@@ -79,10 +79,15 @@ export function RequirementGrid({
 
   const isInitialLoading = !!loading && data.items.length === 0;
   const isProjectEmpty = !isInitialLoading && data.items.length === 0;
+  const isFilteredEmpty = !isInitialLoading && data.items.length > 0 && items.length === 0;
   const open = (id: string) => router.push(`/p/${project}/r/${id}`);
 
   const updateFilters = (patch: Partial<Filters>) => {
     onFiltersChange?.({ ...filters, ...patch });
+  };
+
+  const clearFilters = () => {
+    onFiltersChange?.({ query: '', status: 'all', priority: 'all', owner: 'all' });
   };
 
   const handleCreate = async () => {
@@ -190,6 +195,17 @@ export function RequirementGrid({
             <p>先创建第一条需求，后续可以在详情页维护状态、备注、变更历史，并让 AI 小助手基于当前项目提供建议。</p>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
               新建需求
+            </Button>
+          </div>
+        </section>
+      ) : isFilteredEmpty ? (
+        <section className="requirements-empty requirements-empty-filtered">
+          <div className="requirements-empty-inner">
+            <div className="requirements-empty-kicker">筛选结果</div>
+            <h2>没有匹配的需求</h2>
+            <p>调整筛选条件，或清空筛选后查看当前项目的全部需求。</p>
+            <Button onClick={clearFilters}>
+              清空筛选
             </Button>
           </div>
         </section>

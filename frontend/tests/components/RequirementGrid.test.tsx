@@ -124,6 +124,21 @@ describe('RequirementGrid', () => {
     expect(screen.getByText('项目列表')).toBeInTheDocument();
   });
 
+  it('筛选后没有匹配需求时展示清空筛选入口', () => {
+    render(<GridHarness />);
+
+    fireEvent.change(screen.getByLabelText('状态'), { target: { value: 'done' } });
+
+    expect(screen.getByRole('heading', { name: '没有匹配的需求' })).toBeInTheDocument();
+    expect(screen.getByText('调整筛选条件，或清空筛选后查看当前项目的全部需求。')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '清空筛选' }));
+
+    expect(screen.getByText('登录')).toBeInTheDocument();
+    expect(screen.getByText('AI 小助手')).toBeInTheDocument();
+    expect(screen.getByText('项目列表')).toBeInTheDocument();
+  });
+
   it('列表视图只展示 MVP 需求字段', () => {
     render(<GridHarness />);
 
