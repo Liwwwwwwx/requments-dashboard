@@ -117,15 +117,11 @@ export function ListView({ items, selectedId, isInitialLoading, onOpen }: Props)
                 </th>
               );
             })}
-            <th className="col-progress">进度</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((item) => {
             const status = statusLabel(item.status as RequirementStatus);
-            const total = item.taskStats?.total || 0;
-            const done = item.taskStats?.done || 0;
-            const blocked = item.taskStats?.blocked || 0;
             return (
               <tr
                 key={item.id}
@@ -147,6 +143,7 @@ export function ListView({ items, selectedId, isInitialLoading, onOpen }: Props)
                 </td>
                 <td className="col-title">
                   <span className="list-title">{item.title}</span>
+                  {item.summary && <span className="list-summary">{item.summary}</span>}
                   <span className="list-id">{item.id}</span>
                 </td>
                 <td className="col-status">
@@ -159,14 +156,6 @@ export function ListView({ items, selectedId, isInitialLoading, onOpen }: Props)
                 <td className="col-week list-mono">{item.week || '—'}</td>
                 <td className="col-date list-mono">{item.updatedAt || '—'}</td>
                 <td className="col-date list-mono">{item.dueDate || '—'}</td>
-                <td className="col-progress">
-                  <span className="list-progress">
-                    <span className="list-progress-text">
-                      {done}/{total}
-                    </span>
-                    {blocked > 0 && <span className="list-progress-blocked">阻塞 {blocked}</span>}
-                  </span>
-                </td>
               </tr>
             );
           })}
