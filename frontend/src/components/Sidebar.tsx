@@ -10,11 +10,13 @@ interface SidebarProps {
   projects: Project[];
   selectedItem: Requirement | null;
   onProjectChange?: (project: string) => void;
-  onProjectCreate?: (project: string) => Promise<void> | void;
+  onProjectCreate?: (project: ProjectForm) => Promise<void> | void;
 }
 
 interface ProjectForm {
   id: string;
+  name: string;
+  description?: string;
 }
 
 export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCreate }: SidebarProps) {
@@ -28,10 +30,14 @@ export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCrea
 
   const handleCreate = async () => {
     const values = await form.validateFields();
-    const id = values.id.trim();
+    const input = {
+      id: values.id.trim(),
+      name: values.name.trim(),
+      description: values.description?.trim() || ''
+    };
     setSaving(true);
     try {
-      await onProjectCreate?.(id);
+      await onProjectCreate?.(input);
       message.success('项目已创建');
       setCreating(false);
       form.resetFields();
@@ -64,7 +70,10 @@ export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCrea
                   aria-current={active ? 'page' : undefined}
                 >
                   <span className={`sidenav-dot ${active ? 'is-active' : ''}`} />
-                  <span className="sidenav-item-label">{p.name}</span>
+                  <span className="sidenav-project-text">
+                    <span className="sidenav-item-label">{p.name || p.id}</span>
+                    {p.name && p.name !== p.id && <span className="sidenav-project-id">{p.id}</span>}
+                  </span>
                 </button>
               );
             })}
@@ -121,6 +130,14 @@ export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCrea
       >
         <Form form={form} layout="vertical" preserve={false}>
           <Form.Item
+            label="项目名称"
+            name="name"
+            rules={[{ required: true, whitespace: true, message: '请输入项目名称' }]}
+          >
+            <Input placeholder="例如 TraceBoard V2" autoFocus />
+          </Form.Item>
+
+          <Form.Item
             label="项目 ID"
             name="id"
             rules={[
@@ -131,7 +148,14 @@ export function Sidebar({ projects, selectedItem, onProjectChange, onProjectCrea
               }
             ]}
           >
-            <Input placeholder="例如 traceboard" autoFocus />
+            <Input placeholder="例如 traceboard-v2" />
+          </Form.Item>
+
+          <Form.Item label="项目描述" name="description">
+            <Input.TextArea
+              rows={3}
+              placeholder="记录项目目标、范围或当前阶段"
+            />
           </Form.Item>
         </Form>
       </Modal>

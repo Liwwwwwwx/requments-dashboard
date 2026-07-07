@@ -63,8 +63,11 @@ export function AppShell({ project, reqId, children }: Props) {
     router.push(`/p/${next}`);
   };
 
-  const handleProjectCreate = async (id: string) => {
-    const res = await createProject(id);
+  const handleProjectCreate = async (input: { id: string; name?: string; description?: string }) => {
+    const res = await createProject(input.id, {
+      name: input.name,
+      description: input.description
+    });
     await loadProjects();
     router.push(`/p/${res.project.id}`);
   };

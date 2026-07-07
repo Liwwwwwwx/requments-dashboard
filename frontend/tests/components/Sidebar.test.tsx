@@ -24,12 +24,34 @@ describe('Sidebar', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: '创建项目' }));
+    fireEvent.change(screen.getByLabelText('项目名称'), {
+      target: { value: 'Beta 项目' }
+    });
     fireEvent.change(screen.getByLabelText('项目 ID'), {
       target: { value: 'beta' }
+    });
+    fireEvent.change(screen.getByLabelText('项目描述'), {
+      target: { value: '第二阶段需求' }
     });
     const createButtons = screen.getAllByRole('button', { name: /创\s*建/ });
     fireEvent.click(createButtons[createButtons.length - 1]);
 
-    await waitFor(() => expect(onProjectCreate).toHaveBeenCalledWith('beta'));
+    await waitFor(() => expect(onProjectCreate).toHaveBeenCalledWith({
+      id: 'beta',
+      name: 'Beta 项目',
+      description: '第二阶段需求'
+    }));
+  });
+
+  it('uses project name as the primary label', () => {
+    render(
+      <Sidebar
+        projects={[{ id: 'alpha', name: 'Alpha 项目' }]}
+        selectedItem={null}
+      />
+    );
+
+    expect(screen.getByText('Alpha 项目')).toBeInTheDocument();
+    expect(screen.getByText('alpha')).toBeInTheDocument();
   });
 });
