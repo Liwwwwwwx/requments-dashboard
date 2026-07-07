@@ -6,6 +6,7 @@ import type {
   Project,
   ProjectEventsResponse,
   Requirement,
+  RequirementEvent,
   RequirementStatus,
   Priority
 } from './types';
@@ -99,7 +100,7 @@ export async function renderState(
 export async function fetchRequirementEvents(
   project: string,
   requirementId: string
-): Promise<{ ok: true; events: unknown[] }> {
+): Promise<{ ok: true; events: RequirementEvent[] }> {
   return fetchJson(
     `/projects/${encodeURIComponent(project)}/requirements/${encodeURIComponent(requirementId)}/events`
   );

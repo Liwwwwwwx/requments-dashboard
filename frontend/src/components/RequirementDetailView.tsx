@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Empty, Form, Input, Modal, Progress, Select, Space, Typography, message } from 'antd';
-import { updateRequirement } from '@/lib/api';
+import { fetchRequirementEvents, updateRequirement } from '@/lib/api';
 import { priorityChipClass, roleLabel, statusChipClass, statusLabel } from '@/lib/utils';
 import { TaskDrawer } from './TaskDrawer';
-import type { Priority, Requirement, RequirementStatus, Task } from '@/lib/types';
+import type { Priority, Requirement, RequirementEvent, RequirementStatus, Task } from '@/lib/types';
 
 const { Paragraph, Text } = Typography;
 
@@ -51,6 +51,57 @@ interface RequirementEditForm {
   owner?: string;
 }
 
+function eventPayload(event: RequirementEvent): Record<string, unknown> {
+  return (event.event || event) as Record<string, unknown>;
+}
+
+function eventStatus(event: RequirementEvent): string | undefined {
+  const payload = eventPayload(event);
+  return String(event.status || payload.status || '');
+}
+
+function historyTitle(event: RequirementEvent): string {
+  const kind = event.kind || eventPayload(event).kind;
+  if (kind === 'req.new') return '新建需求';
+  if (kind === 'req.patch') return '更新基础信息';
+  if (kind === 'req.status') {
+    const status = eventStatus(event);
+    return `状态变更 → ${status ? statusLabel(status).label : '-'}`;
+  }
+  if (kind === 'note.add') return '添加备注';
+  if (kind === 'task.new') return `新建任务${event.taskId ? ` ${event.taskId}` : ''}`;
+  if (kind === 'task.status') {
+    const status = eventStatus(event);
+    return `任务状态 → ${status ? statusLabel(status).label : '-'}`;
+  }
+  return String(kind || '未知事件');
+}
+
+function historyDetail(event: RequirementEvent): string {
+  const payload = eventPayload(event);
+  const kind = event.kind || payload.kind;
+  if (kind === 'req.new') return String(payload.title || event.title || '创建了需求');
+  if (kind === 'req.status') return `状态更新为 ${statusLabel(eventStatus(event) || '').label}`;
+  if (kind === 'note.add') return String(payload.text || event.text || '添加了一条备注');
+  if (kind === 'req.patch') {
+    const fields = [
+      payload.title !== undefined ? '标题' : '',
+      payload.summary !== undefined ? '描述' : '',
+      payload.priority !== undefined ? '优先级' : '',
+      payload.owner !== undefined ? '负责人' : ''
+    ].filter(Boolean);
+    return fields.length > 0 ? `更新：${fields.join('、')}` : '更新了需求信息';
+  }
+  return event.taskId || event.summary || event.text || '';
+}
+
+function historyTime(event: RequirementEvent): string {
+  if (event.ts) {
+    return new Date(event.ts).toLocaleString('zh-CN', { hour12: false });
+  }
+  return event.updatedAt || event.at || '-';
+}
+
 export function RequirementDetailView({ item, project, taskItems, onUpdated }: Props) {
   const router = useRouter();
   const [form] = Form.useForm<RequirementEditForm>();
@@ -58,12 +109,63 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [history, setHistory] = useState<RequirementEvent[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   useEffect(() => {
     setDrawerTask(null);
     setRoleFilter('all');
     setEditing(false);
   }, [item?.id]);
+
+  const loadHistory = async () => {
+    if (!item) {
+      setHistory([]);
+      setHistoryError(null);
+      setHistoryLoading(false);
+      return;
+    }
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const res = await fetchRequirementEvents(project, item.id);
+      setHistory(res.events || []);
+    } catch (error) {
+      setHistory([]);
+      setHistoryError(error instanceof Error ? error.message : '加载变更历史失败');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    async function run() {
+      if (!item) {
+        setHistory([]);
+        setHistoryError(null);
+        setHistoryLoading(false);
+        return;
+      }
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const res = await fetchRequirementEvents(project, item.id);
+        if (active) setHistory(res.events || []);
+      } catch (error) {
+        if (!active) return;
+        setHistory([]);
+        setHistoryError(error instanceof Error ? error.message : '加载变更历史失败');
+      } finally {
+        if (active) setHistoryLoading(false);
+      }
+    }
+    void run();
+    return () => {
+      active = false;
+    };
+  }, [project, item]);
 
   const tasks = useMemo(() => item?.tasks || [], [item?.tasks]);
   const taskStats = item?.taskStats || { total: 0, done: 0, active: 0, blocked: 0 };
@@ -119,6 +221,7 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
       message.success('需求已更新');
       setEditing(false);
       await onUpdated?.();
+      await loadHistory();
     } catch (error) {
       message.error(error instanceof Error ? error.message : '更新需求失败');
     } finally {
@@ -387,6 +490,35 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
               </div>
             </section>
           )}
+
+          <section className="view-detail-section">
+            <h3 className="view-detail-section-title">
+              <span>变更历史</span>
+              {history.length > 0 && <span className="count">· {history.length}</span>}
+            </h3>
+            <div className="view-detail-section-body">
+              {historyLoading ? (
+                <div className="history-empty">加载中...</div>
+              ) : historyError ? (
+                <div className="history-empty">加载失败：{historyError}</div>
+              ) : history.length === 0 ? (
+                <div className="history-empty">暂无变更历史</div>
+              ) : (
+                <ol className="history-list">
+                  {history.map((event, index) => (
+                    <li key={event.eventId || `${event.kind}-${index}`} className="history-item">
+                      <div className="history-item-head">
+                        <span className="history-title">{historyTitle(event)}</span>
+                        {event.actor && <span className="history-actor">{event.actor}</span>}
+                      </div>
+                      <div className="history-detail">{historyDetail(event)}</div>
+                      <time className="history-time">{historyTime(event)}</time>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </section>
         </div>
 
         <aside className="view-detail-aside">

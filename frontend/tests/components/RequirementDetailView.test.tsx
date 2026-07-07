@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RequirementDetailView } from '@/components/RequirementDetailView';
-import { updateRequirement } from '@/lib/api';
+import { fetchRequirementEvents, updateRequirement } from '@/lib/api';
 import type { Requirement } from '@/lib/types';
 
 vi.mock('next/navigation', () => ({
@@ -12,6 +12,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/lib/api', () => ({
+  fetchRequirementEvents: vi.fn(),
   updateRequirement: vi.fn()
 }));
 
@@ -43,7 +44,46 @@ const requirement: Requirement = {
 
 describe('RequirementDetailView', () => {
   beforeEach(() => {
+    vi.mocked(fetchRequirementEvents).mockReset();
+    vi.mocked(fetchRequirementEvents).mockResolvedValue({ ok: true, events: [] });
     vi.mocked(updateRequirement).mockReset();
+  });
+
+  it('加载并展示需求变更历史', async () => {
+    vi.mocked(fetchRequirementEvents).mockResolvedValue({
+      ok: true,
+      events: [
+        {
+          eventId: 'E1',
+          ts: 1000,
+          kind: 'req.new',
+          actor: 'pm',
+          event: { title: '登录页' }
+        },
+        {
+          eventId: 'E2',
+          ts: 2000,
+          kind: 'req.status',
+          actor: 'dev',
+          event: { status: 'blocked' }
+        }
+      ]
+    });
+
+    render(
+      <RequirementDetailView
+        item={requirement}
+        project="alpha"
+        taskItems={[]}
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+    expect(await screen.findByText('变更历史')).toBeInTheDocument();
+    expect(screen.getByText('新建需求')).toBeInTheDocument();
+    expect(screen.getByText('状态变更 → 阻塞')).toBeInTheDocument();
   });
 
   it('保存基础字段和状态后刷新详情', async () => {

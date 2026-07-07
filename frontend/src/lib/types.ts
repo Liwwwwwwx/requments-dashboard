@@ -147,6 +147,22 @@ export interface ProjectEventsResponse {
   hasMore: boolean;
 }
 
+export interface RequirementEvent {
+  eventId?: string;
+  ts?: number;
+  kind?: EventKind | string;
+  actor?: string;
+  requirementId?: string;
+  taskId?: string;
+  status?: string;
+  title?: string;
+  summary?: string;
+  text?: string;
+  at?: string;
+  updatedAt?: string;
+  event?: EventInput;
+}
+
 export interface DashboardSummary {
   ok: boolean;
   project: string;
