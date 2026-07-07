@@ -85,4 +85,18 @@ describe('auth routes', () => {
     expect(res.status).toBe(401);
     expect(res.body).toEqual({ ok: false, error: 'INVALID_CREDENTIALS' });
   });
+
+  it('does not expose registration or password management in MVP', async () => {
+    const app = makeApp();
+
+    const register = await request(app)
+      .post('/api/auth/register')
+      .send({ username: 'new-user', password: 'secret123' });
+    expect(register.status).toBe(404);
+
+    const password = await request(app)
+      .put('/api/auth/password')
+      .send({ oldPassword: 'admin123', newPassword: 'secret123' });
+    expect(password.status).toBe(404);
+  });
 });

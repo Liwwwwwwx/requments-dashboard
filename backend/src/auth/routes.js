@@ -68,38 +68,8 @@ function createAuthRoutes(rootDir) {
     return res.json({ ok: true, user: req.user });
   });
 
-  router.post("/auth/register", express.json(), (req, res) => {
-    const { username, password, displayName } = req.body || {};
-    if (!username || !password) {
-      return res.status(400).json({ ok: false, error: "MISSING_CREDENTIALS" });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ ok: false, error: "PASSWORD_TOO_SHORT" });
-    }
-    const user = users.createUser(username, password, displayName);
-    if (!user) {
-      return res.status(409).json({ ok: false, error: "USERNAME_TAKEN" });
-    }
-    return res.status(201).json({
-      ok: true,
-      user: { id: user.id, username: user.username, displayName: user.display_name }
-    });
-  });
-
-  router.put("/auth/password", requireAuth, express.json(), (req, res) => {
-    const { oldPassword, newPassword } = req.body || {};
-    if (!oldPassword || !newPassword) {
-      return res.status(400).json({ ok: false, error: "MISSING_PASSWORDS" });
-    }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ ok: false, error: "PASSWORD_TOO_SHORT" });
-    }
-    const user = users.findById(req.user.id);
-    if (!user || !users.verifyPassword(user, oldPassword)) {
-      return res.status(401).json({ ok: false, error: "INVALID_OLD_PASSWORD" });
-    }
-    users.updatePassword(user.id, newPassword);
-    return res.json({ ok: true });
+  router.use("/auth", (_req, res) => {
+    return res.status(404).json({ ok: false, error: "AUTH_ROUTE_NOT_FOUND" });
   });
 
   return router;

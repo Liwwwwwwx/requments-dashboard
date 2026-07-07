@@ -3,7 +3,6 @@ const Database = require("better-sqlite3");
 const bcrypt = require("bcryptjs");
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto");
 
 let db = null;
 
@@ -19,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 function initUsers(dbPath) {
   if (db) {
-    return { findByUsername, findById, verifyPassword, createUser, updatePassword };
+    return { findByUsername, findById, verifyPassword };
   }
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   db = new Database(dbPath);
@@ -39,7 +38,7 @@ function initUsers(dbPath) {
     );
   }
 
-  return { findByUsername, findById, verifyPassword, createUser, updatePassword };
+  return { findByUsername, findById, verifyPassword };
 }
 
 function findByUsername(username) {
@@ -54,22 +53,6 @@ function findById(id) {
 
 function verifyPassword(user, password) {
   return bcrypt.compareSync(password, user.password);
-}
-
-function createUser(username, password, displayName) {
-  const existing = findByUsername(username);
-  if (existing) return null;
-  const id = crypto.randomUUID();
-  const hash = bcrypt.hashSync(password, 10);
-  const now = new Date().toISOString();
-  db.prepare("INSERT INTO users (id, username, password, display_name, created_at) VALUES (?, ?, ?, ?, ?)").run(id, username, hash, displayName || username, now);
-  return findById(id);
-}
-
-function updatePassword(userId, newPassword) {
-  const hash = bcrypt.hashSync(newPassword, 10);
-  db.prepare("UPDATE users SET password = ? WHERE id = ?").run(hash, userId);
-  return true;
 }
 
 module.exports = { initUsers };
