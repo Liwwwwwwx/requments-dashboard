@@ -9,12 +9,8 @@ import type { AiProposal, AiProposalEvent } from '@/lib/ai-types';
 const { Text } = Typography;
 
 const KIND_META: Record<string, { label: string; color: string }> = {
-  'req.new': { label: '新建需求', color: 'blue' },
   'req.status': { label: '改需求状态', color: 'cyan' },
   'req.patch': { label: '改需求字段', color: 'cyan' },
-  'task.new': { label: '新建任务', color: 'green' },
-  'task.status': { label: '改任务状态', color: 'gold' },
-  'contract.set': { label: '设置契约', color: 'purple' },
   'note.add': { label: '添加备注', color: 'default' }
 };
 
