@@ -104,6 +104,7 @@ export async function updateRequirement(
     title?: string;
     description?: string;
     summary?: string;
+    next?: string;
     status?: RequirementStatus;
     priority?: Priority;
     owner?: string;

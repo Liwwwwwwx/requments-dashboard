@@ -237,6 +237,9 @@ describe('RequirementDetailView', () => {
     fireEvent.change(screen.getByLabelText('描述'), {
       target: { value: '只保留用户名密码登录' }
     });
+    fireEvent.change(screen.getByLabelText('下一步'), {
+      target: { value: '确认登录失败提示' }
+    });
     fireEvent.change(screen.getByLabelText('负责人'), {
       target: { value: 'owner-a' }
     });
@@ -257,7 +260,8 @@ describe('RequirementDetailView', () => {
         description: '只保留用户名密码登录',
         status: 'blocked',
         priority: 'P0',
-        owner: 'owner-a'
+        owner: 'owner-a',
+        next: '确认登录失败提示'
       });
     });
     await waitFor(() => expect(onUpdated).toHaveBeenCalledTimes(1));

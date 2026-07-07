@@ -850,6 +850,7 @@ describe('V2 requirement REST APIs', () => {
         .send({
           title: '新标题',
           description: '新描述',
+          next: '确认登录失败提示',
           status: 'blocked',
           priority: 'P1',
           owner: 'dev'
@@ -864,9 +865,18 @@ describe('V2 requirement REST APIs', () => {
       summary: '新描述',
       status: 'blocked',
       priority: 'P1',
-      owner: 'dev'
+      owner: 'dev',
+      detail: {
+        next: '确认登录失败提示'
+      }
     });
     expect(res.body.appended).toBe(2);
+    const patchEvent = readEvents(paths.eventsPath).find((event) => event.kind === 'req.patch');
+    expect(patchEvent).toMatchObject({
+      detail: {
+        next: '确认登录失败提示'
+      }
+    });
   });
 
   it('rejects invalid status and priority when patching a requirement', async () => {

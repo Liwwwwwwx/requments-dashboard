@@ -19,6 +19,7 @@ interface Props {
 interface RequirementEditForm {
   title: string;
   description?: string;
+  next?: string;
   status: RequirementStatus;
   priority: Priority;
   owner?: string;
@@ -179,6 +180,7 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
     form.setFieldsValue({
       title: item.title,
       description: item.summary || item.detail?.goal || '',
+      next: item.detail?.next || '',
       status: item.status,
       priority: item.priority || 'P1',
       owner: item.owner || ''
@@ -194,6 +196,7 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
       await updateRequirement(project, item.id, {
         title: values.title.trim(),
         description: values.description?.trim() || '',
+        next: values.next?.trim() || '',
         status: values.status,
         priority: values.priority,
         owner: values.owner?.trim() || ''
@@ -501,6 +504,9 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
           </Form.Item>
           <Form.Item label="描述" name="description">
             <Input.TextArea rows={4} placeholder="需求描述" />
+          </Form.Item>
+          <Form.Item label="下一步" name="next">
+            <Input.TextArea rows={2} placeholder="例如：确认登录失败提示文案" />
           </Form.Item>
           <Form.Item
             label="状态"
