@@ -92,6 +92,13 @@ describe('GET /api/projects', () => {
   });
 });
 
+describe('MVP API boundary', () => {
+  it('does not expose dashboard summary endpoints', async () => {
+    const res = await authReq(request(makeApp()).get('/api/dashboard/summary'));
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('POST /api/projects', () => {
   it('creates a project with valid id', async () => {
     const res = await authReq(

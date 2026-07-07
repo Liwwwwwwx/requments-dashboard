@@ -164,28 +164,3 @@ export interface RequirementEvent {
   updatedAt?: string;
   event?: EventInput;
 }
-
-export interface DashboardSummary {
-  ok: boolean;
-  project: string;
-  byStatus: { todo: number; doing: number; blocked: number; done: number };
-  byPriority: { P0: number; P1: number; P2: number };
-  completionRate: number;
-  blockedCount: number;
-  blockedItems: { id: string; title: string; blocked: number }[];
-  weeklyTrend: { week: string; label: string; count: number }[];
-  recentEvents: {
-    eventId: string;
-    ts: number;
-    kind: string;
-    actor?: string;
-    requirementId?: string;
-    summary?: string;
-  }[];
-  health: {
-    total: number;
-    activeRate: number;
-    blockedRate: number;
-    completionRate: number;
-  };
-}

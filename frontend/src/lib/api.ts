@@ -1,7 +1,6 @@
 import { authFetch } from './auth';
 import type {
   BoardState,
-  DashboardSummary,
   EventInput,
   Project,
   ProjectEventsResponse,
@@ -151,10 +150,6 @@ export async function appendEvents(
     method: 'POST',
     body: JSON.stringify({ events })
   });
-}
-
-export async function fetchDashboardSummary(project: string): Promise<DashboardSummary> {
-  return fetchJson(`/dashboard/summary?project=${encodeURIComponent(project)}`);
 }
 
 export async function fetchProjectEvents(
