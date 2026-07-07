@@ -68,6 +68,9 @@ function createRoutes(rootDir) {
   });
 
   router.patch("/projects/:project", express.json(), (req, res, next) => {
+    if (req.body.name !== undefined && !String(req.body.name || "").trim()) {
+      return next(httpError(400, "MISSING_PROJECT_NAME", "项目名称不能为空"));
+    }
     const project = updateProject(rootDir, req.params.project, {
       name: req.body.name,
       description: req.body.description

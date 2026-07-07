@@ -206,6 +206,23 @@ describe('Project detail APIs', () => {
     });
   });
 
+  it('rejects empty project name updates', async () => {
+    await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({ id: 'alpha', name: 'Alpha 项目' })
+    );
+
+    const res = await authReq(
+      request(makeApp())
+        .patch('/api/projects/alpha')
+        .send({ name: '   ' })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('MISSING_PROJECT_NAME');
+  });
+
   it('returns 404 when project detail is missing', async () => {
     const res = await authReq(request(makeApp()).get('/api/projects/missing'));
 
