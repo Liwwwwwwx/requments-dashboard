@@ -477,7 +477,9 @@ function createRoutes(rootDir) {
 
   router.post("/projects/:project/events", express.json({ limit: "10mb" }), (req, res, next) => {
     const paths = projectPaths(rootDir, req.params.project);
-    ensureProject(rootDir, req.params.project);
+    if (!fs.existsSync(paths.dataDir)) {
+      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+    }
 
     const body = req.body;
     const list = Array.isArray(body.events)

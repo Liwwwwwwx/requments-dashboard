@@ -30,6 +30,14 @@ function makeApp() {
   return app;
 }
 
+async function createProject(app: express.Express, id: string) {
+  return authReq(
+    request(app)
+      .post('/api/projects')
+      .send({ id, name: id })
+  );
+}
+
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-routes-test-'));
 });
@@ -278,8 +286,11 @@ describe('GET /api/projects/:project/state', () => {
 
 describe('POST /api/projects/:project/events', () => {
   it('rejects empty events list with structured error', async () => {
+    const app = makeApp();
+    await createProject(app, 'p1');
+
     const res = await authReq(
-      request(makeApp())
+      request(app)
         .post('/api/projects/p1/events')
         .send({ events: [] })
     );
@@ -290,9 +301,34 @@ describe('POST /api/projects/:project/events', () => {
     });
   });
 
-  it('appends valid event and returns updated state', async () => {
+  it('returns 404 when project missing and does not create a project directory', async () => {
+    const projectDir = path.join(tmpDir, 'data', 'missing-events');
+
     const res = await authReq(
       request(makeApp())
+        .post('/api/projects/missing-events/events')
+        .send({
+          events: [
+            {
+              kind: 'req.new',
+              requirementId: 'REQ-0001',
+              title: 't'
+            }
+          ]
+        })
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('PROJECT_NOT_FOUND');
+    expect(fs.existsSync(projectDir)).toBe(false);
+  });
+
+  it('appends valid event and returns updated state', async () => {
+    const app = makeApp();
+    await createProject(app, 'p2');
+
+    const res = await authReq(
+      request(app)
         .post('/api/projects/p2/events')
         .send({
           events: [
@@ -315,8 +351,11 @@ describe('POST /api/projects/:project/events', () => {
   });
 
   it('rejects invalid event with structured error', async () => {
+    const app = makeApp();
+    await createProject(app, 'p3');
+
     const res = await authReq(
-      request(makeApp())
+      request(app)
         .post('/api/projects/p3/events')
         .send({
           events: [{ kind: 'req.new' /* missing requirementId */ }]
@@ -329,8 +368,11 @@ describe('POST /api/projects/:project/events', () => {
   });
 
   it('rejects non-MVP task events at project event write boundary', async () => {
+    const app = makeApp();
+    await createProject(app, 'p4');
+
     const res = await authReq(
-      request(makeApp())
+      request(app)
         .post('/api/projects/p4/events')
         .send({
           events: [
@@ -352,8 +394,11 @@ describe('POST /api/projects/:project/events', () => {
   });
 
   it('validates V2 fields at project event write boundary', async () => {
+    const app = makeApp();
+    await createProject(app, 'p5');
+
     const res = await authReq(
-      request(makeApp())
+      request(app)
         .post('/api/projects/p5/events')
         .send({
           events: [
