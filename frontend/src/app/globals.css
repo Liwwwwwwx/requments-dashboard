@@ -58,10 +58,6 @@
   --status-doing-text: #1e40af;
   --status-doing-dot: #2563eb;
 
-  --status-paused-bg: #fef3c7;
-  --status-paused-text: #92400e;
-  --status-paused-dot: #d97706;
-
   --status-done-bg: #dcfce7;
   --status-done-text: #166534;
   --status-done-dot: #16a34a;
@@ -185,10 +181,6 @@
   --status-doing-bg: rgba(91, 140, 255, 0.18);
   --status-doing-text: #a9c2ff;
   --status-doing-dot: #5b8cff;
-
-  --status-paused-bg: rgba(240, 162, 59, 0.18);
-  --status-paused-text: #f3bd72;
-  --status-paused-dot: #f0a23b;
 
   --status-done-bg: rgba(62, 203, 122, 0.18);
   --status-done-text: #74dba0;
@@ -1530,11 +1522,6 @@ body {
   color: var(--status-doing-text);
   border-color: transparent;
 }
-.chip-status-paused {
-  background: var(--status-paused-bg);
-  color: var(--status-paused-text);
-  border-color: transparent;
-}
 .chip-status-done,
 .chip-status-accepted {
   background: var(--status-done-bg);
@@ -1923,8 +1910,8 @@ body {
 .board-col-dot.tone-doing {
   background: var(--status-doing-dot);
 }
-.board-col-dot.tone-paused {
-  background: var(--status-paused-dot);
+.board-col-dot.tone-blocked {
+  background: var(--status-blocked-dot);
 }
 .board-col-dot.tone-done {
   background: var(--status-done-dot);
@@ -2271,9 +2258,6 @@ body {
 }
 .tl-dot.tone-doing {
   background: var(--status-doing-dot);
-}
-.tl-dot.tone-paused {
-  background: var(--status-paused-dot);
 }
 .tl-dot.tone-done {
   background: var(--status-done-dot);

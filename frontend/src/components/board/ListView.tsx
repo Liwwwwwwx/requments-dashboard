@@ -16,7 +16,7 @@ type SortKey = 'priority' | 'title' | 'status' | 'owner' | 'week' | 'dueDate' | 
 type SortDir = 'asc' | 'desc';
 
 const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2 };
-const STATUS_ORDER: Record<string, number> = { todo: 0, doing: 1, paused: 2, done: 3 };
+const STATUS_ORDER: Record<string, number> = { todo: 0, doing: 1, blocked: 2, done: 3 };
 
 const COLUMNS: { key: SortKey; label: string; sortable: boolean; className?: string }[] = [
   { key: 'priority', label: '优先级', sortable: true, className: 'col-prio' },

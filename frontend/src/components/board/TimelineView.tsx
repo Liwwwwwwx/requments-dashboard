@@ -25,8 +25,6 @@ function statusTone(s?: string): string {
     case 'doing':
     case 'working':
       return 'doing';
-    case 'paused':
-      return 'paused';
     case 'claimed':
       return 'claimed';
     default:

@@ -41,7 +41,7 @@ function createDashboardRoutes(rootDir) {
     const state = JSON.parse(fs.readFileSync(paths.stateJsonPath, "utf8"));
     const items = state.items || [];
 
-    const byStatus = { todo: 0, doing: 0, paused: 0, done: 0 };
+    const byStatus = { todo: 0, doing: 0, blocked: 0, done: 0 };
     const byPriority = { P0: 0, P1: 0, P2: 0 };
     let blockedCount = 0;
     const blockedItems = [];

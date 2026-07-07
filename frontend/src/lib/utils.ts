@@ -3,7 +3,7 @@ import type { Priority, RequirementStatus, Role, TaskStatus } from './types';
 export const REQUIREMENT_STATUS_LABELS: Record<RequirementStatus, { label: string; color: string }> = {
   todo: { label: '待开始', color: 'default' },
   doing: { label: '进行中', color: 'processing' },
-  paused: { label: '暂停', color: 'warning' },
+  blocked: { label: '阻塞', color: 'error' },
   done: { label: '完成', color: 'success' }
 };
 
@@ -66,7 +66,6 @@ export function priorityBarClass(priority: Priority | string): string {
 const STATUS_TOKEN: Record<string, string> = {
   todo: 'chip-status-todo',
   doing: 'chip-status-doing',
-  paused: 'chip-status-paused',
   done: 'chip-status-done',
   blocked: 'chip-status-blocked',
   claimed: 'chip-status-claimed',

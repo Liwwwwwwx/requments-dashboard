@@ -260,12 +260,12 @@ describe('sorting', () => {
     actor: 'a'
   });
 
-  it('sorts by status (todo → doing → paused → done)', () => {
+  it('sorts by status (todo → doing → blocked → done)', () => {
     const events = [
       makeReq('REQ-0001', 'done', 'P1', '2026-01-04'),
       makeReq('REQ-0002', 'todo', 'P1', '2026-01-04'),
       makeReq('REQ-0003', 'doing', 'P1', '2026-01-04'),
-      makeReq('REQ-0004', 'paused', 'P1', '2026-01-04')
+      makeReq('REQ-0004', 'blocked', 'P1', '2026-01-04')
     ];
     const state = buildState(events);
     expect(state.items.map((i) => i.id)).toEqual([

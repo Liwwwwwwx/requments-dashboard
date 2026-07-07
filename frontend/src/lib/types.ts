@@ -1,4 +1,4 @@
-export type RequirementStatus = 'todo' | 'doing' | 'paused' | 'done';
+export type RequirementStatus = 'todo' | 'doing' | 'blocked' | 'done';
 export type TaskStatus = 'todo' | 'claimed' | 'working' | 'done' | 'accepted' | 'blocked';
 export type Priority = 'P0' | 'P1' | 'P2';
 export type Role =
@@ -150,7 +150,7 @@ export interface ProjectEventsResponse {
 export interface DashboardSummary {
   ok: boolean;
   project: string;
-  byStatus: { todo: number; doing: number; paused: number; done: number };
+  byStatus: { todo: number; doing: number; blocked: number; done: number };
   byPriority: { P0: number; P1: number; P2: number };
   completionRate: number;
   blockedCount: number;

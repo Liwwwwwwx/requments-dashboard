@@ -7,7 +7,7 @@ const { assertRequirementTransition, assertTaskTransition } = require("./state-m
 const BOARD_STATUSES = [
   { key: "todo", label: "待开始", tone: "neutral" },
   { key: "doing", label: "进行中", tone: "active" },
-  { key: "paused", label: "暂停", tone: "warning" },
+  { key: "blocked", label: "阻塞", tone: "blocked" },
   { key: "done", label: "完成", tone: "success" }
 ];
 

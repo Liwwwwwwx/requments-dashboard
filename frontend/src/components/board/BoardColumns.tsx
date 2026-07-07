@@ -14,7 +14,7 @@ interface Props {
 const COLS: { key: RequirementStatus; label: string; tone: string }[] = [
   { key: 'todo', label: '待开始', tone: 'todo' },
   { key: 'doing', label: '进行中', tone: 'doing' },
-  { key: 'paused', label: '暂停', tone: 'paused' },
+  { key: 'blocked', label: '阻塞', tone: 'blocked' },
   { key: 'done', label: '完成', tone: 'done' }
 ];
 

@@ -23,12 +23,12 @@ describe('assertRequirementTransition', () => {
     expect(() => assertRequirementTransition('todo', 'doing', 'REQ-0001')).not.toThrow();
   });
 
-  it('allows doing → paused', () => {
-    expect(() => assertRequirementTransition('doing', 'paused', 'REQ-0001')).not.toThrow();
+  it('allows doing → blocked', () => {
+    expect(() => assertRequirementTransition('doing', 'blocked', 'REQ-0001')).not.toThrow();
   });
 
-  it('allows paused → done', () => {
-    expect(() => assertRequirementTransition('paused', 'done', 'REQ-0001')).not.toThrow();
+  it('allows blocked → done', () => {
+    expect(() => assertRequirementTransition('blocked', 'done', 'REQ-0001')).not.toThrow();
   });
 
   it('allows done → done (idempotent)', () => {
