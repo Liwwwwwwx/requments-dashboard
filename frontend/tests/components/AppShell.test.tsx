@@ -115,4 +115,36 @@ describe('AppShell', () => {
     expect(within(detail).getByText('登录页')).toBeInTheDocument();
     expect(detail).toHaveAttribute('data-project', 'alpha');
   });
+
+  it('项目列表刷新信号变化后重新加载项目列表', async () => {
+    const loadProjects = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useRequirements).mockReturnValue({
+      project: 'alpha',
+      projects: [{ id: 'alpha', name: 'Alpha' }],
+      data: { updatedAt: '', statuses: [], items: [] },
+      loading: false,
+      error: null,
+      refresh: vi.fn(),
+      loadState: vi.fn(),
+      loadProjects
+    });
+
+    const { rerender } = render(
+      <AppShell project="alpha" projectListRefreshKey={0}>
+        <div>设置页</div>
+      </AppShell>
+    );
+
+    expect(loadProjects).not.toHaveBeenCalled();
+
+    rerender(
+      <AppShell project="alpha" projectListRefreshKey={1}>
+        <div>设置页</div>
+      </AppShell>
+    );
+
+    await waitFor(() => {
+      expect(loadProjects).toHaveBeenCalledTimes(1);
+    });
+  });
 });

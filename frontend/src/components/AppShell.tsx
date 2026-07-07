@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Layout, Spin } from 'antd';
 import { useRequirements } from '@/hooks/useRequirements';
@@ -24,9 +24,10 @@ interface Props {
   project?: string;
   reqId?: string;
   children?: ReactNode;
+  projectListRefreshKey?: number;
 }
 
-export function AppShell({ project, reqId, children }: Props) {
+export function AppShell({ project, reqId, children, projectListRefreshKey }: Props) {
   const router = useRouter();
   const { projects, data, loading, error, refresh, loadProjects } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
@@ -34,6 +35,7 @@ export function AppShell({ project, reqId, children }: Props) {
   const [detailItem, setDetailItem] = useState<Requirement | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const lastProjectListRefreshKey = useRef(projectListRefreshKey);
 
   const activeProject = project || 'default';
 
@@ -43,6 +45,13 @@ export function AppShell({ project, reqId, children }: Props) {
       router.replace(`/p/${projects[0].id}`, { scroll: false });
     }
   }, [projects, project, router]);
+
+  useEffect(() => {
+    if (projectListRefreshKey === undefined) return;
+    if (lastProjectListRefreshKey.current === projectListRefreshKey) return;
+    lastProjectListRefreshKey.current = projectListRefreshKey;
+    void loadProjects();
+  }, [loadProjects, projectListRefreshKey]);
 
   // Cmd/Ctrl + K：跳到当前项目的 AI 小助手
   useEffect(() => {

@@ -16,6 +16,7 @@ describe('ProjectSettingsView', () => {
   });
 
   it('loads project metadata and saves edits', async () => {
+    const onSaved = vi.fn();
     vi.mocked(fetchProject).mockResolvedValueOnce({
       ok: true,
       project: {
@@ -37,7 +38,7 @@ describe('ProjectSettingsView', () => {
       }
     });
 
-    render(<ProjectSettingsView project="alpha" />);
+    render(<ProjectSettingsView project="alpha" onSaved={onSaved} />);
 
     expect(await screen.findByDisplayValue('Alpha 项目')).toBeInTheDocument();
     expect(screen.getByDisplayValue('第一阶段需求')).toBeInTheDocument();
@@ -58,5 +59,12 @@ describe('ProjectSettingsView', () => {
     });
     expect(screen.getByText('已保存')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Alpha 新名称')).toBeInTheDocument();
+    expect(onSaved).toHaveBeenCalledWith({
+      id: 'alpha',
+      name: 'Alpha 新名称',
+      description: '更新后的说明',
+      createdAt: '2026-07-07T00:00:00.000Z',
+      updatedAt: '2026-07-07T01:00:00.000Z'
+    });
   });
 });

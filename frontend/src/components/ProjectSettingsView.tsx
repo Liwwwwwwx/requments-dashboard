@@ -10,9 +10,10 @@ const { TextArea } = Input;
 
 interface Props {
   project: string;
+  onSaved?: (project: Project) => void;
 }
 
-export function ProjectSettingsView({ project }: Props) {
+export function ProjectSettingsView({ project, onSaved }: Props) {
   const [projectInfo, setProjectInfo] = useState<Project | null>(null);
   const [name, setName] = useState(project);
   const [description, setDescription] = useState('');
@@ -60,6 +61,7 @@ export function ProjectSettingsView({ project }: Props) {
       setName(res.project.name || res.project.id);
       setDescription(res.project.description || '');
       setNotice('已保存');
+      onSaved?.(res.project);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
