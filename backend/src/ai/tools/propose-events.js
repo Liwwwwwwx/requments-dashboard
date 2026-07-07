@@ -4,7 +4,7 @@
  * propose_events 工具定义 + 校验。
  *
  * 用法：模型在一次回复中调用此工具，参数 events: [...]，每个事件符合现有 schema。
- * 写入 ai_proposals 表（不直接写 events.jsonl），由用户在前端确认后 apply。
+ * 写入 ai_proposals 表（不直接写项目事实事件），由用户在前端确认后 apply。
  */
 
 const { validateEvent } = require("../../schema");

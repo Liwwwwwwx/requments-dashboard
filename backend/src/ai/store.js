@@ -8,7 +8,7 @@
  *   - ai_messages
  *   - ai_proposals
  *
- * 关键原则：AI 对话本身不进 events.jsonl，不污染事实源。
+ * 关键原则：AI 对话本身不写入事实事件表，不污染项目需求状态。
  */
 
 const path = require("path");
