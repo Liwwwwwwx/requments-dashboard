@@ -12,7 +12,7 @@ const BOARD_STATUSES = [
 ];
 
 const DEFAULT_TYPE = "工程";
-const DEFAULT_OWNER = "需求协调 / 前端开发 / 后端开发 / 契约审查 / 测试用例";
+const DEFAULT_OWNER = "未分配";
 const DEFAULT_PRIORITY = "P1";
 
 function localDate() {
@@ -229,28 +229,24 @@ function buildState(events) {
 
   const items = Array.from(state.requirements.values())
     .map((item) => {
-      const tasks = clone(item.tasks).sort((a, b) =>
-        String(a.taskId).localeCompare(String(b.taskId))
-      );
-      const taskStats = tasks.reduce(
-        (stats, task) => {
-          stats.total += 1;
-          if (task.status === "done" || task.status === "accepted") stats.done += 1;
-          if (task.status === "working" || task.status === "claimed") stats.active += 1;
-          if (task.status === "blocked") stats.blocked += 1;
-          return stats;
-        },
-        { total: 0, done: 0, active: 0, blocked: 0 }
-      );
-
       return {
-        ...item,
-        tasks,
-        taskStats,
-        contract: {
-          ready: Boolean(item.contract?.ready),
-          endpoints: normalizeArray(item.contract?.endpoints)
-        }
+        id: item.id,
+        feature: item.feature,
+        title: item.title,
+        type: item.type,
+        status: item.status,
+        week: item.week,
+        dueDate: item.dueDate,
+        owner: item.owner,
+        priority: item.priority,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        summary: item.summary,
+        detail: clone(item.detail),
+        acceptance: clone(normalizeArray(item.acceptance)),
+        links: clone(normalizeArray(item.links)),
+        sources: clone(normalizeArray(item.sources)),
+        notes: clone(normalizeArray(item.notes))
       };
     })
     .sort((a, b) => {
