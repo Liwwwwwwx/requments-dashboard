@@ -452,23 +452,6 @@ function createRoutes(rootDir) {
     });
   });
 
-  router.get("/projects/:project/state", (req, res, next) => {
-    const paths = projectPaths(rootDir, req.params.project);
-    if (!fs.existsSync(paths.eventsPath) && !fs.existsSync(paths.stateJsonPath)) {
-      if (fs.existsSync(paths.dataDir)) {
-        render(paths);
-      } else {
-        return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
-      }
-    }
-    if (!fs.existsSync(paths.stateJsonPath)) {
-      render(paths);
-    }
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.setHeader("Cache-Control", "no-store");
-    fs.createReadStream(paths.stateJsonPath).pipe(res);
-  });
-
   router.get("/projects/:project/events", (req, res, next) => {
     const paths = projectPaths(rootDir, req.params.project);
     if (!fs.existsSync(paths.eventsPath)) {

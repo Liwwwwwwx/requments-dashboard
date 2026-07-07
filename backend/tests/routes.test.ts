@@ -120,19 +120,17 @@ describe('POST /api/projects', () => {
     expect(fs.existsSync(path.join(tmpDir, 'data', 'newproj'))).toBe(true);
   });
 
-  it('returns an empty board state for a newly created project', async () => {
+  it('returns an empty requirement list for a newly created project', async () => {
     await authReq(
       request(makeApp())
         .post('/api/projects')
         .send({ id: 'emptyproj' })
     );
 
-    const res = await authReq(request(makeApp()).get('/api/projects/emptyproj/state'));
+    const res = await authReq(request(makeApp()).get('/api/projects/emptyproj/requirements'));
 
     expect(res.status).toBe(200);
-    expect(typeof res.body.updatedAt).toBe('string');
-    expect(res.body.items).toEqual([]);
-    expect(Array.isArray(res.body.statuses)).toBe(true);
+    expect(res.body.requirements).toEqual([]);
   });
 
   it('rejects duplicate project creation without updating metadata', async () => {
@@ -280,17 +278,7 @@ describe('Project detail APIs', () => {
 });
 
 describe('GET /api/projects/:project/state', () => {
-  it('returns 404 with structured error when project missing', async () => {
-    const res = await authReq(request(makeApp()).get('/api/projects/missing/state'));
-    expect(res.status).toBe(404);
-    expect(res.body).toMatchObject({
-      ok: false,
-      code: 'PROJECT_NOT_FOUND'
-    });
-  });
-
-  it('renders and returns state.json for valid project', async () => {
-    // bootstrap project + a req.new event via the proper API
+  it('does not expose the legacy state endpoint in V2', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'p1'), { recursive: true });
     const paths = projectPaths(tmpDir, 'p1');
     appendEvents(paths.eventsPath, [
@@ -304,9 +292,7 @@ describe('GET /api/projects/:project/state', () => {
     ]);
 
     const res = await authReq(request(makeApp()).get('/api/projects/p1/state'));
-    expect(res.status).toBe(200);
-    expect(res.body.items).toHaveLength(1);
-    expect(res.body.items[0].id).toBe('REQ-0001');
+    expect(res.status).toBe(404);
   });
 });
 
