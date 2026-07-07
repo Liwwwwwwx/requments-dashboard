@@ -61,6 +61,10 @@ function seedDeepSeekAccount() {
   );
 }
 
+function seedProject(project = 'default') {
+  fs.mkdirSync(path.join(tmpDir, 'data', project), { recursive: true });
+}
+
 function makeStreamChunks() {
   // 构造 OpenAI 兼容 SSE 字节流
   const chunks = [
@@ -86,6 +90,7 @@ describe('AI 对话路由（Sprint 2）', () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-routes-test-'));
     seedDeepSeekAccount();
+    seedProject();
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -110,6 +115,30 @@ describe('AI 对话路由（Sprint 2）', () => {
   it('未鉴权请求被拒', async () => {
     const res = await request(makeApp()).get('/api/ai/accounts');
     expect(res.status).toBe(401);
+  });
+
+  it('POST /api/ai/conversations 拒绝不存在项目且不创建目录', async () => {
+    const projectDir = path.join(tmpDir, 'data', 'missing');
+
+    const res = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=missing').send({})
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('PROJECT_NOT_FOUND');
+    expect(fs.existsSync(projectDir)).toBe(false);
+  });
+
+  it('GET /api/ai/conversations 拒绝不存在项目且不创建目录', async () => {
+    const projectDir = path.join(tmpDir, 'data', 'missing-list');
+
+    const res = await authReq(
+      request(makeApp()).get('/api/ai/conversations?project=missing-list')
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('PROJECT_NOT_FOUND');
+    expect(fs.existsSync(projectDir)).toBe(false);
   });
 
   it('POST /api/ai/conversations 拒绝非法需求 ID', async () => {

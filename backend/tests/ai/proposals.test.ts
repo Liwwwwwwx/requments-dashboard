@@ -62,6 +62,10 @@ function seedDeepSeekAccount() {
   );
 }
 
+function seedProject(project = 'default') {
+  fs.mkdirSync(path.join(tmpDir, 'data', project), { recursive: true });
+}
+
 function makeStreamWithToolCall() {
   // 模型先流式输出文字，再发出需求级 tool_call
   // 整段 arguments 是一个合法 JSON，分多次片段发出，模拟真实流式
@@ -109,6 +113,7 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-sprint3-test-'));
     seedDeepSeekAccount();
+    seedProject();
   });
   afterEach(() => {
     vi.restoreAllMocks();
