@@ -178,6 +178,10 @@ function createRoutes(rootDir) {
     const requirementIds = new Set((currentState.items || []).map((item) => item.id));
     for (const event of events) {
       if (event.kind === "req.new") {
+        if (requirementIds.has(event.requirementId)) {
+          next(httpError(409, "REQUIREMENT_ALREADY_EXISTS", `需求已存在：${event.requirementId}`));
+          return false;
+        }
         requirementIds.add(event.requirementId);
         continue;
       }

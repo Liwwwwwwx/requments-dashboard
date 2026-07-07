@@ -529,6 +529,38 @@ describe('POST /api/projects/:project/events', () => {
     expect(res.status).toBe(200);
     expect(readEvents(paths.eventsPath).map((event) => event.kind)).toEqual(['req.new', 'note.add']);
   });
+
+  it('rejects duplicate requirement creation at project event write boundary', async () => {
+    const app = makeApp();
+    await createProject(app, 'p9');
+    const paths = projectPaths(tmpDir, 'p9');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '已有需求'
+      }
+    ]);
+
+    const res = await authReq(
+      request(app)
+        .post('/api/projects/p9/events')
+        .send({
+          events: [
+            {
+              kind: 'req.new',
+              requirementId: 'REQ-0001',
+              title: '重复需求'
+            }
+          ]
+        })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('REQUIREMENT_ALREADY_EXISTS');
+    expect(readEvents(paths.eventsPath).map((event) => event.title)).toEqual(['已有需求']);
+  });
 });
 
 describe('V2 requirement REST APIs', () => {
