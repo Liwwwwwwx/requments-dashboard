@@ -135,6 +135,32 @@ describe('POST /api/projects', () => {
     expect(Array.isArray(res.body.statuses)).toBe(true);
   });
 
+  it('rejects duplicate project creation without updating metadata', async () => {
+    const app = makeApp();
+    const first = await authReq(
+      request(app)
+        .post('/api/projects')
+        .send({ id: 'alpha', name: 'Alpha 项目', description: '第一版' })
+    );
+    expect(first.status).toBe(200);
+
+    const duplicate = await authReq(
+      request(app)
+        .post('/api/projects')
+        .send({ id: 'alpha', name: '覆盖名称', description: '不应写入' })
+    );
+
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.code).toBe('PROJECT_ALREADY_EXISTS');
+
+    const detail = await authReq(request(app).get('/api/projects/alpha'));
+    expect(detail.body.project).toMatchObject({
+      id: 'alpha',
+      name: 'Alpha 项目',
+      description: '第一版'
+    });
+  });
+
   it('rejects invalid id with structured error', async () => {
     const res = await authReq(
       request(makeApp())

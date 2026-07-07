@@ -66,7 +66,11 @@ function createRoutes(rootDir) {
     if (!id || !isValidProjectId(id)) {
       return next(httpError(400, "INVALID_PROJECT_ID", `项目 id 非法：${id}`));
     }
-    const paths = ensureProject(rootDir, id);
+    const paths = projectPaths(rootDir, id);
+    if (fs.existsSync(paths.dataDir)) {
+      return next(httpError(409, "PROJECT_ALREADY_EXISTS", `项目已存在：${paths.projectId}`));
+    }
+    ensureProject(rootDir, id);
     const project = ensureProjectMetadata(rootDir, paths.projectId, {
       name: req.body.name,
       description: req.body.description
