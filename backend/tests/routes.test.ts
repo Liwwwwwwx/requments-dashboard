@@ -561,6 +561,41 @@ describe('POST /api/projects/:project/events', () => {
     expect(res.body.code).toBe('REQUIREMENT_ALREADY_EXISTS');
     expect(readEvents(paths.eventsPath).map((event) => event.title)).toEqual(['已有需求']);
   });
+
+  it('rejects invalid requirement detail structures at project event write boundary', async () => {
+    const app = makeApp();
+    await createProject(app, 'p10');
+    const paths = projectPaths(tmpDir, 'p10');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录页'
+      }
+    ]);
+
+    const res = await authReq(
+      request(app)
+        .post('/api/projects/p10/events')
+        .send({
+          events: [
+            {
+              kind: 'req.patch',
+              requirementId: 'REQ-0001',
+              detail: {
+                goal: '补齐登录体验',
+                scope: ['用户名密码登录', 123]
+              }
+            }
+          ]
+        })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_DETAIL');
+    expect(readEvents(paths.eventsPath).map((event) => event.kind)).toEqual(['req.new']);
+  });
 });
 
 describe('V2 requirement REST APIs', () => {
@@ -1093,6 +1128,32 @@ describe('V2 requirement REST APIs', () => {
     );
     expect(emptyTitle.status).toBe(400);
     expect(emptyTitle.body.code).toBe('MISSING_TITLE');
+  });
+
+  it('rejects invalid requirement acceptance structures on requirement-scoped events', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({
+          kind: 'req.patch',
+          acceptance: ['登录成功后进入项目页', { text: '非法验收点' }]
+        })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_ACCEPTANCE');
+    expect(readEvents(paths.eventsPath).map((event) => event.kind)).toEqual(['req.new']);
   });
 });
 

@@ -27,6 +27,8 @@ const V2_PRIORITIES = new Set(["P0", "P1", "P2"]);
 const V2_REQUIREMENT_HISTORY_KINDS = new Set(["req.new", "req.status", "req.patch", "note.add"]);
 const V2_REQUIREMENT_EVENT_KINDS = new Set(["req.status", "req.patch", "note.add"]);
 const V2_PROJECT_EVENT_KINDS = new Set(["req.new", "req.status", "req.patch", "note.add"]);
+const V2_DETAIL_STRING_FIELDS = ["goal", "next"];
+const V2_DETAIL_STRING_LIST_FIELDS = ["scope", "nonGoals"];
 
 function createRoutes(rootDir) {
   const router = express.Router();
@@ -202,6 +204,38 @@ function createRoutes(rootDir) {
     return title;
   }
 
+  function isStringList(value) {
+    return Array.isArray(value) && value.every((item) => typeof item === "string");
+  }
+
+  function assertV2Detail(value, next) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      next(httpError(400, "INVALID_DETAIL", "需求详情必须是对象"));
+      return false;
+    }
+    for (const field of V2_DETAIL_STRING_FIELDS) {
+      if (value[field] !== undefined && typeof value[field] !== "string") {
+        next(httpError(400, "INVALID_DETAIL", `需求详情 ${field} 必须是字符串`));
+        return false;
+      }
+    }
+    for (const field of V2_DETAIL_STRING_LIST_FIELDS) {
+      if (value[field] !== undefined && !isStringList(value[field])) {
+        next(httpError(400, "INVALID_DETAIL", `需求详情 ${field} 必须是字符串数组`));
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function assertV2Acceptance(value, next) {
+    if (!isStringList(value)) {
+      next(httpError(400, "INVALID_ACCEPTANCE", "需求验收点必须是字符串数组"));
+      return false;
+    }
+    return true;
+  }
+
   function validateRequirementScopedEvents(events, next) {
     for (const event of events) {
       if (!V2_REQUIREMENT_EVENT_KINDS.has(event.kind)) {
@@ -220,6 +254,8 @@ function createRoutes(rootDir) {
         if (event.title !== undefined && !assertV2Title(event.title, next)) return false;
         if (event.status !== undefined && !assertV2Status(event.status, next)) return false;
         if (event.priority !== undefined && !assertV2Priority(event.priority, next)) return false;
+        if (event.detail !== undefined && !assertV2Detail(event.detail, next)) return false;
+        if (event.acceptance !== undefined && !assertV2Acceptance(event.acceptance, next)) return false;
       }
       if (event.kind === "note.add" && !String(event.text || "").trim()) {
         next(httpError(400, "EMPTY_NOTE", "备注内容不能为空"));
@@ -258,6 +294,8 @@ function createRoutes(rootDir) {
         if (event.title !== undefined && !assertV2Title(event.title, next)) return false;
         if (event.status !== undefined && !assertV2Status(event.status, next)) return false;
         if (event.priority !== undefined && !assertV2Priority(event.priority, next)) return false;
+        if (event.detail !== undefined && !assertV2Detail(event.detail, next)) return false;
+        if (event.acceptance !== undefined && !assertV2Acceptance(event.acceptance, next)) return false;
       }
       if (event.kind === "note.add" && !String(event.text || "").trim()) {
         next(httpError(400, "EMPTY_NOTE", "备注内容不能为空"));
