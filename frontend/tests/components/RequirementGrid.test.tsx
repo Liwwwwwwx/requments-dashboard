@@ -129,6 +129,20 @@ describe('RequirementGrid', () => {
     expect(screen.getByText('项目列表')).toBeInTheDocument();
   });
 
+  it('列表视图只展示 MVP 需求字段', () => {
+    render(<GridHarness />);
+
+    fireEvent.click(screen.getByRole('tab', { name: /列表/ }));
+
+    expect(screen.getByRole('columnheader', { name: /优先级/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /需求/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /状态/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /负责人/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /更新/ })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /周期/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /截止/ })).not.toBeInTheDocument();
+  });
+
   it('新建需求时提交状态、优先级和负责人', async () => {
     vi.mocked(createRequirement).mockResolvedValue({
       ok: true,

@@ -12,7 +12,7 @@ interface Props {
   onOpen: (id: string) => void;
 }
 
-type SortKey = 'priority' | 'title' | 'status' | 'owner' | 'week' | 'dueDate' | 'updatedAt';
+type SortKey = 'priority' | 'title' | 'status' | 'owner' | 'updatedAt';
 type SortDir = 'asc' | 'desc';
 
 const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2 };
@@ -23,9 +23,7 @@ const COLUMNS: { key: SortKey; label: string; sortable: boolean; className?: str
   { key: 'title', label: '需求', sortable: true, className: 'col-title' },
   { key: 'status', label: '状态', sortable: true, className: 'col-status' },
   { key: 'owner', label: '负责人', sortable: true, className: 'col-owner' },
-  { key: 'week', label: '周期', sortable: true, className: 'col-week' },
-  { key: 'updatedAt', label: '更新', sortable: true, className: 'col-date' },
-  { key: 'dueDate', label: '截止', sortable: true, className: 'col-date' }
+  { key: 'updatedAt', label: '更新', sortable: true, className: 'col-date' }
 ];
 
 function compare(a: Requirement, b: Requirement, key: SortKey): number {
@@ -38,10 +36,6 @@ function compare(a: Requirement, b: Requirement, key: SortKey): number {
       return a.title.localeCompare(b.title, 'zh');
     case 'owner':
       return (a.owner || '').localeCompare(b.owner || '', 'zh');
-    case 'week':
-      return (a.week || '').localeCompare(b.week || '');
-    case 'dueDate':
-      return (a.dueDate || '').localeCompare(b.dueDate || '');
     case 'updatedAt':
       return (a.updatedAt || '').localeCompare(b.updatedAt || '');
     default:
@@ -153,9 +147,7 @@ export function ListView({ items, selectedId, isInitialLoading, onOpen }: Props)
                   </span>
                 </td>
                 <td className="col-owner">{item.owner || '—'}</td>
-                <td className="col-week list-mono">{item.week || '—'}</td>
                 <td className="col-date list-mono">{item.updatedAt || '—'}</td>
-                <td className="col-date list-mono">{item.dueDate || '—'}</td>
               </tr>
             );
           })}
