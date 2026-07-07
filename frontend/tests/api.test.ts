@@ -3,6 +3,7 @@ import {
   ApiError,
   createProject,
   createRequirement,
+  fetchRequirement,
   fetchState,
   addRequirementNote,
   listProjects,
@@ -87,6 +88,28 @@ describe('api client', () => {
 
     expect(result.requirements).toEqual([]);
     expect(fetchMock).toHaveBeenCalledWith('/api/projects/default/requirements', expect.any(Object));
+  });
+
+  it('fetches a requirement detail through the V2 endpoint', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      text: async () =>
+        JSON.stringify({
+          ok: true,
+          project: 'default',
+          requirement: { id: 'REQ-0001', title: '登录', status: 'todo' }
+        })
+    });
+
+    const result = await fetchRequirement('default', 'REQ-0001');
+
+    expect(result.requirement.id).toBe('REQ-0001');
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/projects/default/requirements/REQ-0001',
+      expect.any(Object)
+    );
   });
 
   it('creates a project through the V2 endpoint', async () => {

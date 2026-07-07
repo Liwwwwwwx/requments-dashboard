@@ -62,6 +62,15 @@ export async function listRequirements(
   return fetchJson(`/projects/${encodeURIComponent(project)}/requirements`);
 }
 
+export async function fetchRequirement(
+  project: string,
+  requirementId: string
+): Promise<{ ok: true; project: string; requirement: Requirement }> {
+  return fetchJson(
+    `/projects/${encodeURIComponent(project)}/requirements/${encodeURIComponent(requirementId)}`
+  );
+}
+
 export async function createRequirement(
   project: string,
   input: {
