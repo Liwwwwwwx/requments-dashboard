@@ -33,15 +33,6 @@ interface Props {
   onApplied?: (proposalId: string) => void;
 }
 
-/**
- * 提案卡片：工具调用风格（折叠式）。
- *
- * 标题始终展示"工具调用：propose_events"+ 事件数；展开后看到事件列表。
- * 状态：
- *   - pending：可应用 / 丢弃
- *   - applied：折叠展示 + 绿色对勾
- *   - discarded：本地已被用户隐藏（外层 ChatPanel 负责不渲染）
- */
 export function ProposalCard({ project, proposal, onApplied }: Props) {
   const [applying, setApplying] = useState(false);
   const [expanded, setExpanded] = useState(true);
@@ -71,8 +62,7 @@ export function ProposalCard({ project, proposal, onApplied }: Props) {
       <header className="tool-call-head" onClick={() => setExpanded((v) => !v)}>
         <Space size="small">
           <ApiOutlined className="tool-call-icon" />
-          <Text strong>工具调用</Text>
-          <Tag color="geekblue">propose_events</Tag>
+          <Text strong>AI 建议变更</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {proposal.events.length} 条事件
           </Text>

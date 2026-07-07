@@ -38,6 +38,9 @@ describe('ProposalCard', () => {
       />
     );
 
+    expect(screen.getByText('AI 建议变更')).toBeInTheDocument();
+    expect(screen.queryByText('工具调用')).not.toBeInTheDocument();
+    expect(screen.queryByText('propose_events')).not.toBeInTheDocument();
     expect(screen.getByText('改需求状态')).toBeInTheDocument();
     expect(screen.getByText('改需求字段')).toBeInTheDocument();
     expect(screen.getByText('添加备注')).toBeInTheDocument();
