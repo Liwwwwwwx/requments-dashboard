@@ -1,0 +1,127 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+
+import { ChatPanel } from '@/components/ai/ChatPanel';
+import { getAiConversation, listAiConversations } from '@/lib/ai-api';
+import type { AiConversation } from '@/lib/ai-types';
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    refresh: vi.fn()
+  })
+}));
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+  const Input = Object.assign(actual.Input, {
+    TextArea: ({
+      className,
+      disabled,
+      onChange,
+      onPressEnter,
+      placeholder,
+      value
+    }: {
+      className?: string;
+      disabled?: boolean;
+      onChange?: React.ChangeEventHandler<HTMLTextAreaElement>;
+      onPressEnter?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+      placeholder?: string;
+      value?: string;
+    }) => (
+      <textarea
+        className={className}
+        disabled={disabled}
+        onChange={onChange}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') onPressEnter?.(event);
+        }}
+        placeholder={placeholder}
+        value={value}
+      />
+    )
+  });
+  return { ...actual, Input };
+});
+
+vi.mock('@/lib/ai-key-store', () => ({
+  getDeepSeekApiKey: () => 'sk-test'
+}));
+
+vi.mock('@/lib/ai-api', () => ({
+  listAiConversations: vi.fn(),
+  getAiConversation: vi.fn(),
+  createAiConversation: vi.fn(),
+  sendAiMessageStream: vi.fn()
+}));
+
+vi.mock('@/components/ai/ConversationList', () => ({
+  ConversationList: () => <aside>会话列表</aside>
+}));
+
+vi.mock('@/components/ai/MessageItem', () => ({
+  MessageItem: () => <div>消息</div>
+}));
+
+vi.mock('@/components/ai/ApiKeySettingsModal', () => ({
+  ApiKeySettingsModal: () => null
+}));
+
+function conversation(input: Partial<AiConversation>): AiConversation {
+  return {
+    id: input.id || 'conv-1',
+    userId: 'u1',
+    projectId: 'alpha',
+    requirementId: input.requirementId ?? null,
+    title: input.title || null,
+    model: 'deepseek-chat',
+    accountId: null,
+    createdAt: 1000,
+    updatedAt: 2000
+  };
+}
+
+describe('ChatPanel', () => {
+  beforeEach(() => {
+    vi.mocked(listAiConversations).mockReset();
+    vi.mocked(getAiConversation).mockReset();
+    vi.mocked(getAiConversation).mockResolvedValue({
+      ok: true,
+      conversation: conversation({ id: 'matched', requirementId: 'REQ-0001' }),
+      messages: []
+    });
+  });
+
+  it('需求级入口不会自动选中不匹配的项目级历史会话', async () => {
+    vi.mocked(listAiConversations).mockResolvedValue({
+      ok: true,
+      conversations: [
+        conversation({ id: 'project-old', requirementId: null, title: '项目会话' })
+      ]
+    });
+
+    render(<ChatPanel project="alpha" requirementId="REQ-0001" />);
+
+    await waitFor(() => {
+      expect(listAiConversations).toHaveBeenCalledWith('alpha');
+    });
+    expect(await screen.findByText('已自动绑定到 REQ-0001')).toBeInTheDocument();
+    expect(getAiConversation).not.toHaveBeenCalled();
+  });
+
+  it('需求级入口优先选中同一需求的历史会话', async () => {
+    vi.mocked(listAiConversations).mockResolvedValue({
+      ok: true,
+      conversations: [
+        conversation({ id: 'project-old', requirementId: null, title: '项目会话' }),
+        conversation({ id: 'matched', requirementId: 'REQ-0001', title: '需求会话' })
+      ]
+    });
+
+    render(<ChatPanel project="alpha" requirementId="REQ-0001" />);
+
+    await waitFor(() => {
+      expect(getAiConversation).toHaveBeenCalledWith('alpha', 'matched');
+    });
+  });
+});

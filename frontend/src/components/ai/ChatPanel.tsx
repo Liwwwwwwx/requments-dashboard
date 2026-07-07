@@ -69,17 +69,22 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
     }
   }, [keyModalOpen]);
 
-  // 进入项目时，如果没有选中会话且列表非空，自动选第一个（按 updatedAt 倒序）
+  // 进入项目/需求时自动选会话：需求级入口只复用同一需求的历史会话。
   useEffect(() => {
     let cancelled = false;
+    setConversationId(null);
+    setMessages([]);
+    setProposals({});
+    setLastError(null);
+    lastUserTextRef.current = null;
     (async () => {
       try {
         const res = await listAiConversations(project);
         if (cancelled) return;
-        // 只在用户尚未手动选择时生效
-        if (!conversationId && res.conversations.length > 0) {
-          setConversationId(res.conversations[0].id);
-        }
+        const next = requirementId
+          ? res.conversations.find((conv) => conv.requirementId === requirementId)
+          : res.conversations[0];
+        setConversationId(next?.id || null);
       } catch {
         // 静默
       }
@@ -87,9 +92,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
     return () => {
       cancelled = true;
     };
-    // 只在 project 变化时触发；用户在已加载后切换会话不应被覆盖
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project]);
+  }, [project, requirementId]);
 
   // 加载历史消息
   useEffect(() => {
