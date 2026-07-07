@@ -95,4 +95,15 @@ describe('LoginPage', () => {
       expect(authState.replace).toHaveBeenCalledWith('/p/default');
     });
   });
+
+  it('已登录时不跳回登录页 redirect', async () => {
+    authState.user = { id: 'u1', username: 'admin' };
+    authState.redirect = `redirect=${encodeURIComponent('/login?redirect=/p/alpha')}`;
+
+    render(<LoginPage />);
+
+    await waitFor(() => {
+      expect(authState.replace).toHaveBeenCalledWith('/p/default');
+    });
+  });
 });

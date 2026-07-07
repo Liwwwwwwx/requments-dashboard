@@ -19,6 +19,7 @@ const loginTheme = {
 function safeRedirectTarget(value: string | null) {
   if (!value) return '/p/default';
   if (!value.startsWith('/') || value.startsWith('//')) return '/p/default';
+  if (value === '/login' || value.startsWith('/login?') || value.startsWith('/login#')) return '/p/default';
   return value;
 }
 
