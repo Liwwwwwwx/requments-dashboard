@@ -1,0 +1,88 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import request from 'supertest';
+import { createRoutes } from '../src/routes';
+import { errorMiddleware } from '../src/errors';
+
+let tmpDir: string;
+
+function makeApp() {
+  const app = express();
+  app.use(express.json());
+  app.use(cookieParser());
+  app.use('/api', createRoutes(tmpDir));
+  app.use(errorMiddleware());
+  return app;
+}
+
+beforeEach(() => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-auth-test-'));
+});
+
+afterEach(() => {
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+describe('auth routes', () => {
+  it('logs in default user and reads current user with access token', async () => {
+    const app = makeApp();
+
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ username: 'admin', password: 'admin123' });
+
+    expect(login.status).toBe(200);
+    expect(login.body).toMatchObject({
+      ok: true,
+      user: { id: 'u1', username: 'admin', displayName: '管理员' }
+    });
+    expect(typeof login.body.accessToken).toBe('string');
+    expect(login.headers['set-cookie']?.[0]).toContain('refresh_token=');
+
+    const me = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${login.body.accessToken}`);
+
+    expect(me.status).toBe(200);
+    expect(me.body).toMatchObject({
+      ok: true,
+      user: { id: 'u1', username: 'admin', displayName: '管理员' }
+    });
+  });
+
+  it('refreshes access token from cookie and authorizes project API', async () => {
+    const app = makeApp();
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ username: 'admin', password: 'admin123' });
+
+    const refresh = await request(app)
+      .post('/api/auth/refresh')
+      .set('Cookie', login.headers['set-cookie']);
+
+    expect(refresh.status).toBe(200);
+    expect(refresh.body.ok).toBe(true);
+    expect(typeof refresh.body.accessToken).toBe('string');
+    expect(refresh.headers['set-cookie']?.[0]).toContain('refresh_token=');
+
+    const projects = await request(app)
+      .get('/api/projects')
+      .set('Authorization', `Bearer ${refresh.body.accessToken}`);
+
+    expect(projects.status).toBe(200);
+    expect(projects.body).toEqual({ ok: true, projects: [] });
+  });
+
+  it('rejects wrong password', async () => {
+    const res = await request(makeApp())
+      .post('/api/auth/login')
+      .send({ username: 'admin', password: 'wrong-password' });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ ok: false, error: 'INVALID_CREDENTIALS' });
+  });
+});
