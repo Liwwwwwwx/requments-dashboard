@@ -141,8 +141,19 @@ function buildSystemPrompt(rootDir, { projectId, requirementId } = {}) {
 
   if (requirement) {
     parts.push(`\n## 当前需求\n${requirement.id} · ${requirement.title || "(无标题)"}\n- 状态: ${requirement.status}\n- 优先级: ${requirement.priority}\n- 负责人: ${requirement.owner || "未分配"}\n- 摘要: ${requirement.summary || "(无)"}`);
+    const detailLines = [];
+    if (requirement.detail?.goal) detailLines.push(`目标: ${requirement.detail.goal}`);
+    if (requirement.detail?.next) detailLines.push(`下一步: ${requirement.detail.next}`);
+    if (requirement.detail?.scope?.length) detailLines.push(`范围: ${requirement.detail.scope.join("；")}`);
+    if (requirement.detail?.nonGoals?.length) detailLines.push(`不做范围: ${requirement.detail.nonGoals.join("；")}`);
+    if (detailLines.length > 0) {
+      parts.push(`\n### 需求详情\n${detailLines.map((line) => `- ${line}`).join("\n")}`);
+    }
     if (requirement.acceptance && requirement.acceptance.length > 0) {
       parts.push(`\n### 验收点\n- ${requirement.acceptance.join("\n- ")}`);
+    }
+    if (requirement.notes && requirement.notes.length > 0) {
+      parts.push(`\n### 备注\n- ${requirement.notes.map((note) => note.text).join("\n- ")}`);
     }
   } else if (requirementId) {
     parts.push(`\n## 当前需求\n${requirementId}（未在看板中找到）`);

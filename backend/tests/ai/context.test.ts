@@ -123,4 +123,45 @@ describe('ai/context', () => {
     expect(prompt).not.toContain('### 接口契约');
     expect(prompt).not.toContain('/api/legacy');
   });
+
+  it('需求级上下文包含详情字段和备注', () => {
+    const paths = projectPaths(tmpDir, 'default');
+    appendEvents(paths.eventsPath, [
+      {
+        eventId: 'E1',
+        ts: 100,
+        kind: 'req.new',
+        requirementId: 'REQ-0001',
+        title: '登录页',
+        summary: '最小登录体验',
+        detail: {
+          goal: '用户可以用账号密码进入系统',
+          scope: ['用户名密码登录', '登录失败提示'],
+          nonGoals: ['注册', '找回密码'],
+          next: '先确认登录失败提示文案'
+        },
+        acceptance: ['登录成功后进入项目页']
+      },
+      {
+        eventId: 'E2',
+        ts: 200,
+        kind: 'note.add',
+        requirementId: 'REQ-0001',
+        text: '密码暂时由后端默认用户配置'
+      }
+    ]);
+
+    const prompt = buildSystemPrompt(tmpDir, {
+      projectId: 'default',
+      requirementId: 'REQ-0001'
+    });
+
+    expect(prompt).toContain('### 需求详情');
+    expect(prompt).toContain('目标: 用户可以用账号密码进入系统');
+    expect(prompt).toContain('下一步: 先确认登录失败提示文案');
+    expect(prompt).toContain('范围: 用户名密码登录；登录失败提示');
+    expect(prompt).toContain('不做范围: 注册；找回密码');
+    expect(prompt).toContain('### 备注');
+    expect(prompt).toContain('密码暂时由后端默认用户配置');
+  });
 });
