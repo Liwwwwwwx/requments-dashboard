@@ -33,7 +33,7 @@ function createAuthRoutes(rootDir) {
     res.cookie("refresh_token", refreshToken, COOKIE_OPTIONS);
     return res.json({
       ok: true,
-      user: { id: user.id, username: user.username, displayName: user.display_name },
+      user: { id: user.id, username: user.username, displayName: user.display_name, role: user.role },
       accessToken
     });
   });

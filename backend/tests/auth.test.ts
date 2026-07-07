@@ -5,6 +5,8 @@ import path from 'node:path';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
+import Database from 'better-sqlite3';
+import bcrypt from 'bcryptjs';
 import { createRoutes } from '../src/routes';
 import { errorMiddleware } from '../src/errors';
 import { initUsers } from '../src/auth/users';
@@ -39,7 +41,7 @@ describe('auth routes', () => {
     expect(login.status).toBe(200);
     expect(login.body).toMatchObject({
       ok: true,
-      user: { id: 'u1', username: 'admin', displayName: '管理员' }
+      user: { id: 'u1', username: 'admin', displayName: '管理员', role: 'owner' }
     });
     expect(typeof login.body.accessToken).toBe('string');
     expect(login.headers['set-cookie']?.[0]).toContain('refresh_token=');
@@ -51,7 +53,7 @@ describe('auth routes', () => {
     expect(me.status).toBe(200);
     expect(me.body).toMatchObject({
       ok: true,
-      user: { id: 'u1', username: 'admin', displayName: '管理员' }
+      user: { id: 'u1', username: 'admin', displayName: '管理员', role: 'owner' }
     });
   });
 
@@ -120,6 +122,55 @@ describe('auth routes', () => {
       else process.env.DEFAULT_USERNAME = oldUsername;
       if (oldDisplayName === undefined) delete process.env.DEFAULT_DISPLAY_NAME;
       else process.env.DEFAULT_DISPLAY_NAME = oldDisplayName;
+    }
+  });
+
+  it('migrates legacy password column to password_hash and role', () => {
+    const dbPath = path.join(tmpDir, 'legacy', 'users.db');
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+    const db = new Database(dbPath);
+    try {
+      db.exec(`
+        CREATE TABLE users (
+          id TEXT PRIMARY KEY,
+          username TEXT NOT NULL UNIQUE,
+          password TEXT NOT NULL,
+          display_name TEXT,
+          created_at TEXT NOT NULL
+        );
+      `);
+      db.prepare("INSERT INTO users (id, username, password, display_name, created_at) VALUES (?, ?, ?, ?, ?)").run(
+        'legacy-u1',
+        'legacy',
+        bcrypt.hashSync('legacy123', 10),
+        '旧用户',
+        '2026-07-07T00:00:00.000Z'
+      );
+    } finally {
+      db.close();
+    }
+
+    const store = initUsers(dbPath);
+    const user = store.findByUsername('legacy');
+
+    expect(user).toMatchObject({
+      id: 'legacy-u1',
+      username: 'legacy',
+      role: 'owner',
+      display_name: '旧用户'
+    });
+    expect(store.verifyPassword(user, 'legacy123')).toBe(true);
+
+    const migrated = new Database(dbPath);
+    try {
+      const columns = migrated.prepare('PRAGMA table_info(users)').all().map((column: { name: string }) => column.name);
+      expect(columns).toContain('password_hash');
+      expect(columns).toContain('role');
+      const row = migrated.prepare('SELECT password_hash, role FROM users WHERE username = ?').get('legacy') as { password_hash: string; role: string };
+      expect(row.password_hash).toBeTruthy();
+      expect(row.role).toBe('owner');
+    } finally {
+      migrated.close();
     }
   });
 });
