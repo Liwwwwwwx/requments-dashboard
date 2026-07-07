@@ -6,6 +6,7 @@ import { Button, Form, Input, Modal, Select, Space, Typography, message } from '
 import { addRequirementNote, fetchRequirementEvents, updateRequirement } from '@/lib/api';
 import { priorityChipClass, statusChipClass, statusLabel } from '@/lib/utils';
 import type { Priority, Requirement, RequirementEvent, RequirementStatus } from '@/lib/types';
+import { ChatPanel } from './ai/ChatPanel';
 
 const { Paragraph } = Typography;
 
@@ -149,6 +150,11 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
     router.push(`/p/${project}/ai?requirementId=${encodeURIComponent(item.id)}`);
   };
 
+  const handleAiProposalApplied = async () => {
+    await onUpdated?.();
+    await loadHistory();
+  };
+
   const openEdit = () => {
     if (!item) return;
     form.setFieldsValue({
@@ -230,7 +236,7 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
           </div>
           <Space className="view-detail-actions" size={8}>
             <Button size="small" onClick={openAi}>
-              问 AI
+              完整 AI
             </Button>
             <Button size="small" onClick={openEdit}>
               编辑需求
@@ -433,29 +439,17 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
           </section>
         </div>
 
-        <aside className="view-detail-aside">
-          {(item.contract?.endpoints?.length || 0) > 0 && (
-            <div className="stat-block">
-              <div className="stat-block-label">接口契约</div>
-              {item.contract.endpoints.map((ep, i) => (
-                <div
-                  key={i}
-                  style={{
-                    marginBottom: 6,
-                    fontSize: 12,
-                    fontFamily: 'var(--font-mono)'
-                  }}
-                >
-                  <span style={{ color: 'var(--accent)', fontWeight: 500 }}>
-                    {(ep.method || 'METHOD').toUpperCase()}
-                  </span>
-                  <span style={{ color: 'var(--text-primary)', marginLeft: 6 }}>
-                    {ep.path}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+        <aside className="view-detail-aside" aria-label="需求 AI 小助手">
+          <div className="view-detail-ai-head">
+            <h3 className="view-detail-ai-title">AI 小助手</h3>
+            <span className="view-detail-ai-context">{item.id}</span>
+          </div>
+          <ChatPanel
+            project={project}
+            requirementId={item.id}
+            compact
+            onProposalApplied={() => void handleAiProposalApplied()}
+          />
         </aside>
       </div>
 

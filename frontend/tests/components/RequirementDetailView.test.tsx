@@ -6,11 +6,34 @@ import { addRequirementNote, fetchRequirementEvents, updateRequirement } from '@
 import type { Requirement } from '@/lib/types';
 
 const routerPush = vi.fn();
+const chatPanelMock = vi.hoisted(() =>
+  vi.fn(
+    (props: {
+      project: string;
+      requirementId?: string;
+      compact?: boolean;
+      onProposalApplied?: () => void;
+    }) => (
+      <div
+        data-testid="detail-ai-panel"
+        data-project={props.project}
+        data-requirement={props.requirementId}
+        data-compact={String(props.compact)}
+      >
+        AI Mock
+      </div>
+    )
+  )
+);
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: routerPush
   })
+}));
+
+vi.mock('@/components/ai/ChatPanel', () => ({
+  ChatPanel: chatPanelMock
 }));
 
 vi.mock('@/lib/api', () => ({
@@ -53,9 +76,10 @@ describe('RequirementDetailView', () => {
     vi.mocked(addRequirementNote).mockReset();
     vi.mocked(updateRequirement).mockReset();
     routerPush.mockReset();
+    chatPanelMock.mockClear();
   });
 
-  it('从详情页进入绑定当前需求的 AI 小助手', async () => {
+  it('在详情页展示绑定当前需求的 AI 小助手', async () => {
     render(
       <RequirementDetailView
         item={requirement}
@@ -67,7 +91,12 @@ describe('RequirementDetailView', () => {
       expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '问 AI' }));
+    const aiPanel = screen.getByTestId('detail-ai-panel');
+    expect(aiPanel).toHaveAttribute('data-project', 'alpha');
+    expect(aiPanel).toHaveAttribute('data-requirement', 'REQ-0001');
+    expect(aiPanel).toHaveAttribute('data-compact', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: '完整 AI' }));
 
     expect(routerPush).toHaveBeenCalledWith('/p/alpha/ai?requirementId=REQ-0001');
   });

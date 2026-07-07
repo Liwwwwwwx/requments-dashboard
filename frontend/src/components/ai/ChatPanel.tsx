@@ -37,9 +37,10 @@ interface Props {
   project: string;
   requirementId?: string;
   onProposalApplied?: () => void;
+  compact?: boolean;
 }
 
-export function ChatPanel({ project, requirementId, onProposalApplied }: Props) {
+export function ChatPanel({ project, requirementId, onProposalApplied, compact = false }: Props) {
   const router = useRouter();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiMessage[]>([]);
@@ -343,27 +344,29 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
     (messages.length > 0 || lastError?.code === 'AI_KEY_MISSING');
 
   return (
-    <div className="ai-panel">
-      <ConversationList
-        project={project}
-        selectedId={conversationId}
-        onSelect={handleSelectConversation}
-        onNew={handleNewConversation}
-        onDeleted={(id) => {
-          // 删的是当前正在看的会话 → 清空主面板
-          if (id === conversationId) {
-            setConversationId(null);
-            setMessages([]);
-            setProposals({});
-            setLastError(null);
-            lastUserTextRef.current = null;
-          }
-          setConvListTick((t) => t + 1);
-        }}
-        disabled={sending}
-        // 传 key 用作触发 refresh
-        key={convListTick}
-      />
+    <div className={`ai-panel ${compact ? 'ai-panel-compact' : ''}`}>
+      {!compact && (
+        <ConversationList
+          project={project}
+          selectedId={conversationId}
+          onSelect={handleSelectConversation}
+          onNew={handleNewConversation}
+          onDeleted={(id) => {
+            // 删的是当前正在看的会话 → 清空主面板
+            if (id === conversationId) {
+              setConversationId(null);
+              setMessages([]);
+              setProposals({});
+              setLastError(null);
+              lastUserTextRef.current = null;
+            }
+            setConvListTick((t) => t + 1);
+          }}
+          disabled={sending}
+          // 传 key 用作触发 refresh
+          key={convListTick}
+        />
+      )}
 
       <div className="ai-main">
         <div className="ai-panel-toolbar">
