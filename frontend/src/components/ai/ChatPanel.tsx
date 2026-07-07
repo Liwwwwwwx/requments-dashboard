@@ -136,6 +136,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
     async (textToSend: string) => {
       setLastError(null);
       setSending(true);
+      let streamErrorHandled = false;
       try {
         let cid = conversationId;
         if (!cid) {
@@ -214,6 +215,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
               };
               setProposals((prev) => ({ ...prev, [p.proposalId]: proposal }));
               if (p.errors && p.errors.length > 0) {
+                streamErrorHandled = true;
                 setLastError({
                   code: 'AI_PROPOSAL_INVALID',
                   message: `建议事件校验失败：${p.errors.join('; ')}`
@@ -241,6 +243,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
               assistantPlaceholderId = null;
             },
             onError: (err) => {
+              streamErrorHandled = true;
               setLastError(err);
               setMessages((prev) =>
                 prev.map((m) =>
@@ -257,7 +260,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
         await stream.promise;
         setConvListTick((t) => t + 1);
       } catch (e) {
-        if (!lastError) {
+        if (!streamErrorHandled) {
           setLastError({
             code: 'AI_NETWORK_ERROR',
             message: e instanceof Error ? e.message : '发送失败'
@@ -268,7 +271,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
         streamAbortRef.current = null;
       }
     },
-    [conversationId, project, requirementId, toolsEnabled, lastError]
+    [conversationId, project, requirementId, toolsEnabled]
   );
 
   const handleSend = async () => {

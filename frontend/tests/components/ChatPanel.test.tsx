@@ -61,7 +61,12 @@ vi.mock('@/components/ai/ConversationList', () => ({
 }));
 
 vi.mock('@/components/ai/MessageItem', () => ({
-  MessageItem: () => <div>消息</div>
+  MessageItem: (props: { error?: { code: string; message: string } | null }) => (
+    <div>
+      消息
+      {props.error && <span>{`${props.error.code}:${props.error.message}`}</span>}
+    </div>
+  )
 }));
 
 function conversation(input: Partial<AiConversation>): AiConversation {
@@ -194,5 +199,51 @@ describe('ChatPanel', () => {
       },
       expect.any(Object)
     );
+  });
+
+  it('保留流式错误的后端 code', async () => {
+    vi.mocked(listAiConversations).mockResolvedValue({
+      ok: true,
+      conversations: []
+    });
+    vi.mocked(createAiConversation).mockResolvedValue({
+      ok: true,
+      conversation: conversation({ id: 'conv-new', requirementId: null })
+    });
+    vi.mocked(sendAiMessageStream).mockImplementation(
+      (_project, conversationId, _body, handlers) => ({
+        abort: vi.fn(),
+        promise: new Promise((_, reject) => {
+          setTimeout(() => {
+            handlers.onStart?.({
+              messageId: 'msg-a',
+              conversationId,
+              model: 'deepseek-chat'
+            });
+            handlers.onError?.({
+              code: 'AI_PROPOSAL_INVALID',
+              message: '模型返回的建议事件不符合 V2 写入范围'
+            });
+            reject(new Error('模型返回的建议事件不符合 V2 写入范围'));
+          }, 0);
+        })
+      })
+    );
+
+    render(<ChatPanel project="alpha" />);
+
+    await waitFor(() => {
+      expect(listAiConversations).toHaveBeenCalledWith('alpha');
+    });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '创建旧版任务' }
+    });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(sendAiMessageStream).toHaveBeenCalled();
+    });
+    expect(await screen.findByText(/AI_PROPOSAL_INVALID:/)).toBeInTheDocument();
+    expect(screen.queryByText(/AI_NETWORK_ERROR:/)).not.toBeInTheDocument();
   });
 });
