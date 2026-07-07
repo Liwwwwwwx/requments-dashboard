@@ -3,8 +3,6 @@ export type Priority = 'P0' | 'P1' | 'P2';
 
 export interface RequirementDetail {
   goal?: string;
-  scope: string[];
-  nonGoals: string[];
   next?: string;
 }
 

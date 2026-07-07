@@ -53,9 +53,7 @@ const requirement: Requirement = {
   updatedAt: '2026-07-07',
   summary: '补齐最简单的登录体验',
   detail: {
-    goal: '用户可以登录系统',
-    scope: [],
-    nonGoals: []
+    goal: '用户可以登录系统'
   },
   acceptance: [],
   notes: []
@@ -160,7 +158,8 @@ describe('RequirementDetailView', () => {
     expect(screen.getByText('状态变更 → 阻塞')).toBeInTheDocument();
     expect(screen.getByText('标题：登录页 V2；描述：只保留用户名密码登录；优先级：P0；负责人：owner-a')).toBeInTheDocument();
     expect(screen.getByText('先保持最小登录')).toBeInTheDocument();
-    expect(screen.getByText('下一步：确认错误提示文案；范围：用户名密码登录；验收点：登录成功后进入项目页')).toBeInTheDocument();
+    expect(screen.getByText('下一步：确认错误提示文案；验收点：登录成功后进入项目页')).toBeInTheDocument();
+    expect(screen.queryByText(/范围：用户名密码登录/)).not.toBeInTheDocument();
   });
 
   it('详情页使用描述作为基础字段标题', async () => {
@@ -176,6 +175,30 @@ describe('RequirementDetailView', () => {
     });
     expect(screen.getByRole('heading', { name: '描述' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '摘要' })).not.toBeInTheDocument();
+  });
+
+  it('不展示旧版详情范围字段', async () => {
+    render(
+      <RequirementDetailView
+        item={{
+          ...requirement,
+          detail: {
+            ...requirement.detail,
+            scope: ['用户名密码登录'],
+            nonGoals: ['注册和权限']
+          } as Requirement['detail']
+        }}
+        project="alpha"
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+    expect(screen.queryByRole('heading', { name: /范围/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /不做范围/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('用户名密码登录')).not.toBeInTheDocument();
+    expect(screen.queryByText('注册和权限')).not.toBeInTheDocument();
   });
 
   it('不展示旧版工作流状态字段', async () => {

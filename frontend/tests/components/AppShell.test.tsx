@@ -100,9 +100,7 @@ describe('AppShell', () => {
       updatedAt: '2026-07-07',
       summary: '补齐最简单的登录体验',
       detail: {
-        goal: '用户可以登录系统',
-        scope: [],
-        nonGoals: []
+        goal: '用户可以登录系统'
       },
       acceptance: [],
       notes: []

@@ -87,8 +87,6 @@ function historyDetail(event: RequirementEvent): string {
       payload.status !== undefined ? `状态：${statusLabel(formatHistoryValue(payload.status)).label}` : '',
       detail?.goal !== undefined ? `目标：${formatHistoryValue(detail.goal)}` : '',
       detail?.next !== undefined ? `下一步：${formatHistoryValue(detail.next)}` : '',
-      detail?.scope !== undefined ? `范围：${formatHistoryValue(detail.scope)}` : '',
-      detail?.nonGoals !== undefined ? `不做范围：${formatHistoryValue(detail.nonGoals)}` : '',
       payload.acceptance !== undefined ? `验收点：${formatHistoryValue(payload.acceptance)}` : ''
     ].filter(Boolean);
     return fields.length > 0 ? fields.join('；') : '更新了需求信息';
@@ -337,36 +335,6 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
               <h3 className="view-detail-section-title">下一步</h3>
               <div className="view-detail-section-body">
                 <Paragraph style={{ marginBottom: 0 }}>{item.detail.next}</Paragraph>
-              </div>
-            </section>
-          )}
-
-          {(item.detail?.scope?.length || 0) > 0 && (
-            <section className="view-detail-section">
-              <h3 className="view-detail-section-title">
-                范围 <span className="count">· {item.detail.scope.length}</span>
-              </h3>
-              <div className="view-detail-section-body">
-                <ul>
-                  {item.detail.scope.map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
-              </div>
-            </section>
-          )}
-
-          {(item.detail?.nonGoals?.length || 0) > 0 && (
-            <section className="view-detail-section">
-              <h3 className="view-detail-section-title">
-                不做范围 <span className="count">· {item.detail.nonGoals.length}</span>
-              </h3>
-              <div className="view-detail-section-body">
-                <ul>
-                  {item.detail.nonGoals.map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
               </div>
             </section>
           )}

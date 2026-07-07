@@ -22,6 +22,12 @@ describe('buildState', () => {
         dueDate: '2026-07-31',
         links: [{ href: 'https://example.com/spec', label: '旧文档' }],
         sources: ['legacy-doc'],
+        detail: {
+          goal: '用户可以登录系统',
+          next: '确认错误提示',
+          scope: ['旧范围'],
+          nonGoals: ['旧不做范围']
+        },
         priority: 'P1',
         updatedAt: '2026-07-07',
         actor: 'a'
@@ -48,6 +54,12 @@ describe('buildState', () => {
     expect(req).not.toHaveProperty('taskStats');
     expect(req).not.toHaveProperty('contract');
     expect(req).not.toHaveProperty('needsContract');
+    expect(req.detail).toEqual({
+      goal: '用户可以登录系统',
+      next: '确认错误提示'
+    });
+    expect(req.detail).not.toHaveProperty('scope');
+    expect(req.detail).not.toHaveProperty('nonGoals');
   });
 
   it('applies req.status updates', () => {

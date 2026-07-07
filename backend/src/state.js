@@ -38,6 +38,13 @@ function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function renderDetail(detail) {
+  return {
+    goal: detail?.goal || "",
+    next: detail?.next || ""
+  };
+}
+
 function getOrCreateRequirement(state, id) {
   if (!state.requirements.has(id)) {
     state.requirements.set(id, {
@@ -241,7 +248,7 @@ function buildState(events) {
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
         summary: item.summary,
-        detail: clone(item.detail),
+        detail: renderDetail(item.detail),
         acceptance: clone(normalizeArray(item.acceptance)),
         notes: clone(normalizeArray(item.notes))
       };

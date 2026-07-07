@@ -124,7 +124,7 @@ describe('ai/context', () => {
     expect(prompt).not.toContain('/api/legacy');
   });
 
-  it('需求级上下文包含详情字段和备注', () => {
+  it('需求级上下文包含 V2 详情字段和备注', () => {
     const paths = projectPaths(tmpDir, 'default');
     appendEvents(paths.eventsPath, [
       {
@@ -159,8 +159,8 @@ describe('ai/context', () => {
     expect(prompt).toContain('### 需求详情');
     expect(prompt).toContain('目标: 用户可以用账号密码进入系统');
     expect(prompt).toContain('下一步: 先确认登录失败提示文案');
-    expect(prompt).toContain('范围: 用户名密码登录；登录失败提示');
-    expect(prompt).toContain('不做范围: 注册；找回密码');
+    expect(prompt).not.toContain('范围: 用户名密码登录；登录失败提示');
+    expect(prompt).not.toContain('不做范围: 注册；找回密码');
     expect(prompt).toContain('### 备注');
     expect(prompt).toContain('密码暂时由后端默认用户配置');
   });

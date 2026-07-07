@@ -24,7 +24,7 @@ function requirement(input: Partial<Requirement> & Pick<Requirement, 'id' | 'tit
     createdAt: input.createdAt,
     updatedAt: input.updatedAt || '',
     summary: input.summary || '',
-    detail: { scope: [], nonGoals: [] },
+    detail: {},
     acceptance: [],
     notes: []
   };

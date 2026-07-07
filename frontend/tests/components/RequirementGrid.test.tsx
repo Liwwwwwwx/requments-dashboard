@@ -24,7 +24,7 @@ function makeRequirement(
     ...input,
     updatedAt: '2026-07-07',
     summary: input.summary || '',
-    detail: { scope: [], nonGoals: [] },
+    detail: {},
     acceptance: [],
     notes: []
   };
