@@ -909,6 +909,30 @@ describe('V2 requirement REST APIs', () => {
     expect(res.body.code).toBe('INVALID_REQUIREMENT_EVENT_KIND');
   });
 
+  it('rejects terminal rollback on the requirement-scoped event API before appending', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '已完成需求',
+        status: 'done'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({ kind: 'req.status', status: 'todo' })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_STATUS_TRANSITION');
+    expect(readEvents(paths.eventsPath).map((event) => event.kind)).toEqual(['req.new']);
+  });
+
   it('validates requirement-scoped status and priority events', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
     const paths = projectPaths(tmpDir, 'v2');

@@ -139,6 +139,19 @@ function createRoutes(rootDir) {
     }
   }
 
+  function validateV2StatusTransitions(currentStatus, events, requirementId, next) {
+    let status = currentStatus;
+    for (const event of events) {
+      const nextStatus = event.kind === "req.status" || event.kind === "req.patch"
+        ? event.status
+        : undefined;
+      if (nextStatus === undefined) continue;
+      if (!assertV2StatusTransition(status, nextStatus, requirementId, next)) return false;
+      status = nextStatus;
+    }
+    return true;
+  }
+
   function assertV2Title(value, next) {
     const title = String(value || "").trim();
     if (!title) {
@@ -450,7 +463,8 @@ function createRoutes(rootDir) {
     if (!state) {
       return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
     }
-    if (!(state.items || []).some((item) => item.id === req.params.requirementId)) {
+    const currentRequirement = (state.items || []).find((item) => item.id === req.params.requirementId);
+    if (!currentRequirement) {
       return next(httpError(404, "REQUIREMENT_NOT_FOUND", `需求不存在：${req.params.requirementId}`));
     }
 
@@ -468,6 +482,7 @@ function createRoutes(rootDir) {
       return next(httpError(400, "REQUIREMENT_EVENT_MISMATCH", "事件 requirementId 与路径不一致"));
     }
     if (!validateRequirementScopedEvents(list, next)) return;
+    if (!validateV2StatusTransitions(currentRequirement.status, list, req.params.requirementId, next)) return;
 
     const actor = req.headers["x-actor"] || req.user?.username || "http";
     const stamped = list.map((event) => ({
