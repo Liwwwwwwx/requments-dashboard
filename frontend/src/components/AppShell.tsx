@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Layout, Spin } from 'antd';
 import { useRequirements } from '@/hooks/useRequirements';
-import { createProject } from '@/lib/api';
+import { createProject, fetchRequirement } from '@/lib/api';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './shell/TopBar';
 import { RequirementGrid } from './RequirementGrid';
@@ -31,6 +31,9 @@ export function AppShell({ project, reqId, children }: Props) {
   const { projects, data, loading, error, refresh, loadProjects } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [projectCreateOpen, setProjectCreateOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<Requirement | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const activeProject = project || 'default';
 
@@ -53,10 +56,43 @@ export function AppShell({ project, reqId, children }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [activeProject, router]);
 
-  const selectedItem: Requirement | null = useMemo(() => {
+  const listedItem: Requirement | null = useMemo(() => {
     if (!reqId) return null;
     return data.items.find((i) => i.id === reqId) || null;
   }, [data.items, reqId]);
+  const selectedItem = listedItem || detailItem;
+
+  useEffect(() => {
+    let active = true;
+
+    if (!reqId || listedItem) {
+      setDetailItem(null);
+      setDetailError(null);
+      setDetailLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setDetailLoading(true);
+    setDetailError(null);
+    fetchRequirement(activeProject, reqId)
+      .then((res) => {
+        if (active) setDetailItem(res.requirement);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setDetailItem(null);
+        setDetailError(err instanceof Error ? err.message : '加载需求详情失败');
+      })
+      .finally(() => {
+        if (active) setDetailLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeProject, listedItem, reqId]);
 
   const total = (data.items || []).length;
   const hasNoProjects = !loading && projects.length === 0;
@@ -97,6 +133,7 @@ export function AppShell({ project, reqId, children }: Props) {
         />
         <Content className="main">
           {error && <Alert message={error} type="error" showIcon style={{ margin: 24 }} />}
+          {detailError && <Alert message={detailError} type="error" showIcon style={{ margin: 24 }} />}
           {children
             ? children
             : hasNoProjects
@@ -114,7 +151,7 @@ export function AppShell({ project, reqId, children }: Props) {
               )
             : reqId
               ? (
-                <Spin spinning={loading}>
+                <Spin spinning={loading || detailLoading}>
                   <RequirementDetailView
                     item={selectedItem}
                     project={activeProject}
