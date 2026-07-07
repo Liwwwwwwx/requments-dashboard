@@ -16,6 +16,9 @@ describe('buildState', () => {
         requirementId: 'REQ-0001',
         title: '登录',
         summary: '用户登录',
+        requirementType: 'feature',
+        week: '2026-W28',
+        dueDate: '2026-07-31',
         priority: 'P1',
         updatedAt: '2026-07-07',
         actor: 'a'
@@ -32,6 +35,9 @@ describe('buildState', () => {
     expect(req.createdAt).toBe('2026-07-07');
     expect(req.updatedAt).toBe('2026-07-07');
     expect(req).not.toHaveProperty('workflowStatus');
+    expect(req).not.toHaveProperty('type');
+    expect(req).not.toHaveProperty('week');
+    expect(req).not.toHaveProperty('dueDate');
     expect(req).not.toHaveProperty('tasks');
     expect(req).not.toHaveProperty('taskStats');
     expect(req).not.toHaveProperty('contract');

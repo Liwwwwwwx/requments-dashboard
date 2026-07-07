@@ -23,9 +23,9 @@ export interface Requirement {
   id: string;
   feature?: string;
   title: string;
-  type: string;
+  type?: string;
   status: RequirementStatus;
-  week: string;
+  week?: string;
   dueDate?: string;
   owner: string;
   priority: Priority;
