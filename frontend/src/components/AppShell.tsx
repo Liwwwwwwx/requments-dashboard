@@ -145,9 +145,7 @@ export function AppShell({ project, reqId, children, projectListRefreshKey }: Pr
         <Content className="main">
           {error && <Alert message={error} type="error" showIcon style={{ margin: 24 }} />}
           {detailError && <Alert message={detailError} type="error" showIcon style={{ margin: 24 }} />}
-          {children
-            ? children
-            : hasNoProjects
+          {hasNoProjects
               ? (
                 <div className="first-project-empty">
                   <div className="first-project-empty-inner">
@@ -160,6 +158,8 @@ export function AppShell({ project, reqId, children, projectListRefreshKey }: Pr
                   </div>
                 </div>
               )
+            : children
+              ? children
             : reqId
               ? (
                 <Spin spinning={loading || detailLoading}>

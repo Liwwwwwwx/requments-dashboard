@@ -67,6 +67,28 @@ describe('AppShell', () => {
     expect(screen.getByLabelText('项目名称')).toBeInTheDocument();
   });
 
+  it('无项目时优先展示创建项目空状态而不是子页面', () => {
+    vi.mocked(useRequirements).mockReturnValue({
+      project: 'default',
+      projects: [],
+      data: { updatedAt: '', statuses: [], items: [] },
+      loading: false,
+      error: null,
+      refresh: vi.fn(),
+      loadState: vi.fn(),
+      loadProjects: vi.fn()
+    });
+
+    render(
+      <AppShell project="default">
+        <div>AI 子页面</div>
+      </AppShell>
+    );
+
+    expect(screen.getByRole('heading', { name: '还没有项目' })).toBeInTheDocument();
+    expect(screen.queryByText('AI 子页面')).not.toBeInTheDocument();
+  });
+
   it('详情深链在列表缺失时兜底加载当前需求', async () => {
     const requirement: Requirement = {
       id: 'REQ-0001',
