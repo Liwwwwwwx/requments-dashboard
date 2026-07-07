@@ -54,6 +54,9 @@ function createRoutes(rootDir) {
   function getProjectState(rootDir, projectId) {
     const paths = projectPaths(rootDir, projectId);
     if (!fs.existsSync(paths.eventsPath) && !fs.existsSync(paths.stateJsonPath)) {
+      if (fs.existsSync(paths.dataDir)) {
+        return render(paths);
+      }
       return null;
     }
     if (!fs.existsSync(paths.stateJsonPath)) {
@@ -166,7 +169,11 @@ function createRoutes(rootDir) {
   router.get("/projects/:project/state", (req, res, next) => {
     const paths = projectPaths(rootDir, req.params.project);
     if (!fs.existsSync(paths.eventsPath) && !fs.existsSync(paths.stateJsonPath)) {
-      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+      if (fs.existsSync(paths.dataDir)) {
+        render(paths);
+      } else {
+        return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+      }
     }
     if (!fs.existsSync(paths.stateJsonPath)) {
       render(paths);

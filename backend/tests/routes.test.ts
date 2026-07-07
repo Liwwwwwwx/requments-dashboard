@@ -105,6 +105,21 @@ describe('POST /api/projects', () => {
     expect(fs.existsSync(path.join(tmpDir, 'data', 'newproj'))).toBe(true);
   });
 
+  it('returns an empty board state for a newly created project', async () => {
+    await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({ id: 'emptyproj' })
+    );
+
+    const res = await authReq(request(makeApp()).get('/api/projects/emptyproj/state'));
+
+    expect(res.status).toBe(200);
+    expect(typeof res.body.updatedAt).toBe('string');
+    expect(res.body.items).toEqual([]);
+    expect(Array.isArray(res.body.statuses)).toBe(true);
+  });
+
   it('rejects invalid id with structured error', async () => {
     const res = await authReq(
       request(makeApp())
