@@ -18,6 +18,7 @@ const { readEvents } = require("../events");
 const { render } = require("../state");
 
 const MAX_EVENT_TAIL = 50;
+const MAX_REQUIREMENT_SUMMARY = 30;
 
 const SYSTEM_BASE = `你是 Requirements Board 的项目级 AI 助手，帮助用户查看和推进多项目需求。
 你的回答简洁、精确，使用与界面一致的中文术语。
@@ -61,6 +62,18 @@ function eventSummary(event) {
   return parts.join(" ");
 }
 
+function requirementSummary(requirement) {
+  const parts = [
+    requirement.id,
+    requirement.title || "(无标题)",
+    `状态=${requirement.status || "todo"}`,
+    `优先级=${requirement.priority || "P1"}`,
+    `负责人=${requirement.owner || "未分配"}`
+  ];
+  if (requirement.summary) parts.push(String(requirement.summary).slice(0, 60));
+  return parts.join(" · ");
+}
+
 function buildContext({ rootDir, projectId, requirementId }) {
   const paths = projectPaths(rootDir, projectId);
   const state = safeRender(paths);
@@ -90,13 +103,25 @@ function buildSystemPrompt(rootDir, { projectId, requirementId } = {}) {
   const parts = [SYSTEM_BASE];
   if (!projectId) return parts.join("\n");
 
-  const { requirement, eventTail } = buildContext({
+  const { state, requirement, eventTail } = buildContext({
     rootDir,
     projectId,
     requirementId
   });
 
   parts.push(`\n## 当前项目\n${projectId}`);
+
+  const items = state?.items || [];
+  if (!requirementId && items.length > 0) {
+    const visibleItems = items.slice(0, MAX_REQUIREMENT_SUMMARY);
+    parts.push(`\n## 项目需求概览（${items.length} 条）`);
+    for (const item of visibleItems) {
+      parts.push(`- ${requirementSummary(item)}`);
+    }
+    if (items.length > visibleItems.length) {
+      parts.push(`- 其余 ${items.length - visibleItems.length} 条未展开`);
+    }
+  }
 
   if (requirement) {
     parts.push(`\n## 当前需求\n${requirement.id} · ${requirement.title || "(无标题)"}\n- 状态: ${requirement.status}\n- 优先级: ${requirement.priority}\n- 负责人: ${requirement.owner || "未分配"}\n- 摘要: ${requirement.summary || "(无)"}`);

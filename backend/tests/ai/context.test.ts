@@ -17,6 +17,47 @@ afterEach(() => {
 });
 
 describe('ai/context', () => {
+  it('项目级上下文包含当前需求列表概览', () => {
+    const paths = projectPaths(tmpDir, 'default');
+    appendEvents(paths.eventsPath, [
+      {
+        eventId: 'E1',
+        ts: 100,
+        kind: 'req.new',
+        requirementId: 'REQ-0001',
+        title: '登录页',
+        summary: '最小登录体验',
+        priority: 'P0',
+        owner: 'pm'
+      },
+      {
+        eventId: 'E2',
+        ts: 200,
+        kind: 'req.new',
+        requirementId: 'REQ-0002',
+        title: 'AI 小助手',
+        summary: '基于项目上下文回答问题',
+        priority: 'P1',
+        owner: 'dev'
+      },
+      {
+        eventId: 'E3',
+        ts: 300,
+        kind: 'req.status',
+        requirementId: 'REQ-0002',
+        status: 'doing'
+      }
+    ]);
+
+    const prompt = buildSystemPrompt(tmpDir, {
+      projectId: 'default'
+    });
+
+    expect(prompt).toContain('项目需求概览（2 条）');
+    expect(prompt).toContain('REQ-0001 · 登录页 · 状态=todo · 优先级=P0 · 负责人=pm · 最小登录体验');
+    expect(prompt).toContain('REQ-0002 · AI 小助手 · 状态=doing · 优先级=P1 · 负责人=dev · 基于项目上下文回答问题');
+  });
+
   it('只向模型暴露 V2 需求上下文事件', () => {
     const paths = projectPaths(tmpDir, 'default');
     appendEvents(paths.eventsPath, [
