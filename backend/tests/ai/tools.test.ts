@@ -51,14 +51,14 @@ describe('ai/tools/propose-events', () => {
     expect(r.errors[4]).toContain('title');
   });
 
-  it('validateProposedEvents 拒绝非法详情和验收点结构', () => {
+  it('validateProposedEvents 拒绝旧版详情字段和非法验收点结构', () => {
     const r = validateProposedEvents([
       {
         kind: 'req.patch',
         requirementId: 'REQ-0001',
         detail: {
           goal: '补齐登录体验',
-          scope: ['用户名密码登录', 123],
+          scope: ['用户名密码登录'],
           nonGoals: ['注册']
         }
       },

@@ -28,7 +28,7 @@ const V2_REQUIREMENT_HISTORY_KINDS = new Set(["req.new", "req.status", "req.patc
 const V2_REQUIREMENT_EVENT_KINDS = new Set(["req.status", "req.patch", "note.add"]);
 const V2_PROJECT_EVENT_KINDS = new Set(["req.new", "req.status", "req.patch", "note.add"]);
 const V2_DETAIL_STRING_FIELDS = ["goal", "next"];
-const V2_DETAIL_STRING_LIST_FIELDS = ["scope", "nonGoals"];
+const V2_DETAIL_FIELDS = new Set(V2_DETAIL_STRING_FIELDS);
 
 function createRoutes(rootDir) {
   const router = express.Router();
@@ -213,15 +213,15 @@ function createRoutes(rootDir) {
       next(httpError(400, "INVALID_DETAIL", "需求详情必须是对象"));
       return false;
     }
-    for (const field of V2_DETAIL_STRING_FIELDS) {
-      if (value[field] !== undefined && typeof value[field] !== "string") {
-        next(httpError(400, "INVALID_DETAIL", `需求详情 ${field} 必须是字符串`));
+    for (const field of Object.keys(value)) {
+      if (!V2_DETAIL_FIELDS.has(field)) {
+        next(httpError(400, "INVALID_DETAIL", `需求详情 ${field} 不是 V2 支持的字段`));
         return false;
       }
     }
-    for (const field of V2_DETAIL_STRING_LIST_FIELDS) {
-      if (value[field] !== undefined && !isStringList(value[field])) {
-        next(httpError(400, "INVALID_DETAIL", `需求详情 ${field} 必须是字符串数组`));
+    for (const field of V2_DETAIL_STRING_FIELDS) {
+      if (value[field] !== undefined && typeof value[field] !== "string") {
+        next(httpError(400, "INVALID_DETAIL", `需求详情 ${field} 必须是字符串`));
         return false;
       }
     }
