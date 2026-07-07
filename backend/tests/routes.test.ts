@@ -569,6 +569,69 @@ describe('V2 requirement REST APIs', () => {
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('REQUIREMENT_EVENT_MISMATCH');
   });
+
+  it('rejects legacy event kinds on the requirement-scoped event API', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({
+          kind: 'task.new',
+          taskId: 'FE-1',
+          title: '旧任务'
+        })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_REQUIREMENT_EVENT_KIND');
+  });
+
+  it('validates requirement-scoped status and priority events', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录'
+      }
+    ]);
+
+    const missingStatus = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({ kind: 'req.status' })
+    );
+    expect(missingStatus.status).toBe(400);
+    expect(missingStatus.body.code).toBe('MISSING_STATUS');
+
+    const invalidStatus = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({ kind: 'req.status', status: 'reviewing' })
+    );
+    expect(invalidStatus.status).toBe(400);
+    expect(invalidStatus.body.code).toBe('INVALID_STATUS');
+
+    const invalidPriority = await authReq(
+      request(makeApp())
+        .post('/api/projects/v2/requirements/REQ-0001/events')
+        .send({ kind: 'req.patch', priority: 'P9' })
+    );
+    expect(invalidPriority.status).toBe(400);
+    expect(invalidPriority.body.code).toBe('INVALID_PRIORITY');
+  });
 });
 
 describe('GET /api/projects/:project/events', () => {

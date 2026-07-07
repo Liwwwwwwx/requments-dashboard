@@ -22,6 +22,7 @@ const { createAiRoutes } = require("./ai/routes");
 
 const V2_REQUIREMENT_STATUSES = new Set(["todo", "doing", "blocked", "done"]);
 const V2_PRIORITIES = new Set(["P0", "P1", "P2"]);
+const V2_REQUIREMENT_EVENT_KINDS = new Set(["req.status", "req.patch", "note.add"]);
 
 function createRoutes(rootDir) {
   const router = express.Router();
@@ -101,6 +102,32 @@ function createRoutes(rootDir) {
       return null;
     }
     return priority;
+  }
+
+  function validateRequirementScopedEvents(events, next) {
+    for (const event of events) {
+      if (!V2_REQUIREMENT_EVENT_KINDS.has(event.kind)) {
+        next(httpError(400, "INVALID_REQUIREMENT_EVENT_KIND", "需求级事件仅支持 req.status、req.patch、note.add"));
+        return false;
+      }
+      if (event.kind === "req.status") {
+        if (event.status === undefined) {
+          next(httpError(400, "MISSING_STATUS", "状态变更事件必须包含 status"));
+          return false;
+        }
+        const status = assertV2Status(event.status, next);
+        if (!status) return false;
+      }
+      if (event.kind === "req.patch") {
+        if (event.status !== undefined && !assertV2Status(event.status, next)) return false;
+        if (event.priority !== undefined && !assertV2Priority(event.priority, next)) return false;
+      }
+      if (event.kind === "note.add" && !String(event.text || "").trim()) {
+        next(httpError(400, "EMPTY_NOTE", "备注内容不能为空"));
+        return false;
+      }
+    }
+    return true;
   }
 
   function getProjectState(rootDir, projectId) {
@@ -349,13 +376,12 @@ function createRoutes(rootDir) {
     if (list.some((event) => event.requirementId && event.requirementId !== req.params.requirementId)) {
       return next(httpError(400, "REQUIREMENT_EVENT_MISMATCH", "事件 requirementId 与路径不一致"));
     }
-    if (list.some((event) => event.kind === "note.add" && !String(event.text || "").trim())) {
-      return next(httpError(400, "EMPTY_NOTE", "备注内容不能为空"));
-    }
+    if (!validateRequirementScopedEvents(list, next)) return;
 
     const actor = req.headers["x-actor"] || req.user?.username || "http";
     const stamped = list.map((event) => ({
       ...event,
+      text: event.kind === "note.add" ? String(event.text || "").trim() : event.text,
       requirementId: req.params.requirementId,
       actor: event.actor || actor
     }));
