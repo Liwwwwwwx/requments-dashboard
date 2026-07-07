@@ -471,6 +471,7 @@ describe('V2 requirement REST APIs', () => {
       summary: '按项目查看需求',
       priority: 'P0',
       owner: 'pm',
+      createdBy: 'admin',
       status: 'todo'
     });
     expect(res.body.event.kind).toBe('req.new');

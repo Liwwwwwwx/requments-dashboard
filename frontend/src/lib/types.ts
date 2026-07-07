@@ -29,6 +29,7 @@ export interface Requirement {
   dueDate?: string;
   owner: string;
   priority: Priority;
+  createdBy?: string;
   createdAt?: string;
   updatedAt: string;
   summary: string;

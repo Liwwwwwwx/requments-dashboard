@@ -267,6 +267,15 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
             <span className="k">负责人</span>
             <span className="v">{item.owner || '未分配'}</span>
           </span>
+          {item.createdBy && (
+            <>
+              <span className="dot">·</span>
+              <span className="kv">
+                <span className="k">创建人</span>
+                <span className="v">{item.createdBy}</span>
+              </span>
+            </>
+          )}
           <span className="dot">·</span>
           <span className="kv">
             <span className="k">创建时间</span>

@@ -51,6 +51,7 @@ function getOrCreateRequirement(state, id) {
       dueDate: "",
       owner: DEFAULT_OWNER,
       priority: DEFAULT_PRIORITY,
+      createdBy: "",
       createdAt: "",
       updatedAt: localDate(),
       summary: "",
@@ -94,6 +95,7 @@ function applyEvent(state, event) {
     req.dueDate = event.dueDate || localDate();
     req.owner = event.owner || DEFAULT_OWNER;
     req.priority = event.priority || DEFAULT_PRIORITY;
+    req.createdBy = event.createdBy || event.created_by || event.actor || "";
     req.createdAt = event.createdAt || event.updatedAt || event.at || (event.ts ? new Date(event.ts).toISOString() : localDate());
     req.updatedAt = event.updatedAt || localDate();
     req.summary = event.summary || "";
@@ -239,6 +241,7 @@ function buildState(events) {
         dueDate: item.dueDate,
         owner: item.owner,
         priority: item.priority,
+        createdBy: item.createdBy,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
         summary: item.summary,

@@ -51,6 +51,7 @@ const requirement: Requirement = {
   week: '2026-W28',
   owner: 'pm',
   priority: 'P1',
+  createdBy: 'test-admin',
   createdAt: '2026-07-06',
   updatedAt: '2026-07-07',
   summary: '补齐最简单的登录体验',
@@ -91,6 +92,8 @@ describe('RequirementDetailView', () => {
     expect(aiPanel).toHaveAttribute('data-project', 'alpha');
     expect(aiPanel).toHaveAttribute('data-requirement', 'REQ-0001');
     expect(aiPanel).toHaveAttribute('data-compact', 'true');
+    expect(screen.getByText('创建人')).toBeInTheDocument();
+    expect(screen.getByText('test-admin')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '完整 AI' }));
 

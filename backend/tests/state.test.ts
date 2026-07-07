@@ -28,6 +28,7 @@ describe('buildState', () => {
     expect(req.title).toBe('登录');
     expect(req.priority).toBe('P1');
     expect(req.status).toBe('todo');
+    expect(req.createdBy).toBe('a');
     expect(req.createdAt).toBe('2026-07-07');
     expect(req.updatedAt).toBe('2026-07-07');
     expect(req).not.toHaveProperty('workflowStatus');
