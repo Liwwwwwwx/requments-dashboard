@@ -60,8 +60,8 @@ COREPACK_ENABLE_AUTO_PIN=0 yarn lint
 | `POST` | `/api/projects/:project/requirements` | 新建需求 |
 | `GET` | `/api/projects/:project/requirements/:id` | 需求详情 |
 | `PATCH` | `/api/projects/:project/requirements/:id` | 更新需求 |
-| `POST` | `/api/projects/:project/requirements/:id/notes` | 添加备注 |
 | `GET` | `/api/projects/:project/requirements/:id/events` | 需求变更历史 |
+| `POST` | `/api/projects/:project/requirements/:id/events` | 写入需求状态、字段或备注事件 |
 
 ## 产品规划
 
