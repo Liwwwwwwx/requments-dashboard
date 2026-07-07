@@ -5,11 +5,16 @@ import LoginPage from '@/app/login/page';
 
 const authState = vi.hoisted(() => ({
   user: null as null | { id: string; username: string },
-  login: vi.fn()
+  login: vi.fn(),
+  redirect: '',
+  replace: vi.fn()
 }));
 
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams()
+  useRouter: () => ({
+    replace: authState.replace
+  }),
+  useSearchParams: () => new URLSearchParams(authState.redirect)
 }));
 
 vi.mock('@/components/AuthProvider', () => ({
@@ -22,7 +27,9 @@ vi.mock('@/components/AuthProvider', () => ({
 describe('LoginPage', () => {
   beforeEach(() => {
     authState.user = null;
+    authState.redirect = '';
     authState.login.mockReset();
+    authState.replace.mockReset();
   });
 
   it('渲染简洁登录表单且不展示默认账号', () => {
@@ -65,5 +72,27 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /登\s*录/ }));
 
     expect(await screen.findByText('INVALID_CREDENTIALS')).toBeInTheDocument();
+  });
+
+  it('已登录时跳转到站内 redirect', async () => {
+    authState.user = { id: 'u1', username: 'admin' };
+    authState.redirect = 'redirect=/p/alpha/r/REQ-0001%3Ftab%3Dhistory';
+
+    render(<LoginPage />);
+
+    await waitFor(() => {
+      expect(authState.replace).toHaveBeenCalledWith('/p/alpha/r/REQ-0001?tab=history');
+    });
+  });
+
+  it('已登录时拒绝外部 redirect', async () => {
+    authState.user = { id: 'u1', username: 'admin' };
+    authState.redirect = 'redirect=https%3A%2F%2Fexample.com';
+
+    render(<LoginPage />);
+
+    await waitFor(() => {
+      expect(authState.replace).toHaveBeenCalledWith('/p/default');
+    });
   });
 });

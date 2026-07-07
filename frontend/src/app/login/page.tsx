@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, Button, ConfigProvider, Input } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useAuth } from '@/components/AuthProvider';
@@ -16,8 +16,15 @@ const loginTheme = {
   }
 };
 
+function safeRedirectTarget(value: string | null) {
+  if (!value) return '/p/default';
+  if (!value.startsWith('/') || value.startsWith('//')) return '/p/default';
+  return value;
+}
+
 function LoginForm() {
   const { login, user } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -28,9 +35,9 @@ function LoginForm() {
   useEffect(() => {
     if (user && !didRedirect.current) {
       didRedirect.current = true;
-      window.location.href = searchParams.get('redirect') || '/p/default';
+      router.replace(safeRedirectTarget(searchParams.get('redirect')));
     }
-  }, [user, searchParams]);
+  }, [router, user, searchParams]);
 
   if (user) return null;
 
