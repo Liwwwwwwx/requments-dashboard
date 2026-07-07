@@ -153,6 +153,9 @@ describe('RequirementGrid', () => {
     fireEvent.change(within(dialog).getByLabelText('描述'), {
       target: { value: '编辑基础字段和备注' }
     });
+    fireEvent.change(within(dialog).getByLabelText('下一步'), {
+      target: { value: '先补详情页编辑' }
+    });
     fireEvent.change(within(dialog).getByLabelText('负责人'), {
       target: { value: 'pm' }
     });
@@ -171,6 +174,7 @@ describe('RequirementGrid', () => {
       expect(createRequirement).toHaveBeenCalledWith('alpha', {
         title: '需求详情',
         description: '编辑基础字段和备注',
+        next: '先补详情页编辑',
         status: 'blocked',
         priority: 'P0',
         owner: 'pm'

@@ -760,6 +760,7 @@ describe('V2 requirement REST APIs', () => {
         .send({
           title: '需求看板',
           description: '按项目查看需求',
+          next: '先补新建需求弹窗',
           priority: 'P0',
           owner: 'pm'
         })
@@ -774,7 +775,10 @@ describe('V2 requirement REST APIs', () => {
       priority: 'P0',
       owner: 'pm',
       createdBy: 'admin',
-      status: 'todo'
+      status: 'todo',
+      detail: {
+        next: '先补新建需求弹窗'
+      }
     });
     expect(res.body.event.kind).toBe('req.new');
   });

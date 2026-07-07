@@ -24,6 +24,7 @@ interface Props {
 interface CreateRequirementForm {
   title: string;
   description?: string;
+  next?: string;
   status: RequirementStatus;
   priority: Priority;
   owner?: string;
@@ -237,6 +238,9 @@ export function RequirementGrid({
           </Form.Item>
           <Form.Item label="描述" name="description">
             <Input.TextArea rows={4} placeholder="补充背景、目标或范围" />
+          </Form.Item>
+          <Form.Item label="下一步" name="next">
+            <Input.TextArea rows={2} placeholder="例如：确认登录失败提示文案" />
           </Form.Item>
           <Form.Item
             label="状态"

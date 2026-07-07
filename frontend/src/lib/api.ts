@@ -86,6 +86,7 @@ export async function createRequirement(
   input: {
     title: string;
     description?: string;
+    next?: string;
     status?: RequirementStatus;
     priority?: Priority;
     owner?: string;

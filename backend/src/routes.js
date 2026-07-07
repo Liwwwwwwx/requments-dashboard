@@ -348,7 +348,8 @@ function createRoutes(rootDir) {
       title,
       summary: String(req.body.description || req.body.summary || "").trim(),
       priority,
-      owner: req.body.owner !== undefined ? String(req.body.owner).trim() : undefined
+      owner: req.body.owner !== undefined ? String(req.body.owner).trim() : undefined,
+      detail: req.body.next !== undefined ? { next: String(req.body.next).trim() } : undefined
     };
     if (status) event.status = status;
 
