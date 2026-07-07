@@ -361,4 +361,47 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
     expect(apply.status).toBe(404);
     expect(apply.body.code).toBe('AI_PROPOSAL_REQUIREMENT_NOT_FOUND');
   });
+
+  it('apply 提案：拒绝终态需求状态回退且不写入事件', async () => {
+    const newReq = await authReq(
+      request(makeApp()).post('/api/projects/default/events?project=default').send({
+        events: [
+          {
+            kind: 'req.new',
+            actor: 'test',
+            requirementId: 'REQ-0001',
+            title: '已完成需求',
+            status: 'done'
+          }
+        ]
+      })
+    );
+    expect(newReq.status).toBe(200);
+
+    const create = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=default').send({})
+    );
+    const convId = create.body.conversation.id;
+    const proposal = aiStore.createProposal(tmpDir, 'default', {
+      conversationId: convId,
+      messageId: 'MSG-test',
+      events: [
+        {
+          kind: 'req.status',
+          requirementId: 'REQ-0001',
+          status: 'todo'
+        }
+      ]
+    });
+
+    const apply = await authReq(
+      request(makeApp())
+        .post(`/api/ai/proposals/${proposal.id}/apply?project=default`)
+        .send({})
+    );
+
+    expect(apply.status).toBe(400);
+    expect(apply.body.code).toBe('AI_PROPOSAL_STATUS_TRANSITION_INVALID');
+    expect(readEvents(projectPaths(tmpDir, 'default').eventsPath).map((e) => e.kind)).toEqual(['req.new']);
+  });
 });

@@ -25,6 +25,7 @@ const sse = require("./sse");
 const { projectPaths } = require("../projects");
 const { appendEvents, withLock } = require("../events");
 const { render } = require("../state");
+const { assertRequirementTransition } = require("../state-machine");
 const { httpError } = require("../errors");
 const { RequirementId } = require("../schema");
 const { createRateLimiter } = require("./rate-limit");
@@ -63,6 +64,21 @@ function getOwnedConversation(rootDir, projectId, conversationId, req) {
 function readRequirementId(req) {
   const value = String(req.body?.requirementId || "").trim();
   return value || null;
+}
+
+function validateProposalStatusTransitions(currentState, events) {
+  const statusByRequirement = new Map(
+    (currentState.items || []).map((item) => [item.id, item.status])
+  );
+  for (const event of events) {
+    const nextStatus = event.kind === "req.status" || event.kind === "req.patch"
+      ? event.status
+      : undefined;
+    if (nextStatus === undefined) continue;
+    const currentStatus = statusByRequirement.get(event.requirementId);
+    assertRequirementTransition(currentStatus, nextStatus, event.requirementId);
+    statusByRequirement.set(event.requirementId, nextStatus);
+  }
 }
 
 function createAiRoutes(rootDir) {
@@ -335,6 +351,11 @@ function createAiRoutes(rootDir) {
       const missingRequirementId = validation.events.find((event) => !requirementIds.has(event.requirementId))?.requirementId;
       if (missingRequirementId) {
         return next(httpError(404, "AI_PROPOSAL_REQUIREMENT_NOT_FOUND", `提案指向的需求不存在：${missingRequirementId}`));
+      }
+      try {
+        validateProposalStatusTransitions(currentState, validation.events);
+      } catch (err) {
+        return next(httpError(400, "AI_PROPOSAL_STATUS_TRANSITION_INVALID", err.message));
       }
       // 强制 actor：AI 应用 + 当前用户
       const events = validation.events.map((e) => ({
