@@ -371,7 +371,9 @@ function createRoutes(rootDir) {
 
     const all = readEvents(paths.eventsPath).reverse(); // newest-first
     const filtered = all.filter((event) => {
-      if (kind && (event.kind || event.type) !== kind) return false;
+      const eventKind = event.kind || event.type;
+      if (!V2_PROJECT_EVENT_KINDS.has(eventKind)) return false;
+      if (kind && eventKind !== kind) return false;
       if (requirementId && event.requirementId !== requirementId) return false;
       return true;
     });
