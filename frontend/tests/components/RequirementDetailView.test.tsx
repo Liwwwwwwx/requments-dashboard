@@ -5,9 +5,11 @@ import { RequirementDetailView } from '@/components/RequirementDetailView';
 import { fetchRequirementEvents, updateRequirement } from '@/lib/api';
 import type { Requirement } from '@/lib/types';
 
+const routerPush = vi.fn();
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: vi.fn()
+    push: routerPush
   })
 }));
 
@@ -47,6 +49,25 @@ describe('RequirementDetailView', () => {
     vi.mocked(fetchRequirementEvents).mockReset();
     vi.mocked(fetchRequirementEvents).mockResolvedValue({ ok: true, events: [] });
     vi.mocked(updateRequirement).mockReset();
+    routerPush.mockReset();
+  });
+
+  it('从详情页进入绑定当前需求的 AI 小助手', async () => {
+    render(
+      <RequirementDetailView
+        item={requirement}
+        project="alpha"
+        taskItems={[]}
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '问 AI' }));
+
+    expect(routerPush).toHaveBeenCalledWith('/p/alpha/ai?requirementId=REQ-0001');
   });
 
   it('加载并展示需求变更历史', async () => {

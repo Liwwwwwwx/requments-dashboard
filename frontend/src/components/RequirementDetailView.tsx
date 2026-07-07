@@ -194,6 +194,11 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
     router.push(`/p/${project}`);
   };
 
+  const openAi = () => {
+    if (!item) return;
+    router.push(`/p/${project}/ai?requirementId=${encodeURIComponent(item.id)}`);
+  };
+
   const openEdit = () => {
     if (!item) return;
     form.setFieldsValue({
@@ -252,6 +257,9 @@ export function RequirementDetailView({ item, project, taskItems, onUpdated }: P
             <span>需求详情</span>
           </div>
           <Space className="view-detail-actions" size={8}>
+            <Button size="small" onClick={openAi}>
+              问 AI
+            </Button>
             <Button size="small" onClick={openEdit}>
               编辑需求
             </Button>
