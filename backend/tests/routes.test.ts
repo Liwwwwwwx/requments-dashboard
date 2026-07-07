@@ -477,6 +477,58 @@ describe('POST /api/projects/:project/events', () => {
     expect(res.body.code).toBe('INVALID_STATUS_TRANSITION');
     expect(readEvents(paths.eventsPath).map((event) => event.kind)).toEqual(['req.new']);
   });
+
+  it('rejects updates for missing requirements at project event write boundary', async () => {
+    const app = makeApp();
+    await createProject(app, 'p7');
+    const paths = projectPaths(tmpDir, 'p7');
+
+    const res = await authReq(
+      request(app)
+        .post('/api/projects/p7/events')
+        .send({
+          events: [
+            {
+              kind: 'req.status',
+              requirementId: 'REQ-9999',
+              status: 'doing'
+            }
+          ]
+        })
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('REQUIREMENT_NOT_FOUND');
+    expect(readEvents(paths.eventsPath)).toEqual([]);
+  });
+
+  it('allows project event batches to reference requirements created earlier in the same batch', async () => {
+    const app = makeApp();
+    await createProject(app, 'p8');
+    const paths = projectPaths(tmpDir, 'p8');
+
+    const res = await authReq(
+      request(app)
+        .post('/api/projects/p8/events')
+        .send({
+          events: [
+            {
+              kind: 'req.new',
+              requirementId: 'REQ-0001',
+              title: '登录页'
+            },
+            {
+              kind: 'note.add',
+              requirementId: 'REQ-0001',
+              text: '同批创建后的备注'
+            }
+          ]
+        })
+    );
+
+    expect(res.status).toBe(200);
+    expect(readEvents(paths.eventsPath).map((event) => event.kind)).toEqual(['req.new', 'note.add']);
+  });
 });
 
 describe('V2 requirement REST APIs', () => {

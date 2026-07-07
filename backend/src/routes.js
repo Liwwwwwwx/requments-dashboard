@@ -174,6 +174,21 @@ function createRoutes(rootDir) {
     return true;
   }
 
+  function validateV2ProjectRequirementReferences(currentState, events, next) {
+    const requirementIds = new Set((currentState.items || []).map((item) => item.id));
+    for (const event of events) {
+      if (event.kind === "req.new") {
+        requirementIds.add(event.requirementId);
+        continue;
+      }
+      if (!requirementIds.has(event.requirementId)) {
+        next(httpError(404, "REQUIREMENT_NOT_FOUND", `需求不存在：${event.requirementId}`));
+        return false;
+      }
+    }
+    return true;
+  }
+
   function assertV2Title(value, next) {
     const title = String(value || "").trim();
     if (!title) {
@@ -549,6 +564,7 @@ function createRoutes(rootDir) {
     }
     if (!validateV2ProjectEvents(list, next)) return;
     const currentState = getProjectState(rootDir, req.params.project) || { items: [] };
+    if (!validateV2ProjectRequirementReferences(currentState, list, next)) return;
     if (!validateV2ProjectStatusTransitions(currentState, list, next)) return;
 
     const actor = req.headers["x-actor"] || req.user?.username || "http";
