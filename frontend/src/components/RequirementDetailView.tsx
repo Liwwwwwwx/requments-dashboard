@@ -323,7 +323,7 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
         <div>
           {(item.summary || item.detail?.goal) && (
             <section className="view-detail-section">
-              <h3 className="view-detail-section-title">摘要</h3>
+              <h3 className="view-detail-section-title">描述</h3>
               <div className="view-detail-section-body">
                 <Paragraph style={{ marginBottom: 0 }}>
                   {item.summary || item.detail?.goal}

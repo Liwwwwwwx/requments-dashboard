@@ -168,6 +168,21 @@ describe('RequirementDetailView', () => {
     expect(screen.getByText('下一步：确认错误提示文案；范围：用户名密码登录；验收点：登录成功后进入项目页')).toBeInTheDocument();
   });
 
+  it('详情页使用描述作为基础字段标题', async () => {
+    render(
+      <RequirementDetailView
+        item={requirement}
+        project="alpha"
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+    expect(screen.getByRole('heading', { name: '描述' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '摘要' })).not.toBeInTheDocument();
+  });
+
   it('不展示旧版工作流状态字段', async () => {
     render(
       <RequirementDetailView
