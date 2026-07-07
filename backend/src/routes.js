@@ -171,20 +171,10 @@ function createRoutes(rootDir) {
 
   function getProjectState(rootDir, projectId) {
     const paths = projectPaths(rootDir, projectId);
-    if (!fs.existsSync(paths.eventsPath) && !fs.existsSync(paths.stateJsonPath)) {
-      if (fs.existsSync(paths.dataDir)) {
-        return render(paths);
-      }
+    if (!fs.existsSync(paths.dataDir) && !fs.existsSync(paths.eventsPath) && !fs.existsSync(paths.legacyEventsJsonlPath)) {
       return null;
     }
-    if (!fs.existsSync(paths.stateJsonPath)) {
-      return render(paths);
-    }
-    try {
-      return JSON.parse(fs.readFileSync(paths.stateJsonPath, "utf8"));
-    } catch (_err) {
-      return render(paths);
-    }
+    return render(paths);
   }
 
   router.get("/projects/:project/requirements", (req, res, next) => {

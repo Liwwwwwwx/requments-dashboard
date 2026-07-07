@@ -369,6 +369,38 @@ describe('V2 requirement REST APIs', () => {
     });
   });
 
+  it('renders requirements from the event database when state cache is stale', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '数据库事实源',
+        summary: '不要信旧缓存',
+        priority: 'P1'
+      }
+    ]);
+    fs.writeFileSync(
+      paths.stateJsonPath,
+      `${JSON.stringify({ updatedAt: 'stale', statuses: [], items: [] }, null, 2)}\n`
+    );
+
+    const res = await authReq(request(makeApp()).get('/api/projects/v2/requirements'));
+
+    expect(res.status).toBe(200);
+    expect(res.body.requirements).toHaveLength(1);
+    expect(res.body.requirements[0]).toMatchObject({
+      id: 'REQ-0001',
+      title: '数据库事实源'
+    });
+
+    const refreshed = JSON.parse(fs.readFileSync(paths.stateJsonPath, 'utf8'));
+    expect(refreshed.items).toHaveLength(1);
+    expect(refreshed.items[0].title).toBe('数据库事实源');
+  });
+
   it('returns a requirement detail through the V2 REST API', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
     const paths = projectPaths(tmpDir, 'v2');
