@@ -120,12 +120,9 @@ export interface EventInput {
 
 export interface Filters {
   query: string;
-  type: 'all' | string;
-  role: 'all' | string;
   status: 'all' | RequirementStatus;
   priority: 'all' | Priority;
   owner: 'all' | string;
-  week: 'all' | string;
 }
 
 export interface RequirementEvent {

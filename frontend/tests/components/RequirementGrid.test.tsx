@@ -66,12 +66,9 @@ const data: BoardState = {
 
 const initialFilters: Filters = {
   query: '',
-  type: 'all',
-  role: 'all',
   status: 'all',
   priority: 'all',
-  owner: 'all',
-  week: 'all'
+  owner: 'all'
 };
 
 function GridHarness() {
