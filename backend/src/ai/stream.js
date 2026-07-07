@@ -9,7 +9,7 @@
  *   - "delta"     : { delta }
  *   - "usage"     : { inputTokens, outputTokens, totalTokens }
  *   - "proposal"  : { proposalId, rationale, events, errors? }
- *   - "done"      : { message, usage, toolCalls? }
+ *   - "done"      : { message, usage, proposalId? }
  *   - "error"     : { code, message }
  *
  * 客户端断线 / `req.on('close')` 会通过 AbortController 中止 DeepSeek 调用，避免浪费 token。
@@ -134,7 +134,7 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
       } catch (err) {
         sse.send(res, "error", {
           code: "AI_PROPOSAL_PARSE_FAILED",
-          message: `模型返回的 propose_events 参数无法解析：${err.message}`
+          message: `模型返回的建议变更参数无法解析：${err.message}`
         });
       }
       if (parsedArgs) {
@@ -188,8 +188,7 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
     const donePayload = {
       message: finalMsg,
       usage,
-      model: resolvedModel,
-      toolCalls
+      model: resolvedModel
     };
     if (proposalSummary?.proposalId) {
       donePayload.proposalId = proposalSummary.proposalId;

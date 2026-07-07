@@ -138,6 +138,23 @@ function makeStreamWithInvalidToolCall() {
   });
 }
 
+function makeStreamWithMalformedToolCall() {
+  const encoder = new TextEncoder();
+  const lines = [
+    'data: {"choices":[{"delta":{"content":"我先整理建议"}}]}\n\n',
+    'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"propose_events","arguments":"{\\"events\\":["}}]}}]}\n\n',
+    'data: {"choices":[{"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":20,"completion_tokens":30,"total_tokens":50}}\n\n',
+    'data: [DONE]\n\n'
+  ].join('');
+
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(lines));
+      controller.close();
+    }
+  });
+}
+
 describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-sprint3-test-'));
@@ -219,6 +236,32 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
       request(makeApp()).get(`/api/ai/conversations/${convId}/proposals?project=default`)
     );
     expect(list.body.proposals).toEqual([]);
+  });
+
+  it('流式：模型返回无法解析的建议参数时不暴露内部工具名', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      body: makeStreamWithMalformedToolCall()
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const create = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=default').send({})
+    );
+    const convId = create.body.conversation.id;
+
+    const stream = await authReq(
+      request(makeApp())
+        .post(`/api/ai/conversations/${convId}/messages/stream?project=default`)
+        .send({ text: '给我建议变更' })
+    );
+
+    expect(stream.status).toBe(200);
+    expect(stream.text).toContain('event: error');
+    expect(stream.text).toContain('AI_PROPOSAL_PARSE_FAILED');
+    expect(stream.text).toContain('建议变更');
+    expect(stream.text).not.toContain('propose_events');
   });
 
   it('apply 提案：需求级事件写入 events.db，state.json 重新生成', async () => {
