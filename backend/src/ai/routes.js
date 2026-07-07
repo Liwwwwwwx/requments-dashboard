@@ -26,6 +26,7 @@ const { appendEvents, withLock } = require("../events");
 const { render } = require("../state");
 const { httpError } = require("../errors");
 const { createRateLimiter } = require("./rate-limit");
+const { validateProposedEvents } = require("./tools/propose-events");
 
 function getCurrentUser(req) {
   return req.user || { id: "anonymous", username: "anonymous", displayName: "Anonymous" };
@@ -298,12 +299,22 @@ function createAiRoutes(rootDir) {
       if (!Array.isArray(proposal.events) || proposal.events.length === 0) {
         return next(httpError(400, "AI_PROPOSAL_EMPTY", "提案事件列表为空"));
       }
+      const validation = validateProposedEvents(proposal.events);
+      if (!validation.valid) {
+        return next(httpError(400, "AI_PROPOSAL_INVALID", "提案事件不符合 V2 写入范围", { errors: validation.errors }));
+      }
 
       // 走与 POST /projects/:project/events 同一段写入逻辑 + 重渲染
       const paths = projectPaths(rootDir, projectId);
       const user = getCurrentUser(req);
+      const currentState = render(paths);
+      const requirementIds = new Set((currentState.items || []).map((item) => item.id));
+      const missingRequirementId = validation.events.find((event) => !requirementIds.has(event.requirementId))?.requirementId;
+      if (missingRequirementId) {
+        return next(httpError(404, "AI_PROPOSAL_REQUIREMENT_NOT_FOUND", `提案指向的需求不存在：${missingRequirementId}`));
+      }
       // 强制 actor：AI 应用 + 当前用户
-      const events = proposal.events.map((e) => ({
+      const events = validation.events.map((e) => ({
         ...e,
         actor: e.actor || `ai:${user.id}`
       }));

@@ -9,6 +9,7 @@ import { createRoutes } from '@/routes';
 import { errorMiddleware } from '@/errors';
 import { readEvents } from '@/events';
 import { projectPaths } from '@/projects';
+import aiStore from '@/ai/store';
 
 let tmpDir: string;
 
@@ -224,5 +225,75 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
         .send({})
     );
     expect(apply2.status).toBe(409);
+  });
+
+  it('apply 提案：拒绝不符合 V2 范围的脏提案', async () => {
+    const newReq = await authReq(
+      request(makeApp()).post('/api/projects/default/events?project=default').send({
+        events: [
+          {
+            kind: 'req.new',
+            actor: 'test',
+            requirementId: 'REQ-0001',
+            title: '测试需求'
+          }
+        ]
+      })
+    );
+    expect(newReq.status).toBe(200);
+
+    const create = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=default').send({})
+    );
+    const convId = create.body.conversation.id;
+    const proposal = aiStore.createProposal(tmpDir, 'default', {
+      conversationId: convId,
+      messageId: 'MSG-test',
+      events: [
+        {
+          kind: 'task.status',
+          requirementId: 'REQ-0001',
+          taskId: 'FE-1',
+          status: 'working'
+        }
+      ]
+    });
+
+    const apply = await authReq(
+      request(makeApp())
+        .post(`/api/ai/proposals/${proposal.id}/apply?project=default`)
+        .send({})
+    );
+
+    expect(apply.status).toBe(400);
+    expect(apply.body.code).toBe('AI_PROPOSAL_INVALID');
+    expect(readEvents(projectPaths(tmpDir, 'default').eventsPath).filter((e) => e.kind === 'task.status')).toHaveLength(0);
+  });
+
+  it('apply 提案：拒绝指向不存在需求的事件', async () => {
+    const create = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=default').send({})
+    );
+    const convId = create.body.conversation.id;
+    const proposal = aiStore.createProposal(tmpDir, 'default', {
+      conversationId: convId,
+      messageId: 'MSG-test',
+      events: [
+        {
+          kind: 'req.status',
+          requirementId: 'REQ-9999',
+          status: 'doing'
+        }
+      ]
+    });
+
+    const apply = await authReq(
+      request(makeApp())
+        .post(`/api/ai/proposals/${proposal.id}/apply?project=default`)
+        .send({})
+    );
+
+    expect(apply.status).toBe(404);
+    expect(apply.body.code).toBe('AI_PROPOSAL_REQUIREMENT_NOT_FOUND');
   });
 });

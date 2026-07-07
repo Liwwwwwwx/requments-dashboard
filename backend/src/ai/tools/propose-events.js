@@ -10,6 +10,8 @@
 const { validateEvent } = require("../../schema");
 
 const ALLOWED_PROPOSAL_KINDS = new Set(["req.status", "req.patch", "note.add"]);
+const ALLOWED_REQUIREMENT_STATUSES = new Set(["todo", "doing", "blocked", "done"]);
+const ALLOWED_PRIORITIES = new Set(["P0", "P1", "P2"]);
 
 const PROPOSE_EVENTS_TOOL = {
   type: "function",
@@ -77,6 +79,20 @@ function validateProposedEvents(events) {
     if (!ALLOWED_PROPOSAL_KINDS.has(raw.kind)) {
       errors.push(`events[${i}]: 不允许的提案事件类型 ${raw.kind}`);
       continue;
+    }
+    if (raw.kind === "req.status" && !ALLOWED_REQUIREMENT_STATUSES.has(raw.status)) {
+      errors.push(`events[${i}]: req.status 必须包含合法 status`);
+      continue;
+    }
+    if (raw.kind === "req.patch") {
+      if (raw.status !== undefined && !ALLOWED_REQUIREMENT_STATUSES.has(raw.status)) {
+        errors.push(`events[${i}]: req.patch.status 必须是 todo / doing / blocked / done 之一`);
+        continue;
+      }
+      if (raw.priority !== undefined && !ALLOWED_PRIORITIES.has(raw.priority)) {
+        errors.push(`events[${i}]: req.patch.priority 必须是 P0 / P1 / P2 之一`);
+        continue;
+      }
     }
     if (raw.kind === "note.add" && !String(raw.text || "").trim()) {
       errors.push(`events[${i}]: note.add 必须包含 text`);
