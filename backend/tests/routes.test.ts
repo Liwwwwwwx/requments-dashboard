@@ -1223,74 +1223,16 @@ describe('V2 requirement REST APIs', () => {
 });
 
 describe('GET /api/projects/:project/events', () => {
-  function seedEvents() {
+  it('does not expose the project-level events list in V2', async () => {
     fs.mkdirSync(path.join(tmpDir, 'data', 'pe'), { recursive: true });
     const paths = projectPaths(tmpDir, 'pe');
     appendEvents(paths.eventsPath, [
       { eventId: 'E1', ts: 1000, kind: 'req.new', actor: 'alice', requirementId: 'REQ-0001', title: 'A', summary: 'sa' },
-      { eventId: 'E2', ts: 2000, kind: 'task.new', actor: 'bob', requirementId: 'REQ-0001', taskId: 'FE-1', role: 'frontend', title: 'fe task', status: 'todo' },
-      { eventId: 'E3', ts: 3000, kind: 'task.status', actor: 'bob', requirementId: 'REQ-0001', taskId: 'FE-1', status: 'done' },
-      { eventId: 'E4', ts: 4000, kind: 'contract.set', actor: 'bob', requirementId: 'REQ-0001', endpoints: [{ method: 'GET', path: '/api/legacy' }] },
-      { eventId: 'E5', ts: 5000, kind: 'note.add', actor: 'alice', requirementId: 'REQ-0001', text: '备注' },
-      { eventId: 'E6', ts: 6000, kind: 'req.new', actor: 'alice', requirementId: 'REQ-0002', title: 'B', summary: 'sb' }
+      { eventId: 'E2', ts: 2000, kind: 'note.add', actor: 'alice', requirementId: 'REQ-0001', text: '备注' }
     ]);
-  }
 
-  it('returns 404 when project missing', async () => {
-    const res = await authReq(request(makeApp()).get('/api/projects/missing/events'));
-    expect(res.status).toBe(404);
-    expect(res.body.code).toBe('PROJECT_NOT_FOUND');
-  });
-
-  it('requires authentication', async () => {
-    seedEvents();
-    const res = await request(makeApp()).get('/api/projects/pe/events');
-    expect(res.status).toBe(401);
-  });
-
-  it('returns only V2 project events newest-first with total/hasMore', async () => {
-    seedEvents();
     const res = await authReq(request(makeApp()).get('/api/projects/pe/events'));
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-    expect(res.body.total).toBe(3);
-    expect(res.body.hasMore).toBe(false);
-    expect(res.body.events.map((e: { eventId: string }) => e.eventId)).toEqual(['E6', 'E5', 'E1']);
-    expect(res.body.events.map((e: { kind: string }) => e.kind)).toEqual(['req.new', 'note.add', 'req.new']);
-  });
-
-  it('paginates with limit and offset', async () => {
-    seedEvents();
-    const page1 = await authReq(request(makeApp()).get('/api/projects/pe/events?limit=2&offset=0'));
-    expect(page1.body.events.map((e: { eventId: string }) => e.eventId)).toEqual(['E6', 'E5']);
-    expect(page1.body.hasMore).toBe(true);
-    expect(page1.body.total).toBe(3);
-
-    const page2 = await authReq(request(makeApp()).get('/api/projects/pe/events?limit=2&offset=2'));
-    expect(page2.body.events.map((e: { eventId: string }) => e.eventId)).toEqual(['E1']);
-    expect(page2.body.hasMore).toBe(false);
-  });
-
-  it('filters by kind', async () => {
-    seedEvents();
-    const res = await authReq(request(makeApp()).get('/api/projects/pe/events?kind=req.new'));
-    expect(res.body.total).toBe(2);
-    expect(res.body.events.map((e: { eventId: string }) => e.eventId)).toEqual(['E6', 'E1']);
-  });
-
-  it('does not return legacy event kinds even when requested explicitly', async () => {
-    seedEvents();
-    const res = await authReq(request(makeApp()).get('/api/projects/pe/events?kind=task.new'));
-    expect(res.body.total).toBe(0);
-    expect(res.body.events).toEqual([]);
-  });
-
-  it('filters by requirementId', async () => {
-    seedEvents();
-    const res = await authReq(request(makeApp()).get('/api/projects/pe/events?requirementId=REQ-0002'));
-    expect(res.body.total).toBe(1);
-    expect(res.body.events[0].eventId).toBe('E6');
-    expect(res.body.events[0].kind).toBe('req.new');
+    expect(res.status).toBe(404);
   });
 });
 
