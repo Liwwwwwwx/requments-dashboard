@@ -254,6 +254,56 @@ describe('V2 requirement REST APIs', () => {
     });
   });
 
+  it('returns a requirement detail through the V2 REST API', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录',
+        summary: '用户登录',
+        priority: 'P1',
+        owner: 'pm'
+      }
+    ]);
+
+    const res = await authReq(request(makeApp()).get('/api/projects/v2/requirements/REQ-0001'));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      ok: true,
+      project: 'v2',
+      requirement: {
+        id: 'REQ-0001',
+        title: '登录',
+        summary: '用户登录',
+        priority: 'P1',
+        owner: 'pm',
+        status: 'todo'
+      }
+    });
+  });
+
+  it('returns 404 when requirement detail is missing', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'data', 'v2'), { recursive: true });
+    const paths = projectPaths(tmpDir, 'v2');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '登录'
+      }
+    ]);
+
+    const res = await authReq(request(makeApp()).get('/api/projects/v2/requirements/REQ-9999'));
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('REQUIREMENT_NOT_FOUND');
+  });
+
   it('creates a requirement through the V2 REST API', async () => {
     const res = await authReq(
       request(makeApp())

@@ -114,6 +114,22 @@ function createRoutes(rootDir) {
     });
   });
 
+  router.get("/projects/:project/requirements/:requirementId", (req, res, next) => {
+    const state = getProjectState(rootDir, req.params.project);
+    if (!state) {
+      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+    }
+    const requirement = (state.items || []).find((item) => item.id === req.params.requirementId);
+    if (!requirement) {
+      return next(httpError(404, "REQUIREMENT_NOT_FOUND", `需求不存在：${req.params.requirementId}`));
+    }
+    return res.json({
+      ok: true,
+      project: req.params.project,
+      requirement
+    });
+  });
+
   router.patch("/projects/:project/requirements/:requirementId", express.json(), (req, res, next) => {
     const paths = projectPaths(rootDir, req.params.project);
     const state = getProjectState(rootDir, req.params.project);
