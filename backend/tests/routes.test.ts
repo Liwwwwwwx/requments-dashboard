@@ -851,6 +851,7 @@ describe('V2 requirement REST APIs', () => {
           title: '新标题',
           description: '新描述',
           next: '确认登录失败提示',
+          acceptance: ['登录成功后进入项目页', '密码错误时显示提示'],
           status: 'blocked',
           priority: 'P1',
           owner: 'dev'
@@ -868,14 +869,16 @@ describe('V2 requirement REST APIs', () => {
       owner: 'dev',
       detail: {
         next: '确认登录失败提示'
-      }
+      },
+      acceptance: ['登录成功后进入项目页', '密码错误时显示提示']
     });
     expect(res.body.appended).toBe(2);
     const patchEvent = readEvents(paths.eventsPath).find((event) => event.kind === 'req.patch');
     expect(patchEvent).toMatchObject({
       detail: {
         next: '确认登录失败提示'
-      }
+      },
+      acceptance: ['登录成功后进入项目页', '密码错误时显示提示']
     });
   });
 

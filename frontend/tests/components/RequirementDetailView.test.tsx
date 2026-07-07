@@ -240,6 +240,9 @@ describe('RequirementDetailView', () => {
     fireEvent.change(screen.getByLabelText('下一步'), {
       target: { value: '确认登录失败提示' }
     });
+    fireEvent.change(screen.getByLabelText('验收点'), {
+      target: { value: '登录成功后进入项目页\n密码错误时显示提示' }
+    });
     fireEvent.change(screen.getByLabelText('负责人'), {
       target: { value: 'owner-a' }
     });
@@ -261,7 +264,8 @@ describe('RequirementDetailView', () => {
         status: 'blocked',
         priority: 'P0',
         owner: 'owner-a',
-        next: '确认登录失败提示'
+        next: '确认登录失败提示',
+        acceptance: ['登录成功后进入项目页', '密码错误时显示提示']
       });
     });
     await waitFor(() => expect(onUpdated).toHaveBeenCalledTimes(1));

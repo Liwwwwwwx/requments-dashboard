@@ -20,6 +20,7 @@ interface RequirementEditForm {
   title: string;
   description?: string;
   next?: string;
+  acceptanceText?: string;
   status: RequirementStatus;
   priority: Priority;
   owner?: string;
@@ -44,6 +45,13 @@ function formatHistoryValue(value: unknown): string {
 function objectValue(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
+}
+
+function linesToList(value?: string): string[] {
+  return String(value || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function historyTitle(event: RequirementEvent): string {
@@ -181,6 +189,7 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
       title: item.title,
       description: item.summary || item.detail?.goal || '',
       next: item.detail?.next || '',
+      acceptanceText: (item.acceptance || []).join('\n'),
       status: item.status,
       priority: item.priority || 'P1',
       owner: item.owner || ''
@@ -197,6 +206,7 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
         title: values.title.trim(),
         description: values.description?.trim() || '',
         next: values.next?.trim() || '',
+        acceptance: linesToList(values.acceptanceText),
         status: values.status,
         priority: values.priority,
         owner: values.owner?.trim() || ''
@@ -507,6 +517,9 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
           </Form.Item>
           <Form.Item label="下一步" name="next">
             <Input.TextArea rows={2} placeholder="例如：确认登录失败提示文案" />
+          </Form.Item>
+          <Form.Item label="验收点" name="acceptanceText">
+            <Input.TextArea rows={3} placeholder="每行一条验收点" />
           </Form.Item>
           <Form.Item
             label="状态"

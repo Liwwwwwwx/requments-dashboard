@@ -404,6 +404,10 @@ function createRoutes(rootDir) {
     if (req.body.description !== undefined) patch.summary = String(req.body.description).trim();
     if (req.body.summary !== undefined) patch.summary = String(req.body.summary).trim();
     if (req.body.next !== undefined) patch.detail = { next: String(req.body.next).trim() };
+    if (req.body.acceptance !== undefined) {
+      if (!assertV2Acceptance(req.body.acceptance, next)) return;
+      patch.acceptance = req.body.acceptance;
+    }
     if (req.body.priority !== undefined) {
       const priority = assertV2Priority(req.body.priority, next);
       if (!priority) return;
