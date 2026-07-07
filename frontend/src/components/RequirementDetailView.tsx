@@ -33,6 +33,13 @@ function eventStatus(event: RequirementEvent): string | undefined {
   return String(event.status || payload.status || '');
 }
 
+function formatHistoryValue(value: unknown): string {
+  if (value === undefined || value === null || value === '') return '空';
+  if (Array.isArray(value)) return value.join('、') || '空';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
 function historyTitle(event: RequirementEvent): string {
   const kind = event.kind || eventPayload(event).kind;
   if (kind === 'req.new') return '新建需求';
@@ -58,12 +65,13 @@ function historyDetail(event: RequirementEvent): string {
   if (kind === 'note.add') return String(payload.text || event.text || '添加了一条备注');
   if (kind === 'req.patch') {
     const fields = [
-      payload.title !== undefined ? '标题' : '',
-      payload.summary !== undefined ? '描述' : '',
-      payload.priority !== undefined ? '优先级' : '',
-      payload.owner !== undefined ? '负责人' : ''
+      payload.title !== undefined ? `标题：${formatHistoryValue(payload.title)}` : '',
+      payload.summary !== undefined ? `描述：${formatHistoryValue(payload.summary)}` : '',
+      payload.priority !== undefined ? `优先级：${formatHistoryValue(payload.priority)}` : '',
+      payload.owner !== undefined ? `负责人：${formatHistoryValue(payload.owner)}` : '',
+      payload.status !== undefined ? `状态：${statusLabel(formatHistoryValue(payload.status)).label}` : ''
     ].filter(Boolean);
-    return fields.length > 0 ? `更新：${fields.join('、')}` : '更新了需求信息';
+    return fields.length > 0 ? fields.join('；') : '更新了需求信息';
   }
   return event.taskId || event.summary || event.text || '';
 }

@@ -117,6 +117,20 @@ describe('RequirementDetailView', () => {
           kind: 'req.status',
           actor: 'dev',
           event: { status: 'blocked' }
+        },
+        {
+          eventId: 'E3',
+          ts: 3000,
+          kind: 'req.patch',
+          actor: 'pm',
+          event: { title: '登录页 V2', summary: '只保留用户名密码登录', priority: 'P0', owner: 'owner-a' }
+        },
+        {
+          eventId: 'E4',
+          ts: 4000,
+          kind: 'note.add',
+          actor: 'pm',
+          event: { text: '先保持最小登录' }
         }
       ]
     });
@@ -136,6 +150,8 @@ describe('RequirementDetailView', () => {
     expect(screen.getByText('2026-07-06')).toBeInTheDocument();
     expect(screen.getByText('新建需求')).toBeInTheDocument();
     expect(screen.getByText('状态变更 → 阻塞')).toBeInTheDocument();
+    expect(screen.getByText('标题：登录页 V2；描述：只保留用户名密码登录；优先级：P0；负责人：owner-a')).toBeInTheDocument();
+    expect(screen.getByText('先保持最小登录')).toBeInTheDocument();
   });
 
   it('不展示旧版工作流状态字段', async () => {
