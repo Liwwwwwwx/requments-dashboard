@@ -1,45 +1,5 @@
 export type RequirementStatus = 'todo' | 'doing' | 'blocked' | 'done';
-export type TaskStatus = 'todo' | 'claimed' | 'working' | 'done' | 'accepted' | 'blocked';
 export type Priority = 'P0' | 'P1' | 'P2';
-export type Role =
-  | 'contract'
-  | 'frontend'
-  | 'backend'
-  | 'review'
-  | 'qa'
-  | 'integration'
-  | 'infra'
-  | 'general';
-
-export type WorkflowStatus = string;
-
-export interface Endpoint {
-  method?: string;
-  path: string;
-  permission?: string;
-  reasonRequired?: boolean;
-}
-
-export interface Task {
-  taskId: string;
-  role: Role;
-  title: string;
-  scope?: string;
-  status: TaskStatus;
-  owner?: string | null;
-  agent?: string | null;
-  verify?: string | null;
-  notes?: string | null;
-  files?: string[];
-  updatedAt?: string;
-}
-
-export interface TaskStats {
-  total: number;
-  done: number;
-  active: number;
-  blocked: number;
-}
 
 export interface RequirementDetail {
   goal?: string;
@@ -65,7 +25,6 @@ export interface Requirement {
   title: string;
   type: string;
   status: RequirementStatus;
-  workflowStatus: WorkflowStatus;
   week: string;
   dueDate?: string;
   owner: string;
@@ -78,10 +37,6 @@ export interface Requirement {
   links: RequirementLink[];
   sources: string[];
   notes: Note[];
-  tasks: Task[];
-  taskStats: TaskStats;
-  contract: { ready: boolean; endpoints: Endpoint[] };
-  needsContract?: boolean;
 }
 
 export interface BoardState {
@@ -102,9 +57,6 @@ export type EventKind =
   | 'req.new'
   | 'req.status'
   | 'req.patch'
-  | 'task.new'
-  | 'task.status'
-  | 'contract.set'
   | 'note.add';
 
 export interface EventInput {
@@ -138,5 +90,5 @@ export interface RequirementEvent {
   text?: string;
   at?: string;
   updatedAt?: string;
-  event?: EventInput;
+  event?: Record<string, unknown>;
 }

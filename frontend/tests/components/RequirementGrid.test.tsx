@@ -13,13 +13,12 @@ vi.mock('next/navigation', () => ({
 
 function makeRequirement(
   input: Pick<Requirement, 'id' | 'title' | 'status' | 'priority' | 'owner'> &
-    Partial<Pick<Requirement, 'summary' | 'taskStats'>>
+    Partial<Pick<Requirement, 'summary'>>
 ): Requirement {
   return {
     ...input,
     feature: 'core',
     type: 'feature',
-    workflowStatus: 'open',
     week: '2026-W28',
     updatedAt: '2026-07-07',
     summary: input.summary || '',
@@ -27,10 +26,7 @@ function makeRequirement(
     acceptance: [],
     links: [],
     sources: [],
-    notes: [],
-    tasks: [],
-    taskStats: input.taskStats || { total: 0, done: 0, active: 0, blocked: 0 },
-    contract: { ready: false, endpoints: [] }
+    notes: []
   };
 }
 
@@ -44,8 +40,7 @@ const data: BoardState = {
       status: 'todo',
       priority: 'P0',
       owner: 'pm',
-      summary: '最小登录体验',
-      taskStats: { total: 3, done: 1, active: 1, blocked: 1 }
+      summary: '最小登录体验'
     }),
     makeRequirement({
       id: 'REQ-0002',
@@ -90,8 +85,6 @@ describe('RequirementGrid', () => {
 
     expect(screen.getByText('登录')).toBeInTheDocument();
     expect(screen.getByText('最小登录体验')).toBeInTheDocument();
-    expect(screen.queryByText('阻塞 1')).not.toBeInTheDocument();
-    expect(screen.queryByText('进行 1')).not.toBeInTheDocument();
     expect(screen.getByText('AI 小助手')).toBeInTheDocument();
     expect(screen.getByText('项目列表')).toBeInTheDocument();
 

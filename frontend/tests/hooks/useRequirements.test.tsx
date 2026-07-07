@@ -21,7 +21,6 @@ function requirement(input: Partial<Requirement> & Pick<Requirement, 'id' | 'tit
     title: input.title,
     type: 'feature',
     status: input.status || 'todo',
-    workflowStatus: 'open',
     week: '2026-W28',
     owner: input.owner || 'pm',
     priority: input.priority || 'P1',
@@ -32,10 +31,7 @@ function requirement(input: Partial<Requirement> & Pick<Requirement, 'id' | 'tit
     acceptance: [],
     links: [],
     sources: [],
-    notes: [],
-    tasks: [],
-    taskStats: { total: 0, done: 0, active: 0, blocked: 0 },
-    contract: { ready: false, endpoints: [] }
+    notes: []
   };
 }
 

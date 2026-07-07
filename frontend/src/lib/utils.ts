@@ -1,4 +1,4 @@
-import type { Priority, RequirementStatus, TaskStatus } from './types';
+import type { Priority, RequirementStatus } from './types';
 
 export const REQUIREMENT_STATUS_LABELS: Record<RequirementStatus, { label: string; color: string }> = {
   todo: { label: '待开始', color: 'default' },
@@ -7,7 +7,7 @@ export const REQUIREMENT_STATUS_LABELS: Record<RequirementStatus, { label: strin
   done: { label: '完成', color: 'success' }
 };
 
-export const TASK_STATUS_LABELS: Record<TaskStatus, { label: string; color: string }> = {
+const LEGACY_TASK_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   todo: { label: '待开始', color: 'default' },
   claimed: { label: '已领取', color: 'warning' },
   working: { label: '进行中', color: 'processing' },
@@ -16,10 +16,10 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, { label: string; color: stri
   blocked: { label: '阻塞', color: 'error' }
 };
 
-export function statusLabel(status: RequirementStatus | TaskStatus | string) {
+export function statusLabel(status: RequirementStatus | string) {
   return (
     REQUIREMENT_STATUS_LABELS[status as RequirementStatus] ||
-    TASK_STATUS_LABELS[status as TaskStatus] || { label: status, color: 'default' }
+    LEGACY_TASK_STATUS_LABELS[status] || { label: status, color: 'default' }
   );
 }
 

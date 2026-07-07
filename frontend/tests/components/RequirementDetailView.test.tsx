@@ -48,7 +48,6 @@ const requirement: Requirement = {
   title: '登录页',
   type: 'feature',
   status: 'todo',
-  workflowStatus: 'open',
   week: '2026-W28',
   owner: 'pm',
   priority: 'P1',
@@ -63,10 +62,7 @@ const requirement: Requirement = {
   acceptance: [],
   links: [],
   sources: [],
-  notes: [],
-  tasks: [],
-  taskStats: { total: 0, done: 0, active: 0, blocked: 0 },
-  contract: { ready: false, endpoints: [] }
+  notes: []
 };
 
 describe('RequirementDetailView', () => {
