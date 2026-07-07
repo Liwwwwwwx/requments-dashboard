@@ -5,7 +5,6 @@ import {
   createRequirement,
   fetchProject,
   fetchRequirement,
-  fetchState,
   addRequirementNote,
   listProjects,
   listRequirements,
@@ -49,8 +48,8 @@ describe('api client', () => {
           message: '项目不存在：nope'
         })
     });
-    await expect(fetchState('nope')).rejects.toBeInstanceOf(ApiError);
-    await expect(fetchState('nope')).rejects.toMatchObject({
+    await expect(listRequirements('nope')).rejects.toBeInstanceOf(ApiError);
+    await expect(listRequirements('nope')).rejects.toMatchObject({
       message: '项目不存在：nope',
       code: 'PROJECT_NOT_FOUND'
     });
@@ -63,7 +62,7 @@ describe('api client', () => {
       headers: { get: () => 'application/json' },
       text: async () => JSON.stringify({ ok: false, error: 'LEGACY_CODE' })
     });
-    await expect(fetchState('legacy')).rejects.toMatchObject({
+    await expect(listRequirements('legacy')).rejects.toMatchObject({
       message: 'LEGACY_CODE'
     });
   });
@@ -75,7 +74,7 @@ describe('api client', () => {
       headers: { get: () => 'text/plain' },
       text: async () => 'boom'
     });
-    await expect(fetchState('boom')).rejects.toThrow(/HTTP 500/);
+    await expect(listRequirements('boom')).rejects.toThrow(/HTTP 500/);
   });
 
   it('lists requirements through the V2 endpoint', async () => {

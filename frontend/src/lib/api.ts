@@ -1,6 +1,5 @@
 import { authFetch } from './auth';
 import type {
-  BoardState,
   EventInput,
   Project,
   ProjectEventsResponse,
@@ -68,10 +67,6 @@ export async function updateProject(
   });
 }
 
-export async function fetchState(project: string): Promise<BoardState> {
-  return fetchJson(`/projects/${encodeURIComponent(project)}/state`);
-}
-
 export async function listRequirements(
   project: string
 ): Promise<{ ok: true; project: string; requirements: Requirement[] }> {
@@ -121,12 +116,6 @@ export async function updateRequirement(
       body: JSON.stringify(input)
     }
   );
-}
-
-export async function renderState(
-  project: string
-): Promise<{ ok: true; items: number; updatedAt: string }> {
-  return fetchJson(`/projects/${encodeURIComponent(project)}/render`, { method: 'POST' });
 }
 
 export async function fetchRequirementEvents(

@@ -10,9 +10,7 @@ vi.mock('@/lib/api', async (importOriginal) => {
   return {
     ...actual,
     listProjects: vi.fn(),
-    listRequirements: vi.fn(),
-    fetchState: vi.fn(),
-    renderState: vi.fn()
+    listRequirements: vi.fn()
   };
 });
 
