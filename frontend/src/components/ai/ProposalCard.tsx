@@ -17,13 +17,11 @@ const KIND_META: Record<string, { label: string; color: string }> = {
 function describeEvent(event: AiProposalEvent): string {
   const parts: string[] = [];
   if (event.requirementId) parts.push(String(event.requirementId));
-  if (event.taskId) parts.push(String(event.taskId));
   if (event.status) parts.push(`→ ${event.status}`);
   if (event.title) parts.push(`「${String(event.title).slice(0, 28)}」`);
   if (event.summary) parts.push(String(event.summary).slice(0, 32));
   if (event.text) parts.push(String(event.text).slice(0, 32));
   if (event.priority) parts.push(`优先级 ${event.priority}`);
-  if (event.agent) parts.push(`@${event.agent}`);
   return parts.join(' · ');
 }
 
@@ -94,7 +92,7 @@ export function ProposalCard({ project, proposal, onApplied }: Props) {
                     {meta.label}
                   </Tag>
                   <span className="tool-call-desc">
-                    {KIND_META[event.kind] ? description : `${event.kind}${description ? ` · ${description}` : ''}`}
+                    {KIND_META[event.kind] ? description : '已隐藏旧版事件详情'}
                   </span>
                 </li>
               );

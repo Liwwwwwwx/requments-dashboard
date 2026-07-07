@@ -45,7 +45,8 @@ describe('ProposalCard', () => {
     expect(screen.getByText('改需求字段')).toBeInTheDocument();
     expect(screen.getByText('添加备注')).toBeInTheDocument();
     expect(screen.getByText('不支持的事件')).toBeInTheDocument();
-    expect(screen.getByText(/task\.new/)).toBeInTheDocument();
+    expect(screen.queryByText(/task\.new/)).not.toBeInTheDocument();
+    expect(screen.queryByText('FE-1')).not.toBeInTheDocument();
     expect(screen.getByText('含不支持事件')).toBeInTheDocument();
     expect(screen.getByText(/请重新生成提案/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /应用到看板/ })).toBeDisabled();
