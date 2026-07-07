@@ -286,6 +286,52 @@ describe('RequirementDetailView', () => {
     expect(screen.queryByText('实现登录表单')).not.toBeInTheDocument();
   });
 
+  it('变更历史不展示旧版任务和契约事件', async () => {
+    vi.mocked(fetchRequirementEvents).mockResolvedValue({
+      ok: true,
+      events: [
+        {
+          eventId: 'E1',
+          ts: 1000,
+          kind: 'req.new',
+          actor: 'pm',
+          event: { title: '登录页' }
+        },
+        {
+          eventId: 'E2',
+          ts: 2000,
+          kind: 'task.new',
+          actor: 'dev',
+          taskId: 'FE-1',
+          event: { title: '实现登录表单' }
+        },
+        {
+          eventId: 'E3',
+          ts: 3000,
+          kind: 'contract.set',
+          actor: 'dev',
+          event: { endpoints: [{ method: 'GET', path: '/api/legacy' }] }
+        }
+      ]
+    });
+
+    render(
+      <RequirementDetailView
+        item={requirement}
+        project="alpha"
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+    expect(screen.getByText('新建需求')).toBeInTheDocument();
+    expect(screen.queryByText(/新建任务/)).not.toBeInTheDocument();
+    expect(screen.queryByText('FE-1')).not.toBeInTheDocument();
+    expect(screen.queryByText('实现登录表单')).not.toBeInTheDocument();
+    expect(screen.queryByText('/api/legacy')).not.toBeInTheDocument();
+  });
+
   it('保存基础字段和状态后刷新详情', async () => {
     const onUpdated = vi.fn();
     vi.mocked(updateRequirement).mockResolvedValue({

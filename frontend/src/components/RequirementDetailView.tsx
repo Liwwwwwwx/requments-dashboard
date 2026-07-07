@@ -10,6 +10,8 @@ import { ChatPanel } from './ai/ChatPanel';
 
 const { Paragraph } = Typography;
 
+const V2_HISTORY_KINDS = new Set(['req.new', 'req.status', 'req.patch', 'note.add']);
+
 interface Props {
   item: Requirement | null;
   project: string;
@@ -54,6 +56,11 @@ function linesToList(value?: string): string[] {
     .filter(Boolean);
 }
 
+function isV2HistoryEvent(event: RequirementEvent): boolean {
+  const kind = String(event.kind || eventPayload(event).kind || '');
+  return V2_HISTORY_KINDS.has(kind);
+}
+
 function historyTitle(event: RequirementEvent): string {
   const kind = event.kind || eventPayload(event).kind;
   if (kind === 'req.new') return '新建需求';
@@ -63,11 +70,6 @@ function historyTitle(event: RequirementEvent): string {
     return `状态变更 → ${status ? statusLabel(status).label : '-'}`;
   }
   if (kind === 'note.add') return '添加备注';
-  if (kind === 'task.new') return `新建任务${event.taskId ? ` ${event.taskId}` : ''}`;
-  if (kind === 'task.status') {
-    const status = eventStatus(event);
-    return `任务状态 → ${status ? statusLabel(status).label : '-'}`;
-  }
   return String(kind || '未知事件');
 }
 
@@ -130,7 +132,7 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
     setHistoryError(null);
     try {
       const res = await fetchRequirementEvents(project, item.id);
-      setHistory(res.events || []);
+      setHistory((res.events || []).filter(isV2HistoryEvent));
     } catch (error) {
       setHistory([]);
       setHistoryError(error instanceof Error ? error.message : '加载变更历史失败');
@@ -152,7 +154,7 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
       setHistoryError(null);
       try {
         const res = await fetchRequirementEvents(project, item.id);
-        if (active) setHistory(res.events || []);
+        if (active) setHistory((res.events || []).filter(isV2HistoryEvent));
       } catch (error) {
         if (!active) return;
         setHistory([]);
