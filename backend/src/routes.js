@@ -532,40 +532,6 @@ function createRoutes(rootDir) {
     });
   });
 
-  router.post("/projects/:project/events", express.json({ limit: "10mb" }), (req, res, next) => {
-    const paths = projectPaths(rootDir, req.params.project);
-    if (!fs.existsSync(paths.dataDir)) {
-      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
-    }
-
-    const body = req.body;
-    const list = Array.isArray(body.events)
-      ? body.events
-      : Array.isArray(body)
-        ? body
-        : [body];
-
-    if (list.length === 0) {
-      return next(httpError(400, "EMPTY_EVENTS", "事件列表为空"));
-    }
-    if (!validateV2ProjectEvents(list, next)) return;
-    const currentState = getProjectState(rootDir, req.params.project) || { items: [] };
-    if (!validateV2ProjectRequirementReferences(currentState, list, next)) return;
-    if (!validateV2ProjectStatusTransitions(currentState, list, next)) return;
-
-    const actor = req.headers["x-actor"] || req.user?.username || "http";
-    const stamped = list.map((e) => ({
-      ...e,
-      text: e.kind === "note.add" ? String(e.text || "").trim() : e.text,
-      actor: e.actor || actor
-    }));
-    const state = withLock(paths.lockPath, () => {
-      appendEvents(paths.eventsPath, stamped);
-      return render(paths);
-    });
-    return res.json({ ok: true, appended: stamped.length, items: state.items.length, updatedAt: state.updatedAt });
-  });
-
   return router;
 }
 

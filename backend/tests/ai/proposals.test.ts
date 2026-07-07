@@ -7,7 +7,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { createRoutes } from '@/routes';
 import { errorMiddleware } from '@/errors';
-import { readEvents } from '@/events';
+import { appendEvents, readEvents } from '@/events';
 import { projectPaths } from '@/projects';
 import aiStore from '@/ai/store';
 
@@ -64,6 +64,27 @@ function seedDeepSeekAccount() {
 
 function seedProject(project = 'default') {
   fs.mkdirSync(path.join(tmpDir, 'data', project), { recursive: true });
+}
+
+function seedRequirement(input: {
+  requirementId?: string;
+  title?: string;
+  summary?: string;
+  priority?: string;
+  status?: string;
+} = {}) {
+  const paths = projectPaths(tmpDir, 'default');
+  appendEvents(paths.eventsPath, [
+    {
+      kind: 'req.new',
+      actor: 'test',
+      requirementId: input.requirementId || 'REQ-0001',
+      title: input.title || '测试需求',
+      summary: input.summary || '',
+      priority: input.priority,
+      status: input.status
+    }
+  ]);
 }
 
 function makeStreamWithToolCall() {
@@ -265,22 +286,10 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
   });
 
   it('apply 提案：需求级事件写入 events.db，state.json 重新生成', async () => {
-    // 先建一个 req.new 事件让 REQ-0001 存在
-    const newReq = await authReq(
-      request(makeApp()).post('/api/projects/default/events?project=default').send({
-        events: [
-          {
-            kind: 'req.new',
-            actor: 'test',
-            requirementId: 'REQ-0001',
-            title: '测试需求',
-            summary: '用于 Sprint 3 集成测试',
-            priority: 'P1'
-          }
-        ]
-      })
-    );
-    expect(newReq.status).toBe(200);
+    seedRequirement({
+      summary: '用于 Sprint 3 集成测试',
+      priority: 'P1'
+    });
 
     const fetchMock = vi.fn(async () => ({
       ok: true,
@@ -336,19 +345,7 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
   });
 
   it('apply 提案：拒绝不符合 V2 范围的脏提案', async () => {
-    const newReq = await authReq(
-      request(makeApp()).post('/api/projects/default/events?project=default').send({
-        events: [
-          {
-            kind: 'req.new',
-            actor: 'test',
-            requirementId: 'REQ-0001',
-            title: '测试需求'
-          }
-        ]
-      })
-    );
-    expect(newReq.status).toBe(200);
+    seedRequirement();
 
     const create = await authReq(
       request(makeApp()).post('/api/ai/conversations?project=default').send({})
@@ -379,19 +376,7 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
   });
 
   it('apply 提案：写入备注前会修剪文本空白', async () => {
-    const newReq = await authReq(
-      request(makeApp()).post('/api/projects/default/events?project=default').send({
-        events: [
-          {
-            kind: 'req.new',
-            actor: 'test',
-            requirementId: 'REQ-0001',
-            title: '测试需求'
-          }
-        ]
-      })
-    );
-    expect(newReq.status).toBe(200);
+    seedRequirement();
 
     const create = await authReq(
       request(makeApp()).post('/api/ai/conversations?project=default').send({})
@@ -449,20 +434,10 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
   });
 
   it('apply 提案：拒绝终态需求状态回退且不写入事件', async () => {
-    const newReq = await authReq(
-      request(makeApp()).post('/api/projects/default/events?project=default').send({
-        events: [
-          {
-            kind: 'req.new',
-            actor: 'test',
-            requirementId: 'REQ-0001',
-            title: '已完成需求',
-            status: 'done'
-          }
-        ]
-      })
-    );
-    expect(newReq.status).toBe(200);
+    seedRequirement({
+      title: '已完成需求',
+      status: 'done'
+    });
 
     const create = await authReq(
       request(makeApp()).post('/api/ai/conversations?project=default').send({})
