@@ -3,7 +3,6 @@ import {
   ApartmentOutlined,
   SettingOutlined,
   TableOutlined,
-  FieldTimeOutlined,
   RobotOutlined
 } from '@ant-design/icons';
 
@@ -65,6 +64,5 @@ export interface BoardViewItem {
 
 export const BOARD_VIEWS: BoardViewItem[] = [
   { key: 'board', label: '看板', icon: ApartmentOutlined, status: 'ready' },
-  { key: 'list', label: '列表', icon: TableOutlined, status: 'ready' },
-  { key: 'timeline', label: '时间线', icon: FieldTimeOutlined, status: 'ready' }
+  { key: 'list', label: '列表', icon: TableOutlined, status: 'ready' }
 ];

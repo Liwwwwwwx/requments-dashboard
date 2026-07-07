@@ -10,7 +10,6 @@ import type { BoardState, Filters, Priority, RequirementStatus } from '@/lib/typ
 import { BOARD_VIEWS } from '@/lib/nav';
 import { BoardColumns } from './board/BoardColumns';
 import { ListView } from './board/ListView';
-import { TimelineView } from './board/TimelineView';
 
 interface Props {
   data: BoardState;
@@ -171,11 +170,9 @@ export function RequirementGrid({
               </select>
             </label>
           </div>
-          {activeView !== 'timeline' && (
-            <div className="board-count">
-              共 <strong>{items.length}</strong> 条需求
-            </div>
-          )}
+          <div className="board-count">
+            共 <strong>{items.length}</strong> 条需求
+          </div>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             新建需求
           </Button>
@@ -198,10 +195,6 @@ export function RequirementGrid({
           onOpen={open}
         />
       )}
-      {activeView === 'timeline' && (
-        <TimelineView project={project} requirements={data.items} onOpen={open} />
-      )}
-
       <Modal
         title="新建需求"
         open={createOpen}

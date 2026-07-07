@@ -2,7 +2,6 @@ import { authFetch } from './auth';
 import type {
   EventInput,
   Project,
-  ProjectEventsResponse,
   Requirement,
   RequirementEvent,
   RequirementStatus,
@@ -146,29 +145,6 @@ export async function addRequirementNote(
       body: JSON.stringify({ kind: 'note.add', text })
     }
   );
-}
-
-export async function appendEvents(
-  project: string,
-  events: EventInput[]
-): Promise<{ ok: true; appended: number; items: number; updatedAt: string }> {
-  return fetchJson(`/projects/${encodeURIComponent(project)}/events`, {
-    method: 'POST',
-    body: JSON.stringify({ events })
-  });
-}
-
-export async function fetchProjectEvents(
-  project: string,
-  params: { limit?: number; offset?: number; kind?: string; requirementId?: string } = {}
-): Promise<ProjectEventsResponse> {
-  const qs = new URLSearchParams();
-  if (params.limit != null) qs.set('limit', String(params.limit));
-  if (params.offset != null) qs.set('offset', String(params.offset));
-  if (params.kind) qs.set('kind', params.kind);
-  if (params.requirementId) qs.set('requirementId', params.requirementId);
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return fetchJson(`/projects/${encodeURIComponent(project)}/events${suffix}`);
 }
 
 export { ApiError };
