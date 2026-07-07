@@ -44,10 +44,27 @@ export async function listProjects(): Promise<{ ok: true; projects: Project[] }>
   return fetchJson('/projects');
 }
 
-export async function createProject(id: string): Promise<{ ok: true; project: Project }> {
+export async function createProject(
+  id: string,
+  input: { name?: string; description?: string } = {}
+): Promise<{ ok: true; project: Project }> {
   return fetchJson('/projects', {
     method: 'POST',
-    body: JSON.stringify({ id })
+    body: JSON.stringify({ id, ...input })
+  });
+}
+
+export async function fetchProject(project: string): Promise<{ ok: true; project: Project }> {
+  return fetchJson(`/projects/${encodeURIComponent(project)}`);
+}
+
+export async function updateProject(
+  project: string,
+  input: { name?: string; description?: string }
+): Promise<{ ok: true; project: Project }> {
+  return fetchJson(`/projects/${encodeURIComponent(project)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input)
   });
 }
 

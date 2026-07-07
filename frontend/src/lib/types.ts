@@ -93,6 +93,9 @@ export interface BoardState {
 export interface Project {
   id: string;
   name: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type EventKind =

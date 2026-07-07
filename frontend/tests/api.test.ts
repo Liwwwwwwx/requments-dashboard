@@ -3,11 +3,13 @@ import {
   ApiError,
   createProject,
   createRequirement,
+  fetchProject,
   fetchRequirement,
   fetchState,
   addRequirementNote,
   listProjects,
   listRequirements,
+  updateProject,
   updateRequirement
 } from '@/lib/api';
 
@@ -126,6 +128,75 @@ describe('api client', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/projects', expect.objectContaining({
       method: 'POST',
       body: JSON.stringify({ id: 'alpha' })
+    }));
+  });
+
+  it('creates a project with metadata through the V2 endpoint', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      text: async () =>
+        JSON.stringify({
+          ok: true,
+          project: { id: 'alpha', name: 'Alpha 项目', description: '第一阶段需求' }
+        })
+    });
+
+    const result = await createProject('alpha', {
+      name: 'Alpha 项目',
+      description: '第一阶段需求'
+    });
+
+    expect(result.project.name).toBe('Alpha 项目');
+    expect(fetchMock).toHaveBeenCalledWith('/api/projects', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({
+        id: 'alpha',
+        name: 'Alpha 项目',
+        description: '第一阶段需求'
+      })
+    }));
+  });
+
+  it('fetches and updates project metadata through the V2 endpoint', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        text: async () =>
+          JSON.stringify({
+            ok: true,
+            project: { id: 'alpha', name: 'Alpha 项目', description: '' }
+          })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        text: async () =>
+          JSON.stringify({
+            ok: true,
+            project: { id: 'alpha', name: 'Alpha 新名称', description: '更新后的说明' }
+          })
+      });
+
+    const detail = await fetchProject('alpha');
+    expect(detail.project.id).toBe('alpha');
+
+    const updated = await updateProject('alpha', {
+      name: 'Alpha 新名称',
+      description: '更新后的说明'
+    });
+    expect(updated.project.description).toBe('更新后的说明');
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/projects/alpha', expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/projects/alpha', expect.objectContaining({
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: 'Alpha 新名称',
+        description: '更新后的说明'
+      })
     }));
   });
 

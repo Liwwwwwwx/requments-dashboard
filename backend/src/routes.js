@@ -3,7 +3,15 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const { projectPaths, listProjects, ensureProject, isValidProjectId } = require("./projects");
+const {
+  projectPaths,
+  listProjectDetails,
+  ensureProject,
+  ensureProjectMetadata,
+  getProject,
+  updateProject,
+  isValidProjectId
+} = require("./projects");
 const { readEvents, appendEvents, withLock } = require("./events");
 const { render } = require("./state");
 const { httpError } = require("./errors");
@@ -28,7 +36,7 @@ function createRoutes(rootDir) {
   router.use("/ai", createAiRoutes(rootDir));
 
   router.get("/projects", (_req, res) => {
-    const projects = listProjects(rootDir).map((id) => ({ id, name: id }));
+    const projects = listProjectDetails(rootDir);
     res.json({ ok: true, projects });
   });
 
@@ -38,7 +46,30 @@ function createRoutes(rootDir) {
       return next(httpError(400, "INVALID_PROJECT_ID", `项目 id 非法：${id}`));
     }
     const paths = ensureProject(rootDir, id);
-    return res.json({ ok: true, project: { id, dataDir: paths.dataDir } });
+    const project = ensureProjectMetadata(rootDir, paths.projectId, {
+      name: req.body.name,
+      description: req.body.description
+    });
+    return res.json({ ok: true, project: { ...project, dataDir: paths.dataDir } });
+  });
+
+  router.get("/projects/:project", (req, res, next) => {
+    const project = getProject(rootDir, req.params.project);
+    if (!project) {
+      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+    }
+    return res.json({ ok: true, project });
+  });
+
+  router.patch("/projects/:project", express.json(), (req, res, next) => {
+    const project = updateProject(rootDir, req.params.project, {
+      name: req.body.name,
+      description: req.body.description
+    });
+    if (!project) {
+      return next(httpError(404, "PROJECT_NOT_FOUND", `项目不存在：${req.params.project}`));
+    }
+    return res.json({ ok: true, project });
   });
 
   function nextRequirementId(items) {

@@ -152,6 +152,68 @@ describe('POST /api/projects', () => {
   });
 });
 
+describe('Project detail APIs', () => {
+  it('returns project detail with metadata', async () => {
+    await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({ id: 'alpha', name: 'Alpha 项目', description: '第一阶段需求' })
+    );
+
+    const res = await authReq(request(makeApp()).get('/api/projects/alpha'));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      ok: true,
+      project: {
+        id: 'alpha',
+        name: 'Alpha 项目',
+        description: '第一阶段需求'
+      }
+    });
+    expect(typeof res.body.project.createdAt).toBe('string');
+    expect(typeof res.body.project.updatedAt).toBe('string');
+  });
+
+  it('updates project name and description', async () => {
+    await authReq(
+      request(makeApp())
+        .post('/api/projects')
+        .send({ id: 'alpha' })
+    );
+
+    const res = await authReq(
+      request(makeApp())
+        .patch('/api/projects/alpha')
+        .send({ name: 'Alpha 新名称', description: '更新后的说明' })
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      ok: true,
+      project: {
+        id: 'alpha',
+        name: 'Alpha 新名称',
+        description: '更新后的说明'
+      }
+    });
+
+    const list = await authReq(request(makeApp()).get('/api/projects'));
+    expect(list.body.projects[0]).toMatchObject({
+      id: 'alpha',
+      name: 'Alpha 新名称',
+      description: '更新后的说明'
+    });
+  });
+
+  it('returns 404 when project detail is missing', async () => {
+    const res = await authReq(request(makeApp()).get('/api/projects/missing'));
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('PROJECT_NOT_FOUND');
+  });
+});
+
 describe('GET /api/projects/:project/state', () => {
   it('returns 404 with structured error when project missing', async () => {
     const res = await authReq(request(makeApp()).get('/api/projects/missing/state'));
