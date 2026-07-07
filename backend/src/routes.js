@@ -152,6 +152,28 @@ function createRoutes(rootDir) {
     return true;
   }
 
+  function validateV2ProjectStatusTransitions(currentState, events, next) {
+    const statusByRequirement = new Map(
+      (currentState.items || []).map((item) => [item.id, item.status])
+    );
+    for (const event of events) {
+      const requirementId = event.requirementId;
+      if (!requirementId) continue;
+      if (event.kind === "req.new") {
+        statusByRequirement.set(requirementId, event.status || "todo");
+        continue;
+      }
+      const nextStatus = event.kind === "req.status" || event.kind === "req.patch"
+        ? event.status
+        : undefined;
+      if (nextStatus === undefined) continue;
+      const currentStatus = statusByRequirement.get(requirementId);
+      if (!assertV2StatusTransition(currentStatus, nextStatus, requirementId, next)) return false;
+      statusByRequirement.set(requirementId, nextStatus);
+    }
+    return true;
+  }
+
   function assertV2Title(value, next) {
     const title = String(value || "").trim();
     if (!title) {
@@ -526,6 +548,8 @@ function createRoutes(rootDir) {
       return next(httpError(400, "EMPTY_EVENTS", "事件列表为空"));
     }
     if (!validateV2ProjectEvents(list, next)) return;
+    const currentState = getProjectState(rootDir, req.params.project) || { items: [] };
+    if (!validateV2ProjectStatusTransitions(currentState, list, next)) return;
 
     const actor = req.headers["x-actor"] || req.user?.username || "http";
     const stamped = list.map((e) => ({ ...e, actor: e.actor || actor }));

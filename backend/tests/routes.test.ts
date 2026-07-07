@@ -444,6 +444,39 @@ describe('POST /api/projects/:project/events', () => {
       code: 'INVALID_PRIORITY'
     });
   });
+
+  it('rejects terminal rollback at project event write boundary before appending', async () => {
+    const app = makeApp();
+    await createProject(app, 'p6');
+    const paths = projectPaths(tmpDir, 'p6');
+    appendEvents(paths.eventsPath, [
+      {
+        kind: 'req.new',
+        actor: 'test',
+        requirementId: 'REQ-0001',
+        title: '已完成需求',
+        status: 'done'
+      }
+    ]);
+
+    const res = await authReq(
+      request(app)
+        .post('/api/projects/p6/events')
+        .send({
+          events: [
+            {
+              kind: 'req.status',
+              requirementId: 'REQ-0001',
+              status: 'todo'
+            }
+          ]
+        })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_STATUS_TRANSITION');
+    expect(readEvents(paths.eventsPath).map((event) => event.kind)).toEqual(['req.new']);
+  });
 });
 
 describe('V2 requirement REST APIs', () => {
