@@ -228,6 +228,15 @@ describe('AI 对话路由（Sprint 2）', () => {
     expect(read.body.messages[1]).toMatchObject({ role: 'assistant', content: '你好，世界' });
     expect(read.body.messages[1].tokensIn).toBe(3);
     expect(read.body.messages[1].tokensOut).toBe(4);
+
+    const messages = await authReq(
+      request(makeApp()).get(`/api/ai/conversations/${convId}/messages?project=default`)
+    );
+    expect(messages.status).toBe(200);
+    expect(messages.body).toMatchObject({ ok: true, conversationId: convId });
+    expect(messages.body.messages).toHaveLength(2);
+    expect(messages.body.messages[0]).toMatchObject({ role: 'user', content: '你好' });
+    expect(messages.body.messages[1]).toMatchObject({ role: 'assistant', content: '你好，世界' });
   });
 
   it('POST 流式：provider 报错时 SSE error 事件', async () => {

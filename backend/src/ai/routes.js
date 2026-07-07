@@ -196,6 +196,19 @@ function createAiRoutes(rootDir) {
     }
   });
 
+  router.get("/conversations/:id/messages", (req, res, next) => {
+    try {
+      const projectId = readExistingProjectId(rootDir, req, next);
+      if (!projectId) return;
+      const conv = getOwnedConversation(rootDir, projectId, req.params.id, req);
+      if (!conv) return next(httpError(404, "AI_CONVERSATION_NOT_FOUND", "会话不存在"));
+      const messages = store.listMessages(rootDir, projectId, req.params.id);
+      res.json({ ok: true, conversationId: req.params.id, messages });
+    } catch (err) {
+      next(httpError(500, "AI_MESSAGES_READ_FAILED", err.message));
+    }
+  });
+
   // ===== 流式（Sprint 2 主用）=====
   router.post(
     "/conversations/:id/messages/stream",
