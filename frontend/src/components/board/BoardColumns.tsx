@@ -69,6 +69,7 @@ export function BoardColumns({ items, selectedId, isInitialLoading, onOpen }: Pr
                           {item.priority || 'P3'}
                         </span>
                         <span className="card-id">{item.id}</span>
+                        <span className="card-owner">{item.owner || '未分配'}</span>
                         {item.updatedAt && <span className="card-updated">{item.updatedAt}</span>}
                       </footer>
                     </article>

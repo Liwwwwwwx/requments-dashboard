@@ -1984,6 +1984,16 @@ body {
   letter-spacing: 0.02em;
 }
 
+.card-owner {
+  min-width: 0;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
 .card-updated {
   margin-left: auto;
   font-family: var(--font-mono);

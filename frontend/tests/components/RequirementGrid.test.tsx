@@ -109,6 +109,9 @@ describe('RequirementGrid', () => {
     expect(screen.getByText('最小登录体验')).toBeInTheDocument();
     expect(screen.getByText('AI 小助手')).toBeInTheDocument();
     expect(screen.getByText('项目列表')).toBeInTheDocument();
+    const loginCard = screen.getByText('登录').closest('article');
+    expect(loginCard).toBeTruthy();
+    expect(within(loginCard as HTMLElement).getByText('pm')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('优先级'), { target: { value: 'P0' } });
     expect(screen.getByText('登录')).toBeInTheDocument();
