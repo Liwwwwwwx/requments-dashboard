@@ -109,6 +109,35 @@ function makeStreamWithToolCall() {
   return stream;
 }
 
+function makeStreamWithInvalidToolCall() {
+  const argsObject = {
+    rationale: '尝试创建旧版任务',
+    events: [
+      {
+        kind: 'task.new',
+        requirementId: 'REQ-0001',
+        taskId: 'FE-1',
+        title: '旧版任务'
+      }
+    ]
+  };
+  const args = JSON.stringify(argsObject);
+  const encoder = new TextEncoder();
+  const lines = [
+    'data: {"choices":[{"delta":{"content":"我先给出建议"}}]}\n\n',
+    `data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"propose_events","arguments":${JSON.stringify(args)}}}]}}]}\n\n`,
+    'data: {"choices":[{"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":20,"completion_tokens":30,"total_tokens":50}}\n\n',
+    'data: [DONE]\n\n'
+  ].join('');
+
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(lines));
+      controller.close();
+    }
+  });
+}
+
 describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-sprint3-test-'));
@@ -159,6 +188,37 @@ describe('AI 对话 Sprint 3（工具调用 + 提案应用）', () => {
     expect(list.body.proposals).toHaveLength(1);
     expect(list.body.proposals[0].id).toBe(proposalId);
     expect(list.body.proposals[0].status).toBe('pending');
+  });
+
+  it('流式：模型返回非法 tool_calls 时不写入 ai_proposals', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      body: makeStreamWithInvalidToolCall()
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const create = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=default').send({})
+    );
+    const convId = create.body.conversation.id;
+
+    const stream = await authReq(
+      request(makeApp())
+        .post(`/api/ai/conversations/${convId}/messages/stream?project=default`)
+        .send({ text: '帮我创建旧版任务' })
+    );
+
+    expect(stream.status).toBe(200);
+    expect(stream.text).toContain('event: error');
+    expect(stream.text).toContain('AI_PROPOSAL_INVALID');
+    expect(stream.text).not.toContain('event: proposal');
+    expect(stream.text).not.toContain('"proposalId"');
+
+    const list = await authReq(
+      request(makeApp()).get(`/api/ai/conversations/${convId}/proposals?project=default`)
+    );
+    expect(list.body.proposals).toEqual([]);
   });
 
   it('apply 提案：需求级事件写入 events.db，state.json 重新生成', async () => {
