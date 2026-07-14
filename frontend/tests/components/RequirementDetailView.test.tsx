@@ -192,7 +192,7 @@ describe('RequirementDetailView', () => {
           type: 'feature',
           week: '2026-W28',
           dueDate: '2026-07-31'
-        }}
+        } as Requirement & { type: string; week: string; dueDate: string }}
         project="alpha"
       />
     );
@@ -213,7 +213,7 @@ describe('RequirementDetailView', () => {
           ...requirement,
           links: [{ href: 'https://example.com/spec', label: '旧版文档' }],
           sources: ['legacy-doc']
-        }}
+        } as Requirement & { links: Array<{ href: string; label: string }>; sources: string[] }}
         project="alpha"
       />
     );
@@ -240,6 +240,9 @@ describe('RequirementDetailView', () => {
             }
           ],
           taskStats: { total: 1, done: 0, active: 0, blocked: 1 }
+        } as Requirement & {
+          tasks: Array<{ taskId: string; role: string; title: string; status: string; agent: string }>;
+          taskStats: { total: number; done: number; active: number; blocked: number };
         }}
         project="alpha"
       />

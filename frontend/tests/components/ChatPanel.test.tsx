@@ -230,12 +230,12 @@ describe('ChatPanel', () => {
         abort: vi.fn(),
         promise: new Promise((_, reject) => {
           setTimeout(() => {
-            handlers.onStart?.({
+            handlers?.onStart?.({
               messageId: 'msg-a',
               conversationId,
               model: 'deepseek-chat'
             });
-            handlers.onError?.({
+            handlers?.onError?.({
               code: 'AI_PROPOSAL_INVALID',
               message: '模型返回的建议事件不符合 V2 写入范围'
             });
@@ -285,24 +285,27 @@ describe('ChatPanel', () => {
         abort: vi.fn(),
         promise: new Promise((resolve) => {
           setTimeout(() => {
-            handlers.onStart?.({
+            handlers?.onStart?.({
               messageId: 'msg-a',
               conversationId,
               model: 'deepseek-chat'
             });
-            handlers.onProposal?.({
+            handlers?.onProposal?.({
               proposalId: 'proposal-1',
               rationale: '推进状态',
               events: [{ kind: 'req.status', requirementId: 'REQ-0001', status: 'doing' }],
               errors: null
             });
-            handlers.onProposal?.({
+            handlers?.onProposal?.({
               proposalId: 'proposal-2',
               rationale: '补充备注',
               events: [{ kind: 'note.add', requirementId: 'REQ-0001', text: '补充验收口径' }],
               errors: null
             });
-            handlers.onDone?.({ message: assistantMessage });
+            handlers?.onDone?.({
+              message: assistantMessage,
+              usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 }
+            });
             resolve({
               message: assistantMessage,
               usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 }
