@@ -163,7 +163,7 @@ describe('AppShell', () => {
     });
   });
 
-  it('顶栏展示当前项目名称', () => {
+  it('渲染需求看板导航入口', () => {
     vi.mocked(useRequirements).mockReturnValue({
       project: 'alpha',
       projects: [{ id: 'alpha', name: 'Alpha 项目' }],
@@ -177,7 +177,6 @@ describe('AppShell', () => {
 
     render(<AppShell project="alpha" />);
 
-    const projectScope = screen.getByLabelText('当前项目');
-    expect(within(projectScope).getByText('Alpha 项目')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /需求看板/ })).toBeInTheDocument();
   });
 });

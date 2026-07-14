@@ -155,7 +155,7 @@ describe('ChatPanel', () => {
     expect(await screen.findByRole('button', { name: '总结项目' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '拆下一步' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '需求草稿' })).toBeInTheDocument();
-    expect(screen.getByText('建议变更')).toBeInTheDocument();
+    expect(screen.getByText('允许建议变更')).toBeInTheDocument();
     expect(screen.queryByText('工具')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '推进 FE-1' })).not.toBeInTheDocument();
 
