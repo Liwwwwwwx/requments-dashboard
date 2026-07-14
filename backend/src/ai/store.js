@@ -8,7 +8,7 @@
  *   - ai_messages
  *   - ai_proposals
  *
- * 关键原则：AI 对话本身不进 events.jsonl，不污染事实源。
+ * 关键原则：AI 对话本身不写入事实事件表，不污染项目需求状态。
  */
 
 const path = require("path");
@@ -93,7 +93,7 @@ function createConversation(rootDir, projectId, input) {
         (id, user_id, project_id, requirement_id, title, model, account_id, created_at, updated_at)
       VALUES (@id, @user_id, @project_id, @requirement_id, @title, @model, @account_id, @created_at, @updated_at)
     `).run(conv);
-    return conv;
+    return rowToConversation(conv);
   } finally {
     db.close();
   }
@@ -192,11 +192,21 @@ function renameConversation(rootDir, projectId, conversationId, newTitle) {
  * 在某项目下查找同名（不区分大小写 / 忽略空白）会话。
  * 返回除 excludeId 之外的命中。
  */
-function findDuplicateTitle(rootDir, projectId, title, excludeId) {
+function findDuplicateTitle(rootDir, projectId, title, excludeId, userId) {
   const trimmed = String(title || "").trim().toLowerCase();
   if (!trimmed) return null;
   const db = openAiDb(rootDir, projectId);
   try {
+    if (userId) {
+      const rows = db
+        .prepare(
+          excludeId
+            ? "SELECT id, title FROM ai_conversations WHERE user_id = ? AND id != ? AND lower(trim(title)) = ?"
+            : "SELECT id, title FROM ai_conversations WHERE user_id = ? AND lower(trim(title)) = ?"
+        )
+        .all(...(excludeId ? [userId, excludeId, trimmed] : [userId, trimmed]));
+      return rows[0] || null;
+    }
     const rows = db
       .prepare(
         excludeId

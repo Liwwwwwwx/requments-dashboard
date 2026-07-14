@@ -1,8 +1,12 @@
 'use client';
 
-import { AuthProvider } from '@/components/AuthProvider';
+import { AuthProvider, RouteGuard } from '@/components/AuthProvider';
 import type { ReactNode } from 'react';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <AuthProvider>
+      <RouteGuard>{children}</RouteGuard>
+    </AuthProvider>
+  );
 }

@@ -2,10 +2,12 @@ import type { ComponentType } from 'react';
 import {
   ApartmentOutlined,
   BarChartOutlined,
+  FileTextOutlined,
+  HomeOutlined,
+  MessageOutlined,
+  ProjectOutlined,
   SettingOutlined,
-  TableOutlined,
-  FieldTimeOutlined,
-  RobotOutlined
+  TableOutlined
 } from '@ant-design/icons';
 
 /** 模块上线状态：ready 可用，soon 预留（导航中可见但不可进入）。 */
@@ -26,8 +28,8 @@ export interface ModuleNavItem {
 }
 
 /**
- * 应用级模块导航。新增业务模块 = 在此追加一条 + 提供对应路由页面。
- * 看板已可用；仪表盘、管理后台先占位（status: 'soon'）。
+ * 全局侧栏只表达产品能力，不把项目列表混入其中。
+ * 项目是各业务模块内的工作范围，由模块页面自行切换。
  */
 export const MODULE_NAV: ModuleNavItem[] = [
   {
@@ -39,28 +41,58 @@ export const MODULE_NAV: ModuleNavItem[] = [
     match: (pathname, p) => pathname === `/p/${p}` || pathname.startsWith(`/p/${p}/r/`)
   },
   {
-    key: 'ai',
-    label: 'AI 对话',
-    icon: RobotOutlined,
-    status: 'ready',
-    path: (p) => `/p/${p}/ai`,
-    match: (pathname, p) => pathname.startsWith(`/p/${p}/ai`)
+    key: 'documents',
+    label: '文档中心',
+    icon: FileTextOutlined,
+    status: 'soon',
+    path: () => '#',
+    match: () => false
   },
   {
-    key: 'dashboard',
-    label: '数据仪表盘',
+    key: 'insights',
+    label: '数据分析',
     icon: BarChartOutlined,
     status: 'soon',
-    path: (p) => `/p/${p}/dashboard`,
-    match: (pathname, p) => pathname.startsWith(`/p/${p}/dashboard`)
+    path: () => '#',
+    match: () => false
+  }
+];
+
+export const WORKSPACE_NAV: ModuleNavItem[] = [
+  {
+    key: 'overview',
+    label: '概览',
+    icon: HomeOutlined,
+    status: 'soon',
+    path: () => '#',
+    match: () => false
   },
   {
-    key: 'admin',
-    label: '管理后台',
-    icon: SettingOutlined,
+    key: 'chat',
+    label: '聊天',
+    icon: MessageOutlined,
+    status: 'ready',
+    path: () => '#',
+    match: () => false
+  }
+];
+
+export const MANAGEMENT_NAV: ModuleNavItem[] = [
+  {
+    key: 'projects',
+    label: '项目管理',
+    icon: ProjectOutlined,
     status: 'soon',
-    path: (p) => `/p/${p}/admin`,
-    match: (pathname, p) => pathname.startsWith(`/p/${p}/admin`)
+    path: () => '#',
+    match: () => false
+  },
+  {
+    key: 'project-settings',
+    label: '项目设置',
+    icon: SettingOutlined,
+    status: 'ready',
+    path: (p) => `/p/${p}/settings`,
+    match: (pathname, p) => pathname.startsWith(`/p/${p}/settings`)
   }
 ];
 
@@ -74,6 +106,5 @@ export interface BoardViewItem {
 
 export const BOARD_VIEWS: BoardViewItem[] = [
   { key: 'board', label: '看板', icon: ApartmentOutlined, status: 'ready' },
-  { key: 'list', label: '列表', icon: TableOutlined, status: 'ready' },
-  { key: 'timeline', label: '时间线', icon: FieldTimeOutlined, status: 'ready' }
+  { key: 'list', label: '列表', icon: TableOutlined, status: 'ready' }
 ];

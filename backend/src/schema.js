@@ -25,7 +25,7 @@ const Role = z.enum([
   "general"
 ]);
 
-const RequirementStatus = z.enum(["todo", "doing", "paused", "done"]);
+const RequirementStatus = z.enum(["todo", "doing", "blocked", "done"]);
 const TaskStatus = z.enum(["todo", "claimed", "working", "done", "accepted", "blocked"]);
 const Priority = z.enum(["P0", "P1", "P2"]);
 
@@ -87,6 +87,12 @@ function validateEvent(input) {
   }
   if (event.kind.startsWith("task.") && (!event.requirementId || !event.taskId)) {
     throw new Error(`事件校验失败: ${event.kind} 必须同时包含 requirementId 和 taskId`);
+  }
+  if ((event.kind === "req.new" || event.kind === "req.status" || event.kind === "req.patch") && event.status !== undefined) {
+    const status = RequirementStatus.safeParse(event.status);
+    if (!status.success) {
+      throw new Error(`事件校验失败: status 必须是 todo / doing / blocked / done 之一，实际 ${event.status}`);
+    }
   }
 
   return event;

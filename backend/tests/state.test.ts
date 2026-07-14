@@ -14,9 +14,22 @@ describe('buildState', () => {
       {
         kind: 'req.new',
         requirementId: 'REQ-0001',
+        feature: 'legacy-category',
         title: '登录',
         summary: '用户登录',
+        requirementType: 'feature',
+        week: '2026-W28',
+        dueDate: '2026-07-31',
+        links: [{ href: 'https://example.com/spec', label: '旧文档' }],
+        sources: ['legacy-doc'],
+        detail: {
+          goal: '用户可以登录系统',
+          next: '确认错误提示',
+          scope: ['旧范围'],
+          nonGoals: ['旧不做范围']
+        },
         priority: 'P1',
+        updatedAt: '2026-07-07',
         actor: 'a'
       }
     ];
@@ -27,9 +40,26 @@ describe('buildState', () => {
     expect(req.title).toBe('登录');
     expect(req.priority).toBe('P1');
     expect(req.status).toBe('todo');
-    expect(req.tasks).toEqual([]);
-    expect(req.taskStats).toEqual({ total: 0, done: 0, active: 0, blocked: 0 });
-    expect(req.contract).toEqual({ ready: false, endpoints: [] });
+    expect(req.createdBy).toBe('a');
+    expect(req.createdAt).toBe('2026-07-07');
+    expect(req.updatedAt).toBe('2026-07-07');
+    expect(req).not.toHaveProperty('feature');
+    expect(req).not.toHaveProperty('workflowStatus');
+    expect(req).not.toHaveProperty('type');
+    expect(req).not.toHaveProperty('week');
+    expect(req).not.toHaveProperty('dueDate');
+    expect(req).not.toHaveProperty('links');
+    expect(req).not.toHaveProperty('sources');
+    expect(req).not.toHaveProperty('tasks');
+    expect(req).not.toHaveProperty('taskStats');
+    expect(req).not.toHaveProperty('contract');
+    expect(req).not.toHaveProperty('needsContract');
+    expect(req.detail).toEqual({
+      goal: '用户可以登录系统',
+      next: '确认错误提示'
+    });
+    expect(req.detail).not.toHaveProperty('scope');
+    expect(req.detail).not.toHaveProperty('nonGoals');
   });
 
   it('applies req.status updates', () => {
@@ -51,7 +81,7 @@ describe('buildState', () => {
     ];
     const state = buildState(events);
     expect(state.items[0].status).toBe('doing');
-    expect(state.items[0].workflowStatus).toBe('frontend-working');
+    expect(state.items[0]).not.toHaveProperty('workflowStatus');
   });
 
   it('applies req.patch (partial update)', () => {
@@ -77,7 +107,7 @@ describe('buildState', () => {
     expect(state.items[0].priority).toBe('P0');
   });
 
-  it('appends tasks via task.new and updates via task.status', () => {
+  it('replays legacy task events without exposing task fields', () => {
     const events = [
       {
         kind: 'req.new',
@@ -122,14 +152,11 @@ describe('buildState', () => {
     ];
     const state = buildState(events);
     const req = state.items[0];
-    expect(req.tasks).toHaveLength(2);
-    // sorted by taskId: FE-1 then QA-1
-    expect(req.tasks[0].taskId).toBe('FE-1');
-    expect(req.tasks[1].taskId).toBe('QA-1');
-    expect(req.taskStats).toEqual({ total: 2, done: 1, active: 0, blocked: 1 });
+    expect(req).not.toHaveProperty('tasks');
+    expect(req).not.toHaveProperty('taskStats');
   });
 
-  it('upserts task when task.new is replayed', () => {
+  it('keeps legacy task upsert compatibility out of the rendered requirement', () => {
     const events = [
       {
         kind: 'req.new',
@@ -157,12 +184,10 @@ describe('buildState', () => {
       }
     ];
     const state = buildState(events);
-    expect(state.items[0].tasks).toHaveLength(1);
-    expect(state.items[0].tasks[0].title).toBe('new title');
-    expect(state.items[0].tasks[0].scope).toBe('updated scope');
+    expect(state.items[0]).not.toHaveProperty('tasks');
   });
 
-  it('sets contract via contract.set', () => {
+  it('replays legacy contract events without exposing contract fields', () => {
     const events = [
       {
         kind: 'req.new',
@@ -183,11 +208,10 @@ describe('buildState', () => {
     ];
     const state = buildState(events);
     const req = state.items[0];
-    expect(req.contract.ready).toBe(true);
-    expect(req.contract.endpoints).toHaveLength(2);
+    expect(req).not.toHaveProperty('contract');
   });
 
-  it('marks contract as not ready when endpoints is empty', () => {
+  it('keeps empty legacy contracts out of the rendered requirement', () => {
     const events = [
       {
         kind: 'req.new',
@@ -204,7 +228,7 @@ describe('buildState', () => {
       }
     ];
     const state = buildState(events);
-    expect(state.items[0].contract.ready).toBe(false);
+    expect(state.items[0]).not.toHaveProperty('contract');
   });
 
   it('appends notes via note.add', () => {
@@ -260,12 +284,12 @@ describe('sorting', () => {
     actor: 'a'
   });
 
-  it('sorts by status (todo → doing → paused → done)', () => {
+  it('sorts by status (todo → doing → blocked → done)', () => {
     const events = [
       makeReq('REQ-0001', 'done', 'P1', '2026-01-04'),
       makeReq('REQ-0002', 'todo', 'P1', '2026-01-04'),
       makeReq('REQ-0003', 'doing', 'P1', '2026-01-04'),
-      makeReq('REQ-0004', 'paused', 'P1', '2026-01-04')
+      makeReq('REQ-0004', 'blocked', 'P1', '2026-01-04')
     ];
     const state = buildState(events);
     expect(state.items.map((i) => i.id)).toEqual([

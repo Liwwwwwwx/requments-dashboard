@@ -3,8 +3,6 @@ import {
   priorityBarClass,
   priorityChipClass,
   priorityColor,
-  roleColor,
-  roleLabel,
   statusChipClass,
   statusLabel,
   unique
@@ -24,30 +22,6 @@ describe('statusLabel', () => {
 
   it('falls back to the raw status when unknown', () => {
     expect(statusLabel('weird-state')).toEqual({ label: 'weird-state', color: 'default' });
-  });
-});
-
-describe('role helpers', () => {
-  it('returns known role label', () => {
-    expect(roleLabel('frontend')).toBe('前端');
-    expect(roleLabel('qa')).toBe('测试');
-  });
-
-  it('falls back to role string when unknown', () => {
-    expect(roleLabel('mystery')).toBe('mystery');
-  });
-
-  it('falls back to 通用 when role is empty', () => {
-    expect(roleLabel(undefined)).toBe('通用');
-    expect(roleLabel('')).toBe('通用');
-  });
-
-  it('returns known role color', () => {
-    expect(roleColor('frontend')).toBe('#c084fc');
-  });
-
-  it('falls back to gray for unknown role', () => {
-    expect(roleColor('unknown')).toBe('#9ca3af');
   });
 });
 

@@ -6,29 +6,73 @@ describe('ai/tools/propose-events', () => {
     expect(PROPOSE_EVENTS_TOOL.type).toBe('function');
     expect(PROPOSE_EVENTS_TOOL.function.name).toBe('propose_events');
     expect(PROPOSE_EVENTS_TOOL.function.parameters.required).toContain('events');
+    const kinds = PROPOSE_EVENTS_TOOL.function.parameters.properties.events.items.properties.kind.enum;
+    expect(kinds).toEqual(['req.status', 'req.patch', 'note.add']);
   });
 
   it('validateProposedEvents 接受合法事件', () => {
     const events = [
-      { kind: 'req.new', requirementId: 'REQ-0001', title: 'x', summary: 'y', priority: 'P1' },
-      { kind: 'task.status', requirementId: 'REQ-0001', taskId: 'FE-1', status: 'working' }
+      { kind: 'req.status', requirementId: 'REQ-0001', status: 'doing' },
+      { kind: 'req.patch', requirementId: 'REQ-0001', summary: '更新描述', priority: 'P1' },
+      { kind: 'note.add', requirementId: 'REQ-0001', text: '建议先补登录错误提示' }
     ];
     const r = validateProposedEvents(events);
     expect(r.valid).toBe(true);
     expect(r.errors).toBeUndefined();
-    expect(r.events).toHaveLength(2);
+    expect(r.events).toHaveLength(3);
+  });
+
+  it('validateProposedEvents 拒绝非 MVP 提案事件', () => {
+    const r = validateProposedEvents([
+      { kind: 'req.new', requirementId: 'REQ-0002', title: '新需求', summary: '不应由 AI 直接创建' },
+      { kind: 'task.status', requirementId: 'REQ-0001', taskId: 'FE-1', status: 'working' },
+      { kind: 'contract.set', requirementId: 'REQ-0001', endpoints: [] }
+    ]);
+    expect(r.valid).toBe(false);
+    expect(r.errors).toHaveLength(3);
+    expect(r.errors.join('\n')).toContain('不允许');
   });
 
   it('validateProposedEvents 拒绝非法事件', () => {
     const events = [
-      { kind: 'req.new', requirementId: 'BAD', title: 'x' }, // requirementId 非法
-      { kind: 'task.status', requirementId: 'REQ-0001', taskId: 'BAD-XX', status: 'working' } // taskId 非法
+      { kind: 'req.status', requirementId: 'BAD', status: 'doing' },
+      { kind: 'note.add', requirementId: 'REQ-0001' },
+      { kind: 'req.status', requirementId: 'REQ-0001' },
+      { kind: 'req.patch', requirementId: 'REQ-0001', priority: 'P9' },
+      { kind: 'req.patch', requirementId: 'REQ-0001', title: '   ' }
     ];
     const r = validateProposedEvents(events);
     expect(r.valid).toBe(false);
-    expect(r.errors).toHaveLength(2);
+    expect(r.errors).toHaveLength(5);
     expect(r.errors[0]).toContain('requirementId');
-    expect(r.errors[1]).toContain('taskId');
+    expect(r.errors[1]).toContain('text');
+    expect(r.errors[2]).toContain('status');
+    expect(r.errors[3]).toContain('priority');
+    expect(r.errors[4]).toContain('title');
+  });
+
+  it('validateProposedEvents 拒绝旧版详情字段和非法验收点结构', () => {
+    const r = validateProposedEvents([
+      {
+        kind: 'req.patch',
+        requirementId: 'REQ-0001',
+        detail: {
+          goal: '补齐登录体验',
+          scope: ['用户名密码登录'],
+          nonGoals: ['注册']
+        }
+      },
+      {
+        kind: 'req.patch',
+        requirementId: 'REQ-0001',
+        acceptance: ['登录成功后进入项目页', { text: '非法验收点' }]
+      }
+    ]);
+
+    expect(r.valid).toBe(false);
+    expect(r.errors).toHaveLength(2);
+    expect(r.errors[0]).toContain('detail.scope');
+    expect(r.errors[1]).toContain('acceptance');
   });
 
   it('validateProposedEvents 拒绝非数组', () => {

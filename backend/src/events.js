@@ -44,7 +44,7 @@ function readEvents(eventsPath) {
   try {
     const rows = db
       .prepare(
-        "SELECT payload FROM events ORDER BY ts ASC, id ASC"
+        "SELECT payload FROM events ORDER BY ts ASC, rowid ASC"
       )
       .all();
     return rows.map((row) => rowToEvent(row));

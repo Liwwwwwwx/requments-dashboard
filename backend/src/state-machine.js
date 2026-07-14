@@ -7,7 +7,7 @@
  *   - requirement.done   → 任何其他状态
  *   - task.accepted      → 任何其他状态
  *
- * 中间状态（todo/doing/paused/working/blocked/claimed/done）之间允许自由转移，
+ * 中间状态（todo/doing/blocked/working/claimed/done）之间允许自由转移，
  * 这样 CLI 一次性把 task 标记为 done、UI 直接拖到 done 列都不会被拒绝。
  */
 

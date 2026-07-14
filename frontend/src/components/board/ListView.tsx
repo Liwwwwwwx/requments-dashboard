@@ -12,20 +12,18 @@ interface Props {
   onOpen: (id: string) => void;
 }
 
-type SortKey = 'priority' | 'title' | 'status' | 'owner' | 'week' | 'dueDate' | 'updatedAt';
+type SortKey = 'priority' | 'title' | 'status' | 'owner' | 'updatedAt';
 type SortDir = 'asc' | 'desc';
 
 const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2 };
-const STATUS_ORDER: Record<string, number> = { todo: 0, doing: 1, paused: 2, done: 3 };
+const STATUS_ORDER: Record<string, number> = { todo: 0, doing: 1, blocked: 2, done: 3 };
 
 const COLUMNS: { key: SortKey; label: string; sortable: boolean; className?: string }[] = [
   { key: 'priority', label: '优先级', sortable: true, className: 'col-prio' },
   { key: 'title', label: '需求', sortable: true, className: 'col-title' },
   { key: 'status', label: '状态', sortable: true, className: 'col-status' },
   { key: 'owner', label: '负责人', sortable: true, className: 'col-owner' },
-  { key: 'week', label: '周期', sortable: true, className: 'col-week' },
-  { key: 'updatedAt', label: '更新', sortable: true, className: 'col-date' },
-  { key: 'dueDate', label: '截止', sortable: true, className: 'col-date' }
+  { key: 'updatedAt', label: '更新', sortable: true, className: 'col-date' }
 ];
 
 function compare(a: Requirement, b: Requirement, key: SortKey): number {
@@ -38,10 +36,6 @@ function compare(a: Requirement, b: Requirement, key: SortKey): number {
       return a.title.localeCompare(b.title, 'zh');
     case 'owner':
       return (a.owner || '').localeCompare(b.owner || '', 'zh');
-    case 'week':
-      return (a.week || '').localeCompare(b.week || '');
-    case 'dueDate':
-      return (a.dueDate || '').localeCompare(b.dueDate || '');
     case 'updatedAt':
       return (a.updatedAt || '').localeCompare(b.updatedAt || '');
     default:
@@ -117,15 +111,11 @@ export function ListView({ items, selectedId, isInitialLoading, onOpen }: Props)
                 </th>
               );
             })}
-            <th className="col-progress">进度</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((item) => {
             const status = statusLabel(item.status as RequirementStatus);
-            const total = item.taskStats?.total || 0;
-            const done = item.taskStats?.done || 0;
-            const blocked = item.taskStats?.blocked || 0;
             return (
               <tr
                 key={item.id}
@@ -147,6 +137,7 @@ export function ListView({ items, selectedId, isInitialLoading, onOpen }: Props)
                 </td>
                 <td className="col-title">
                   <span className="list-title">{item.title}</span>
+                  {item.summary && <span className="list-summary">{item.summary}</span>}
                   <span className="list-id">{item.id}</span>
                 </td>
                 <td className="col-status">
@@ -156,17 +147,7 @@ export function ListView({ items, selectedId, isInitialLoading, onOpen }: Props)
                   </span>
                 </td>
                 <td className="col-owner">{item.owner || '—'}</td>
-                <td className="col-week list-mono">{item.week || '—'}</td>
                 <td className="col-date list-mono">{item.updatedAt || '—'}</td>
-                <td className="col-date list-mono">{item.dueDate || '—'}</td>
-                <td className="col-progress">
-                  <span className="list-progress">
-                    <span className="list-progress-text">
-                      {done}/{total}
-                    </span>
-                    {blocked > 0 && <span className="list-progress-blocked">阻塞 {blocked}</span>}
-                  </span>
-                </td>
               </tr>
             );
           })}

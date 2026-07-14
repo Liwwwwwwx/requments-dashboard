@@ -211,8 +211,12 @@ export function ConversationList({
   return (
     <aside className="conv-list">
       <header className="conv-list-header">
+        <div className="conv-list-title">
+          <span>会话</span>
+          <span>当前项目</span>
+        </div>
         <Button
-          type="primary"
+          type="text"
           icon={<PlusOutlined />}
           onClick={onNew}
           disabled={disabled}

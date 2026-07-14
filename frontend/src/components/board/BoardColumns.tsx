@@ -14,7 +14,7 @@ interface Props {
 const COLS: { key: RequirementStatus; label: string; tone: string }[] = [
   { key: 'todo', label: '待开始', tone: 'todo' },
   { key: 'doing', label: '进行中', tone: 'doing' },
-  { key: 'paused', label: '暂停', tone: 'paused' },
+  { key: 'blocked', label: '阻塞', tone: 'blocked' },
   { key: 'done', label: '完成', tone: 'done' }
 ];
 
@@ -48,8 +48,6 @@ export function BoardColumns({ items, selectedId, isInitialLoading, onOpen }: Pr
                   </div>
                 ))
               : col.items.map((item) => {
-                  const blocked = item.taskStats?.blocked || 0;
-                  const active = item.taskStats?.active || 0;
                   return (
                     <article
                       key={item.id}
@@ -65,23 +63,14 @@ export function BoardColumns({ items, selectedId, isInitialLoading, onOpen }: Pr
                       }}
                     >
                       <h4 className="card-title">{item.title}</h4>
+                      {item.summary && <p className="card-summary">{item.summary}</p>}
                       <footer className="card-meta">
                         <span className={`card-prio tone-${prioTone(item.priority)}`}>
                           {item.priority || 'P3'}
                         </span>
                         <span className="card-id">{item.id}</span>
-                        <span className="card-badges">
-                          {blocked > 0 && (
-                            <span className="card-badge is-blocked" title={`${blocked} 个阻塞任务`}>
-                              阻塞 {blocked}
-                            </span>
-                          )}
-                          {active > 0 && (
-                            <span className="card-badge" title={`${active} 个进行中任务`}>
-                              进行 {active}
-                            </span>
-                          )}
-                        </span>
+                        <span className="card-owner">{item.owner || '未分配'}</span>
+                        {item.updatedAt && <span className="card-updated">{item.updatedAt}</span>}
                       </footer>
                     </article>
                   );
