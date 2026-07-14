@@ -3,15 +3,21 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const refreshToken = request.cookies.get('refresh_token')?.value;
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
 
-  if (pathname === '/login' || pathname === '/version.json' || pathname.startsWith('/_next') || pathname.startsWith('/api')) {
+  if (
+    pathname === '/login'
+    || pathname === '/version.json'
+    || pathname.startsWith('/_next')
+    || pathname.startsWith('/api')
+    || pathname.startsWith('/images/')
+  ) {
     return NextResponse.next();
   }
 
   if (!refreshToken) {
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
+    loginUrl.searchParams.set('redirect', `${pathname}${search}`);
     return NextResponse.redirect(loginUrl);
   }
 

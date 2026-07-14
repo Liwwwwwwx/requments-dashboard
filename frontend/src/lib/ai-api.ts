@@ -43,6 +43,17 @@ export async function getAiConversation(
   );
 }
 
+export async function getAiMessages(
+  project: string,
+  conversationId: string
+): Promise<{ ok: true; conversationId: string; messages: AiMessage[] }> {
+  return fetchJson(
+    `/ai/conversations/${encodeURIComponent(
+      conversationId
+    )}/messages?project=${encodeURIComponent(project)}`
+  );
+}
+
 export async function createAiConversation(
   project: string,
   body: { requirementId?: string; title?: string; model?: string; accountId?: string } = {}
@@ -99,8 +110,6 @@ export function sendAiMessageStream(
     model?: string;
     accountId?: string;
     toolsEnabled?: boolean;
-    /** 用户私有 key（per-user 隔离，从 localStorage 读出） */
-    apiKey?: string;
   },
   handlers: {
     onUser?: (message: AiMessage) => void;
@@ -121,9 +130,6 @@ export function sendAiMessageStream(
       'Content-Type': 'application/json',
       Accept: 'text/event-stream'
     };
-    if (body.apiKey) {
-      headers['X-AI-Api-Key'] = body.apiKey;
-    }
     const res = await authFetch(
       `${API_BASE}/ai/conversations/${encodeURIComponent(
         conversationId

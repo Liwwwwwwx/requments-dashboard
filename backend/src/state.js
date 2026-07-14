@@ -7,12 +7,12 @@ const { assertRequirementTransition, assertTaskTransition } = require("./state-m
 const BOARD_STATUSES = [
   { key: "todo", label: "待开始", tone: "neutral" },
   { key: "doing", label: "进行中", tone: "active" },
-  { key: "paused", label: "暂停", tone: "warning" },
+  { key: "blocked", label: "阻塞", tone: "blocked" },
   { key: "done", label: "完成", tone: "success" }
 ];
 
 const DEFAULT_TYPE = "工程";
-const DEFAULT_OWNER = "需求协调 / 前端开发 / 后端开发 / 契约审查 / 测试用例";
+const DEFAULT_OWNER = "未分配";
 const DEFAULT_PRIORITY = "P1";
 
 function localDate() {
@@ -38,6 +38,13 @@ function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function renderDetail(detail) {
+  return {
+    goal: detail?.goal || "",
+    next: detail?.next || ""
+  };
+}
+
 function getOrCreateRequirement(state, id) {
   if (!state.requirements.has(id)) {
     state.requirements.set(id, {
@@ -51,6 +58,8 @@ function getOrCreateRequirement(state, id) {
       dueDate: "",
       owner: DEFAULT_OWNER,
       priority: DEFAULT_PRIORITY,
+      createdBy: "",
+      createdAt: "",
       updatedAt: localDate(),
       summary: "",
       detail: { goal: "", scope: [], nonGoals: [], next: "" },
@@ -93,6 +102,8 @@ function applyEvent(state, event) {
     req.dueDate = event.dueDate || localDate();
     req.owner = event.owner || DEFAULT_OWNER;
     req.priority = event.priority || DEFAULT_PRIORITY;
+    req.createdBy = event.createdBy || event.created_by || event.actor || "";
+    req.createdAt = event.createdAt || event.updatedAt || event.at || (event.ts ? new Date(event.ts).toISOString() : localDate());
     req.updatedAt = event.updatedAt || localDate();
     req.summary = event.summary || "";
     req.detail = {
@@ -227,28 +238,19 @@ function buildState(events) {
 
   const items = Array.from(state.requirements.values())
     .map((item) => {
-      const tasks = clone(item.tasks).sort((a, b) =>
-        String(a.taskId).localeCompare(String(b.taskId))
-      );
-      const taskStats = tasks.reduce(
-        (stats, task) => {
-          stats.total += 1;
-          if (task.status === "done" || task.status === "accepted") stats.done += 1;
-          if (task.status === "working" || task.status === "claimed") stats.active += 1;
-          if (task.status === "blocked") stats.blocked += 1;
-          return stats;
-        },
-        { total: 0, done: 0, active: 0, blocked: 0 }
-      );
-
       return {
-        ...item,
-        tasks,
-        taskStats,
-        contract: {
-          ready: Boolean(item.contract?.ready),
-          endpoints: normalizeArray(item.contract?.endpoints)
-        }
+        id: item.id,
+        title: item.title,
+        status: item.status,
+        owner: item.owner,
+        priority: item.priority,
+        createdBy: item.createdBy,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        summary: item.summary,
+        detail: renderDetail(item.detail),
+        acceptance: clone(normalizeArray(item.acceptance)),
+        notes: clone(normalizeArray(item.notes))
       };
     })
     .sort((a, b) => {

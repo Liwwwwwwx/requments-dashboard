@@ -6,8 +6,10 @@ import { Button, Input, Space, Spin, Switch, Tooltip, Typography } from 'antd';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
-  KeyOutlined,
+  FileTextOutlined,
+  FolderOpenOutlined,
   RedoOutlined,
+  RobotOutlined,
   StopOutlined
 } from '@ant-design/icons';
 import {
@@ -17,18 +19,16 @@ import {
   sendAiMessageStream
 } from '@/lib/ai-api';
 import type { AiMessage, AiProposal } from '@/lib/ai-types';
-import { getDeepSeekApiKey } from '@/lib/ai-key-store';
 import { MessageItem } from './MessageItem';
 import { ConversationList } from './ConversationList';
-import { ApiKeySettingsModal } from './ApiKeySettingsModal';
 
 const { TextArea } = Input;
 const { Text } = Typography;
 
 const QUICK_PROMPTS = [
-  { label: '总结阻塞', text: '请总结当前项目里所有阻塞的任务和需求。' },
-  { label: '推进 FE-1', text: '请把当前需求 REQ-0001 的 FE-1 任务状态推进到 working，并给一句推进说明。' },
-  { label: '生成验收点', text: '请为当前需求生成 3-5 条可测试的验收点。' }
+  { label: '总结项目', text: '请总结当前项目的需求现状，按状态、优先级和负责人列出重点。' },
+  { label: '拆下一步', text: '请基于当前项目或需求上下文，给出下一步推进建议，不要直接修改数据。' },
+  { label: '需求草稿', text: '请根据我的描述生成一份需求草稿，包含标题、描述、优先级和验收点。' }
 ];
 
 const STICK_TO_BOTTOM_THRESHOLD = 80;
@@ -37,9 +37,10 @@ interface Props {
   project: string;
   requirementId?: string;
   onProposalApplied?: () => void;
+  compact?: boolean;
 }
 
-export function ChatPanel({ project, requirementId, onProposalApplied }: Props) {
+export function ChatPanel({ project, requirementId, onProposalApplied, compact = false }: Props) {
   const router = useRouter();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiMessage[]>([]);
@@ -51,35 +52,27 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
   const [stickToBottom, setStickToBottom] = useState(true);
   /** 强制触发 ConversationList 重新拉取（用 counter 做依赖） */
   const [convListTick, setConvListTick] = useState(0);
-  const [keyModalOpen, setKeyModalOpen] = useState(false);
-  /** 本地是否有 user key（决定 toolbar 上 Key 按钮的状态点） */
-  const [hasUserKey, setHasUserKey] = useState<boolean | null>(null);
 
   const streamAbortRef = useRef<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastUserTextRef = useRef<string | null>(null);
 
-  // 检查本地是否有 user key
-  useEffect(() => {
-    setHasUserKey(Boolean(getDeepSeekApiKey()));
-    // key modal 关闭时再查一次
-    if (!keyModalOpen) {
-      const id = setTimeout(() => setHasUserKey(Boolean(getDeepSeekApiKey())), 100);
-      return () => clearTimeout(id);
-    }
-  }, [keyModalOpen]);
-
-  // 进入项目时，如果没有选中会话且列表非空，自动选第一个（按 updatedAt 倒序）
+  // 进入项目/需求时自动选会话：需求级入口只复用同一需求的历史会话。
   useEffect(() => {
     let cancelled = false;
+    setConversationId(null);
+    setMessages([]);
+    setProposals({});
+    setLastError(null);
+    lastUserTextRef.current = null;
     (async () => {
       try {
         const res = await listAiConversations(project);
         if (cancelled) return;
-        // 只在用户尚未手动选择时生效
-        if (!conversationId && res.conversations.length > 0) {
-          setConversationId(res.conversations[0].id);
-        }
+        const next = requirementId
+          ? res.conversations.find((conv) => conv.requirementId === requirementId)
+          : res.conversations[0];
+        setConversationId(next?.id || null);
       } catch {
         // 静默
       }
@@ -87,9 +80,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
     return () => {
       cancelled = true;
     };
-    // 只在 project 变化时触发；用户在已加载后切换会话不应被覆盖
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project]);
+  }, [project, requirementId]);
 
   // 加载历史消息
   useEffect(() => {
@@ -146,17 +137,9 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
 
   const sendMessage = useCallback(
     async (textToSend: string) => {
-      const userKey = getDeepSeekApiKey();
-      if (!userKey) {
-        setKeyModalOpen(true);
-        setLastError({
-          code: 'AI_KEY_MISSING',
-          message: '请先在右上角配置 DeepSeek API Key'
-        });
-        return;
-      }
       setLastError(null);
       setSending(true);
+      let streamErrorHandled = false;
       try {
         let cid = conversationId;
         if (!cid) {
@@ -186,8 +169,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
           {
             text: textToSend,
             model: 'deepseek-chat',
-            toolsEnabled,
-            apiKey: userKey
+            toolsEnabled
           },
           {
             onUser: (msg) => {
@@ -236,6 +218,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
               };
               setProposals((prev) => ({ ...prev, [p.proposalId]: proposal }));
               if (p.errors && p.errors.length > 0) {
+                streamErrorHandled = true;
                 setLastError({
                   code: 'AI_PROPOSAL_INVALID',
                   message: `建议事件校验失败：${p.errors.join('; ')}`
@@ -263,6 +246,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
               assistantPlaceholderId = null;
             },
             onError: (err) => {
+              streamErrorHandled = true;
               setLastError(err);
               setMessages((prev) =>
                 prev.map((m) =>
@@ -279,7 +263,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
         await stream.promise;
         setConvListTick((t) => t + 1);
       } catch (e) {
-        if (!lastError) {
+        if (!streamErrorHandled) {
           setLastError({
             code: 'AI_NETWORK_ERROR',
             message: e instanceof Error ? e.message : '发送失败'
@@ -290,7 +274,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
         streamAbortRef.current = null;
       }
     },
-    [conversationId, project, requirementId, toolsEnabled, lastError]
+    [conversationId, project, requirementId, toolsEnabled]
   );
 
   const handleSend = async () => {
@@ -335,105 +319,79 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
   };
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
-  const showKeyAlert =
-    hasUserKey === false &&
-    (messages.length > 0 || lastError?.code === 'AI_KEY_MISSING');
 
   return (
-    <div className="ai-panel">
-      <ConversationList
-        project={project}
-        selectedId={conversationId}
-        onSelect={handleSelectConversation}
-        onNew={handleNewConversation}
-        onDeleted={(id) => {
-          // 删的是当前正在看的会话 → 清空主面板
-          if (id === conversationId) {
-            setConversationId(null);
-            setMessages([]);
-            setProposals({});
-            setLastError(null);
-            lastUserTextRef.current = null;
-          }
-          setConvListTick((t) => t + 1);
-        }}
-        disabled={sending}
-        // 传 key 用作触发 refresh
-        key={convListTick}
-      />
+    <div className={`ai-panel ${compact ? 'ai-panel-compact' : ''}`}>
+      {!compact && (
+        <ConversationList
+          project={project}
+          selectedId={conversationId}
+          onSelect={handleSelectConversation}
+          onNew={handleNewConversation}
+          onDeleted={(id) => {
+            // 删的是当前正在看的会话 → 清空主面板
+            if (id === conversationId) {
+              setConversationId(null);
+              setMessages([]);
+              setProposals({});
+              setLastError(null);
+              lastUserTextRef.current = null;
+            }
+            setConvListTick((t) => t + 1);
+          }}
+          disabled={sending}
+          // 传 key 用作触发 refresh
+          key={convListTick}
+        />
+      )}
 
       <div className="ai-main">
         <div className="ai-panel-toolbar">
+          <div className="ai-toolbar-title">
+            <span className="ai-toolbar-heading">AI 助手</span>
+            <span className="ai-toolbar-context">
+              <FolderOpenOutlined />
+              {project}
+            </span>
+            {requirementId && (
+              <span className="ai-toolbar-context">
+                <FileTextOutlined />
+                {requirementId}
+              </span>
+            )}
+          </div>
           <Space size={6} align="center">
             <span className="ai-model-dot" />
             <Text className="ai-toolbar-label">deepseek-chat</Text>
-            <span className="ai-toolbar-sep" />
-            <Tooltip
-              title={
-                hasUserKey
-                  ? '已配置 Key · 点击修改'
-                  : '点击配置 DeepSeek API Key'
-              }
-            >
-              <button
-                type="button"
-                className={`ai-key-chip ${hasUserKey ? 'is-set' : 'is-empty'}`}
-                onClick={() => setKeyModalOpen(true)}
-                aria-label="配置 Key"
-              >
-                <KeyOutlined />
-                <span>{hasUserKey ? 'Key 已配置' : '配置 Key'}</span>
-              </button>
-            </Tooltip>
           </Space>
         </div>
-
-        {showKeyAlert && (
-          <div className="ai-key-banner">
-            <Text type="warning">
-              你还没有配置 DeepSeek API Key。AI 对话需要它才能工作。
-            </Text>
-            <Button
-              size="small"
-              type="primary"
-              icon={<KeyOutlined />}
-              onClick={() => setKeyModalOpen(true)}
-            >
-              立即配置
-            </Button>
-          </div>
-        )}
 
         <div className="ai-panel-scroll" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="ai-panel-empty">
               <div className="ai-panel-empty-icon">
-                <Spin size="large" />
+                <RobotOutlined />
               </div>
-              <div className="ai-panel-empty-title">开始与 DeepSeek 对话</div>
+              <div className="ai-panel-empty-title">从这里开始工作</div>
               <Text type="secondary" style={{ fontSize: 13 }}>
-                {hasUserKey === false
-                  ? '请先点击右上角"配置 Key"，粘贴你的 DeepSeek API Key。'
-                  : requirementId
-                    ? `已自动绑定到 ${requirementId}`
-                    : '支持自然语言提问、需求摘要、推进建议'}
+                {requirementId
+                  ? `已自动绑定到 ${requirementId}`
+                  : '围绕当前项目梳理需求、制定下一步或生成草稿'}
               </Text>
-              {hasUserKey && (
-                <Space wrap style={{ marginTop: 16, justifyContent: 'center' }}>
-                  {QUICK_PROMPTS.map((p) => (
-                    <Button
-                      key={p.label}
-                      size="small"
-                      disabled={sending}
-                      onClick={() => {
-                        setText(p.text);
-                      }}
-                    >
-                      {p.label}
-                    </Button>
-                  ))}
-                </Space>
-              )}
+              <Space wrap className="ai-quick-prompts">
+                {QUICK_PROMPTS.map((p) => (
+                  <Button
+                    key={p.label}
+                    size="small"
+                    disabled={sending}
+                    onClick={() => {
+                      setText(p.text);
+                    }}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </Space>
             </div>
           ) : (
             <div className="msg-list" role="log" aria-live="polite">
@@ -458,12 +416,10 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
                         ? handleRegenerate
                         : undefined
                     }
-                    onProposalApplied={() => {
+                    onProposalApplied={(proposalId) => {
                       setProposals((prev) => ({
                         ...prev,
-                        ...Object.fromEntries(
-                          Object.entries(prev).map(([k, v]) => [k, { ...v, status: 'applied' as const }])
-                        )
+                        [proposalId]: { ...prev[proposalId], status: 'applied' as const }
                       }));
                       try {
                         router.refresh();
@@ -514,23 +470,25 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
               placeholder={
                 sending
                   ? '正在生成中…'
-                  : hasUserKey === false
-                    ? '请先配置 Key…'
-                    : '发消息给 DeepSeek'
+                  : '问问 AI，或描述你想推进的工作'
               }
-              disabled={sending || hasUserKey === false}
+              disabled={sending}
               variant="borderless"
             />
             <div className="ai-input-toolbar">
               <div className="ai-input-toolbar-left">
-                <Tooltip title="开启后 AI 可调用 propose_events 工具写入事件；关闭后只回答问题">
+                <span className="ai-input-context">
+                  {requirementId ? <FileTextOutlined /> : <FolderOpenOutlined />}
+                  {requirementId || project}
+                </span>
+                <Tooltip title="开启后 AI 只生成建议事件，用户确认后才会应用到看板；关闭后只回答问题">
                   <Space size={4} align="center" className="ai-input-toolswitch">
                     <Switch
                       size="small"
                       checked={toolsEnabled}
                       onChange={setToolsEnabled}
                     />
-                    <Text type="secondary" style={{ fontSize: 12 }}>工具</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>允许建议变更</Text>
                   </Space>
                 </Tooltip>
               </div>
@@ -552,7 +510,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
                       shape="circle"
                       className="ai-input-action"
                       icon={<RedoOutlined />}
-                      disabled={!lastUserTextRef.current || hasUserKey === false}
+                      disabled={!lastUserTextRef.current}
                       onClick={handleRetry}
                     />
                   </Tooltip>
@@ -563,7 +521,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
                       shape="circle"
                       className="ai-input-action"
                       icon={<ArrowUpOutlined />}
-                      disabled={!text.trim() || hasUserKey === false}
+                      disabled={!text.trim()}
                       onClick={handleSend}
                     />
                   </Tooltip>
@@ -572,15 +530,10 @@ export function ChatPanel({ project, requirementId, onProposalApplied }: Props) 
             </div>
           </div>
           <div className="ai-input-hint">
-            Enter 发送 · Shift+Enter 换行
+            AI 生成的变更需经你确认后才会写入看板 · Enter 发送
           </div>
         </div>
       </div>
-
-      <ApiKeySettingsModal
-        open={keyModalOpen}
-        onClose={() => setKeyModalOpen(false)}
-      />
     </div>
   );
 }

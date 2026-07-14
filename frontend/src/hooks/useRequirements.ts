@@ -1,34 +1,40 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchState, listProjects, renderState, ApiError } from '@/lib/api';
-import type { BoardState, Project } from '@/lib/types';
+import { useCallback, useEffect, useState } from 'react';
+import { listProjects, listRequirements, ApiError } from '@/lib/api';
+import { statusLabel } from '@/lib/utils';
+import type { BoardState, Project, Requirement, RequirementStatus } from '@/lib/types';
 
 interface UseRequirementsResult {
   project: string;
   projects: Project[];
   data: BoardState;
-  taskItems: (BoardState['items'][number]['tasks'][number] & {
-    taskKey: string;
-    requirementId: string;
-    requirementTitle: string;
-    requirementType: string;
-    requirementWeek: string;
-    requirementPriority: string;
-    requirementOwner: string;
-    requirementStatus: string;
-    requirementWorkflowStatus: string;
-    requirementUpdatedAt: string;
-    requirementSummary: string;
-    requirement: BoardState['items'][number];
-  })[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
   loadState: () => Promise<void>;
+  loadProjects: () => Promise<void>;
 }
 
 const EMPTY_STATE: BoardState = { updatedAt: '', statuses: [], items: [] };
+const V2_STATUSES: BoardState['statuses'] = (['todo', 'doing', 'blocked', 'done'] as RequirementStatus[]).map(
+  (status) => ({
+    key: status,
+    label: statusLabel(status).label,
+    tone: status
+  })
+);
+
+function stateFromRequirements(requirements: Requirement[]): BoardState {
+  return {
+    updatedAt: requirements.reduce((latest, item) => {
+      if (!item.updatedAt) return latest;
+      return item.updatedAt > latest ? item.updatedAt : latest;
+    }, ''),
+    statuses: V2_STATUSES,
+    items: requirements
+  };
+}
 
 export function useRequirements({
   project,
@@ -60,10 +66,10 @@ export function useRequirements({
       setLoading(true);
       setError(null);
       try {
-        const state = await fetchState(targetProject);
-        setData(state);
+        const res = await listRequirements(targetProject);
+        setData(stateFromRequirements(res.requirements || []));
       } catch (e) {
-        if (e instanceof ApiError && e.message === 'PROJECT_NOT_FOUND') {
+        if (e instanceof ApiError && (e.code === 'PROJECT_NOT_FOUND' || e.message === 'PROJECT_NOT_FOUND')) {
           setData(EMPTY_STATE);
         } else {
           setError(e instanceof Error ? e.message : String(e));
@@ -77,22 +83,8 @@ export function useRequirements({
 
   const refresh = useCallback(async () => {
     if (!activeProject) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await renderState(activeProject);
-      const state = await fetchState(activeProject);
-      setData(state);
-    } catch (e) {
-      if (e instanceof ApiError && e.message === 'PROJECT_NOT_FOUND') {
-        setData(EMPTY_STATE);
-      } else {
-        setError(e instanceof Error ? e.message : String(e));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [activeProject]);
+    await loadState(activeProject);
+  }, [activeProject, loadState]);
 
   useEffect(() => {
     loadProjects();
@@ -102,34 +94,14 @@ export function useRequirements({
     loadState(activeProject);
   }, [activeProject, loadState]);
 
-  const taskItems = useMemo(() => {
-    return data.items.flatMap((item) =>
-      (item.tasks || []).map((task) => ({
-        ...task,
-        taskKey: `${item.id}::${task.taskId}`,
-        requirementId: item.id,
-        requirementTitle: item.title,
-        requirementType: item.type,
-        requirementWeek: item.week,
-        requirementPriority: item.priority,
-        requirementOwner: item.owner,
-        requirementStatus: item.status,
-        requirementWorkflowStatus: item.workflowStatus,
-        requirementUpdatedAt: item.updatedAt,
-        requirementSummary: item.summary,
-        requirement: item
-      }))
-    );
-  }, [data.items]);
-
   return {
     project: activeProject,
     projects,
     data,
-    taskItems,
     loading,
     error,
     refresh,
-    loadState
+    loadState,
+    loadProjects
   };
 }

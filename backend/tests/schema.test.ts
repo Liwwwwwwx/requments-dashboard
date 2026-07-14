@@ -37,6 +37,24 @@ describe('validateEvent', () => {
       expect(() => validateEvent(ev)).toThrow(/requirementId 必须是 REQ-NNNN/);
     });
 
+    it('accepts blocked as a requirement status', () => {
+      const ev = {
+        kind: 'req.status',
+        requirementId: 'REQ-0001',
+        status: 'blocked'
+      };
+      expect(validateEvent(ev).status).toBe('blocked');
+    });
+
+    it('rejects paused as a requirement status in V2', () => {
+      const ev = {
+        kind: 'req.status',
+        requirementId: 'REQ-0001',
+        status: 'paused'
+      };
+      expect(() => validateEvent(ev)).toThrow(/status/);
+    });
+
     it('preserves caller-provided eventId and ts', () => {
       const ev = {
         eventId: 'EVT-CUSTOM',

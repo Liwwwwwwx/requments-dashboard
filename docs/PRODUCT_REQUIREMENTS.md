@@ -1,5 +1,12 @@
 # Requirements Board PRD
 
+> 文档状态：历史参考。
+>
+> 本文记录的是 V1 / 旧版 Requirements Board 的产品设想，包含 Task、
+> Contract、Agent 执行、JSONL 事实源等已从 V2 MVP 中移出的概念。
+> 当前开发请以 `docs/TRACEBOARD_V2_PRODUCT_PLAN.md` 和
+> `docs/TRACEBOARD_V2_IMPLEMENTATION_STATUS.md` 为准。
+
 ## 1. 产品定位
 
 Requirements Board 是一个面向多项目研发协同的需求工作台。

@@ -28,7 +28,7 @@ interface Props {
   /** 反馈：👍 / 👎（仅占位，实际未持久化） */
   onFeedback?: (m: AiMessage, value: 'up' | 'down') => void;
   /** 提案应用后回调（router.refresh） */
-  onProposalApplied?: () => void;
+  onProposalApplied?: (proposalId: string) => void;
   /** 流式错误信息（用于在 AI 消息下方显示重试） */
   error?: { code: string; message: string } | null;
   /** 重试回调 */

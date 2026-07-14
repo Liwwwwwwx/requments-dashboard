@@ -3,12 +3,13 @@ import type { Metadata } from 'next';
 import { AntdProvider } from '@/components/AntdProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider, themeInitScript } from '@/components/ThemeProvider';
+import { LanguageProvider } from '@/components/LanguageProvider';
 import AuthLayout from './AuthLayout';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'TraceBoard',
-  description: 'TraceBoard — 事件溯源驱动的多项目需求管理平台'
+  description: 'TraceBoard — 面向项目的轻量需求看板与 AI 小助手'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -27,10 +28,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ErrorBoundary>
           <ThemeProvider>
-            <AntdProvider>
-              <AuthLayout>{children}</AuthLayout>
-              <UpdateNotifier />
-            </AntdProvider>
+            <LanguageProvider>
+              <AntdProvider>
+                <AuthLayout>{children}</AuthLayout>
+                <UpdateNotifier />
+              </AntdProvider>
+            </LanguageProvider>
           </ThemeProvider>
         </ErrorBoundary>
       </body>

@@ -28,7 +28,7 @@ function authMiddleware(users) {
       if (!user) {
         return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
       }
-      req.user = { id: user.id, username: user.username, displayName: user.display_name };
+      req.user = { id: user.id, username: user.username, displayName: user.display_name, role: user.role };
       next();
     } catch (_err) {
       return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
@@ -51,7 +51,7 @@ function optionalAuth(users) {
       const decoded = verifyAccess(token);
       const user = users.findById(decoded.sub);
       if (user) {
-        req.user = { id: user.id, username: user.username, displayName: user.display_name };
+        req.user = { id: user.id, username: user.username, displayName: user.display_name, role: user.role };
       } else {
         req.user = null;
       }

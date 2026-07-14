@@ -9,13 +9,13 @@
  *   - "delta"     : { delta }
  *   - "usage"     : { inputTokens, outputTokens, totalTokens }
  *   - "proposal"  : { proposalId, rationale, events, errors? }
- *   - "done"      : { message, usage, toolCalls? }
+ *   - "done"      : { message, usage, proposalId? }
  *   - "error"     : { code, message }
  *
  * 客户端断线 / `req.on('close')` 会通过 AbortController 中止 DeepSeek 调用，避免浪费 token。
  */
 
-const { readAccounts, recordChatUsage } = require("../ai-usage/store");
+const { readAccounts } = require("../ai-usage/store");
 const { pickProvider, selectAccount } = require("./provider");
 const store = require("./store");
 const { buildSystemPrompt } = require("./context");
@@ -42,13 +42,6 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
     provider: providerKey,
     accountId: body?.accountId || conv.accountId
   });
-
-  // 用户私有 key（per-user 隔离）：前端从 localStorage 读出，通过 X-AI-Api-Key 头传入。
-  // 优先于 accounts.json 里的 key。baseUrl / modelId 仍从 accounts.json 拿。
-  const userKey = String(req.headers["x-ai-api-key"] || "").trim();
-  if (userKey) {
-    account.apiKey = userKey;
-  }
 
   // 1. 落库 user 消息
   const userMsg = store.appendMessage(rootDir, projectId, {
@@ -114,27 +107,6 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
   let resolvedModel = body.model || conv.model;
   const stopHeartbeat = sse.heartbeat(res);
 
-  function recordUsageSafe() {
-    if (usage.totalTokens <= 0 && usage.inputTokens <= 0 && usage.outputTokens <= 0) return;
-    try {
-      recordChatUsage(rootDir, {
-        accountId: account.id,
-        provider: providerKey,
-        model: resolvedModel,
-        userId: req.user?.id || "anonymous",
-        projectId,
-        conversationId: conv.id,
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        totalTokens: usage.totalTokens
-      });
-    } catch (err) {
-      // usage 记录失败不影响主流程
-      // eslint-disable-next-line no-console
-      console.warn(`[ai] recordChatUsage failed: ${err.message}`);
-    }
-  }
-
   try {
     const result = await provider.chatStream(messages, {
       account,
@@ -162,24 +134,32 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
       } catch (err) {
         sse.send(res, "error", {
           code: "AI_PROPOSAL_PARSE_FAILED",
-          message: `模型返回的 propose_events 参数无法解析：${err.message}`
+          message: `模型返回的建议变更参数无法解析：${err.message}`
         });
       }
       if (parsedArgs) {
         const events = Array.isArray(parsedArgs.events) ? parsedArgs.events : [];
         const validation = validateProposedEvents(events);
-        const proposal = store.createProposal(rootDir, projectId, {
-          conversationId: conv.id,
-          messageId: assistantMsg.id,
-          events: validation.events || []
-        });
-        proposalSummary = {
-          proposalId: proposal.id,
-          rationale: parsedArgs.rationale || "",
-          events: validation.events || [],
-          errors: validation.valid ? null : validation.errors
-        };
-        sse.send(res, "proposal", proposalSummary);
+        if (!validation.valid) {
+          sse.send(res, "error", {
+            code: "AI_PROPOSAL_INVALID",
+            message: "模型返回的建议事件不符合 V2 写入范围",
+            errors: validation.errors
+          });
+        } else {
+          const proposal = store.createProposal(rootDir, projectId, {
+            conversationId: conv.id,
+            messageId: assistantMsg.id,
+            events: validation.events
+          });
+          proposalSummary = {
+            proposalId: proposal.id,
+            rationale: parsedArgs.rationale || "",
+            events: validation.events,
+            errors: null
+          };
+          sse.send(res, "proposal", proposalSummary);
+        }
       }
     }
 
@@ -205,14 +185,15 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
     }
 
     sse.send(res, "usage", usage);
-    sse.send(res, "done", {
+    const donePayload = {
       message: finalMsg,
       usage,
-      model: resolvedModel,
-      toolCalls,
-      proposalId: proposalSummary?.proposalId || null
-    });
-    recordUsageSafe();
+      model: resolvedModel
+    };
+    if (proposalSummary?.proposalId) {
+      donePayload.proposalId = proposalSummary.proposalId;
+    }
+    sse.send(res, "done", donePayload);
     sse.endSse(res);
   } catch (err) {
     const code = err.code || "AI_CHAT_FAILED";
@@ -234,7 +215,6 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
         });
         store.touchConversation(rootDir, projectId, conv.id);
       }
-      recordUsageSafe();
       sse.send(res, "aborted", { reason: err.message || "aborted" });
       sse.endSse(res);
       return;

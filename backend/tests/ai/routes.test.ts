@@ -6,6 +6,8 @@ import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { createRoutes } from '@/routes';
+import { appendEvents } from '@/events';
+import { projectPaths } from '@/projects';
 import { errorMiddleware } from '@/errors';
 
 let tmpDir: string;
@@ -59,6 +61,10 @@ function seedDeepSeekAccount() {
   );
 }
 
+function seedProject(project = 'default') {
+  fs.mkdirSync(path.join(tmpDir, 'data', project), { recursive: true });
+}
+
 function makeStreamChunks() {
   // 构造 OpenAI 兼容 SSE 字节流
   const chunks = [
@@ -84,6 +90,7 @@ describe('AI 对话路由（Sprint 2）', () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-routes-test-'));
     seedDeepSeekAccount();
+    seedProject();
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -108,6 +115,75 @@ describe('AI 对话路由（Sprint 2）', () => {
   it('未鉴权请求被拒', async () => {
     const res = await request(makeApp()).get('/api/ai/accounts');
     expect(res.status).toBe(401);
+  });
+
+  it('POST /api/ai/conversations 拒绝不存在项目且不创建目录', async () => {
+    const projectDir = path.join(tmpDir, 'data', 'missing');
+
+    const res = await authReq(
+      request(makeApp()).post('/api/ai/conversations?project=missing').send({})
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('PROJECT_NOT_FOUND');
+    expect(fs.existsSync(projectDir)).toBe(false);
+  });
+
+  it('GET /api/ai/conversations 拒绝不存在项目且不创建目录', async () => {
+    const projectDir = path.join(tmpDir, 'data', 'missing-list');
+
+    const res = await authReq(
+      request(makeApp()).get('/api/ai/conversations?project=missing-list')
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('PROJECT_NOT_FOUND');
+    expect(fs.existsSync(projectDir)).toBe(false);
+  });
+
+  it('POST /api/ai/conversations 拒绝非法需求 ID', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/ai/conversations?project=default')
+        .send({ requirementId: 'BAD-001' })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_REQUIREMENT_ID');
+  });
+
+  it('POST /api/ai/conversations 拒绝绑定不存在的需求', async () => {
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/ai/conversations?project=default')
+        .send({ requirementId: 'REQ-9999' })
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('AI_REQUIREMENT_NOT_FOUND');
+  });
+
+  it('POST /api/ai/conversations 允许绑定当前项目已存在需求', async () => {
+    const paths = projectPaths(tmpDir, 'default');
+    appendEvents(paths.eventsPath, [
+      {
+        eventId: 'E1',
+        ts: 100,
+        kind: 'req.new',
+        requirementId: 'REQ-0001',
+        title: '登录页',
+        summary: '最小登录体验'
+      }
+    ]);
+
+    const res = await authReq(
+      request(makeApp())
+        .post('/api/ai/conversations?project=default')
+        .send({ requirementId: 'REQ-0001' })
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.conversation.requirementId).toBe('REQ-0001');
   });
 
   it('POST 流式：SSE 事件序列正确', async () => {
@@ -152,6 +228,15 @@ describe('AI 对话路由（Sprint 2）', () => {
     expect(read.body.messages[1]).toMatchObject({ role: 'assistant', content: '你好，世界' });
     expect(read.body.messages[1].tokensIn).toBe(3);
     expect(read.body.messages[1].tokensOut).toBe(4);
+
+    const messages = await authReq(
+      request(makeApp()).get(`/api/ai/conversations/${convId}/messages?project=default`)
+    );
+    expect(messages.status).toBe(200);
+    expect(messages.body).toMatchObject({ ok: true, conversationId: convId });
+    expect(messages.body.messages).toHaveLength(2);
+    expect(messages.body.messages[0]).toMatchObject({ role: 'user', content: '你好' });
+    expect(messages.body.messages[1]).toMatchObject({ role: 'assistant', content: '你好，世界' });
   });
 
   it('POST 流式：provider 报错时 SSE error 事件', async () => {
@@ -179,7 +264,10 @@ describe('AI 对话路由（Sprint 2）', () => {
   });
 
   it('POST 同步：返回完整 assistant 消息', async () => {
-    const fetchMock = vi.fn(async () => ({
+    let capturedBody: { messages?: Array<{ role: string; content: string }> } | undefined;
+    const fetchMock = vi.fn(async (_url: unknown, init: { body?: string }) => {
+      capturedBody = init.body ? JSON.parse(init.body) : undefined;
+      return {
       ok: true,
       status: 200,
       text: async () =>
@@ -187,7 +275,8 @@ describe('AI 对话路由（Sprint 2）', () => {
           choices: [{ message: { role: 'assistant', content: '同步答复' } }],
           usage: { prompt_tokens: 2, completion_tokens: 4, total_tokens: 6 }
         })
-    }));
+      };
+    });
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const create = await authReq(
@@ -203,9 +292,11 @@ describe('AI 对话路由（Sprint 2）', () => {
     expect(res.status).toBe(200);
     expect(res.body.assistantMessage.content).toBe('同步答复');
     expect(res.body.usage.totalTokens).toBe(6);
+    expect(capturedBody?.messages?.[0]?.content).toContain('## 当前项目');
+    expect(capturedBody?.messages?.[0]?.content).toContain('default');
   });
 
-  it('流式：X-AI-Api-Key 头会覆盖账号里的 apiKey（per-user 隔离）', async () => {
+  it('流式：忽略客户端 Key 头并使用服务器账号 key', async () => {
     let capturedAuth: string | undefined;
     const fetchMock = vi.fn(async (_url: unknown, init: { headers: Record<string, string> }) => {
       capturedAuth = init.headers.Authorization;
@@ -232,7 +323,6 @@ describe('AI 对话路由（Sprint 2）', () => {
     );
     const convId = create.body.conversation.id;
 
-    // 用户发请求时带自己的 key
     await authReq(
       request(makeApp())
         .post(`/api/ai/conversations/${convId}/messages/stream?project=default`)
@@ -240,8 +330,7 @@ describe('AI 对话路由（Sprint 2）', () => {
         .send({ text: 'hi' })
     );
 
-    // 验证 fetch 收到的是用户的 key，而不是 accounts.json 里的 'sk-test'
-    expect(capturedAuth).toBe('Bearer sk-user-override');
+    expect(capturedAuth).toBe('Bearer sk-test');
   });
 
   it('PATCH /api/ai/conversations/:id 改名（含重名校验）', async () => {
@@ -278,6 +367,73 @@ describe('AI 对话路由（Sprint 2）', () => {
     );
     expect(empty.status).toBe(400);
     expect(empty.body.code).toBe('AI_TITLE_EMPTY');
+  });
+
+  it('AI 会话按当前用户隔离访问和改名校验', async () => {
+    const previousToken = process.env.REQUIREMENTS_API_TOKEN;
+    process.env.REQUIREMENTS_API_TOKEN = 'test-api-token';
+    try {
+      const app = makeApp();
+      const ownerCreate = await authReq(
+        request(app).post('/api/ai/conversations?project=default').send({ title: '同名会话' })
+      );
+      expect(ownerCreate.status).toBe(200);
+      const ownerConvId = ownerCreate.body.conversation.id;
+
+      const apiRequest = (base: request.Test) =>
+        base.set('Authorization', 'Bearer test-api-token');
+
+      const apiList = await apiRequest(request(app).get('/api/ai/conversations?project=default'));
+      expect(apiList.status).toBe(200);
+      expect(apiList.body.conversations).toEqual([]);
+
+      const apiRead = await apiRequest(
+        request(app).get(`/api/ai/conversations/${ownerConvId}?project=default`)
+      );
+      expect(apiRead.status).toBe(404);
+      expect(apiRead.body.code).toBe('AI_CONVERSATION_NOT_FOUND');
+
+      const apiRename = await apiRequest(
+        request(app)
+          .patch(`/api/ai/conversations/${ownerConvId}?project=default`)
+          .send({ title: '不能改别人的' })
+      );
+      expect(apiRename.status).toBe(404);
+
+      const apiMessage = await apiRequest(
+        request(app)
+          .post(`/api/ai/conversations/${ownerConvId}/messages?project=default`)
+          .send({ text: 'hi' })
+      );
+      expect(apiMessage.status).toBe(404);
+
+      const apiDelete = await apiRequest(
+        request(app).delete(`/api/ai/conversations/${ownerConvId}?project=default`)
+      );
+      expect(apiDelete.status).toBe(404);
+
+      const apiCreate = await apiRequest(
+        request(app).post('/api/ai/conversations?project=default').send({})
+      );
+      expect(apiCreate.status).toBe(200);
+
+      const apiSameTitle = await apiRequest(
+        request(app)
+          .patch(`/api/ai/conversations/${apiCreate.body.conversation.id}?project=default`)
+          .send({ title: '同名会话' })
+      );
+      expect(apiSameTitle.status).toBe(200);
+      expect(apiSameTitle.body.conversation.title).toBe('同名会话');
+
+      const ownerRead = await authReq(
+        request(app).get(`/api/ai/conversations/${ownerConvId}?project=default`)
+      );
+      expect(ownerRead.status).toBe(200);
+      expect(ownerRead.body.conversation.title).toBe('同名会话');
+    } finally {
+      if (previousToken === undefined) delete process.env.REQUIREMENTS_API_TOKEN;
+      else process.env.REQUIREMENTS_API_TOKEN = previousToken;
+    }
   });
 
   it('DELETE /api/ai/conversations/:id 级联删除', async () => {

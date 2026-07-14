@@ -1,13 +1,13 @@
-import type { Priority, RequirementStatus, Role, TaskStatus } from './types';
+import type { Priority, RequirementStatus } from './types';
 
 export const REQUIREMENT_STATUS_LABELS: Record<RequirementStatus, { label: string; color: string }> = {
   todo: { label: '待开始', color: 'default' },
   doing: { label: '进行中', color: 'processing' },
-  paused: { label: '暂停', color: 'warning' },
+  blocked: { label: '阻塞', color: 'error' },
   done: { label: '完成', color: 'success' }
 };
 
-export const TASK_STATUS_LABELS: Record<TaskStatus, { label: string; color: string }> = {
+const LEGACY_TASK_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   todo: { label: '待开始', color: 'default' },
   claimed: { label: '已领取', color: 'warning' },
   working: { label: '进行中', color: 'processing' },
@@ -16,30 +16,11 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, { label: string; color: stri
   blocked: { label: '阻塞', color: 'error' }
 };
 
-export const ROLE_META: Record<Role, { label: string; color: string }> = {
-  contract: { label: '契约', color: '#818cf8' },
-  frontend: { label: '前端', color: '#c084fc' },
-  backend: { label: '后端', color: '#22d3ee' },
-  review: { label: '审查', color: '#fb923c' },
-  qa: { label: '测试', color: '#34d399' },
-  integration: { label: '联调', color: '#f472b6' },
-  infra: { label: '基建', color: '#a78bfa' },
-  general: { label: '通用', color: '#9ca3af' }
-};
-
-export function statusLabel(status: RequirementStatus | TaskStatus | string) {
+export function statusLabel(status: RequirementStatus | string) {
   return (
     REQUIREMENT_STATUS_LABELS[status as RequirementStatus] ||
-    TASK_STATUS_LABELS[status as TaskStatus] || { label: status, color: 'default' }
+    LEGACY_TASK_STATUS_LABELS[status] || { label: status, color: 'default' }
   );
-}
-
-export function roleLabel(role?: Role | string): string {
-  return ROLE_META[role as Role]?.label || role || '通用';
-}
-
-export function roleColor(role?: Role | string): string {
-  return ROLE_META[role as Role]?.color || '#9ca3af';
 }
 
 export function priorityColor(priority: Priority | string): string {
@@ -66,7 +47,6 @@ export function priorityBarClass(priority: Priority | string): string {
 const STATUS_TOKEN: Record<string, string> = {
   todo: 'chip-status-todo',
   doing: 'chip-status-doing',
-  paused: 'chip-status-paused',
   done: 'chip-status-done',
   blocked: 'chip-status-blocked',
   claimed: 'chip-status-claimed',
