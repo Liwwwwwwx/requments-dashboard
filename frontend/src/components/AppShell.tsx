@@ -38,7 +38,6 @@ export function AppShell({ project, reqId, children, projectListRefreshKey }: Pr
   const lastProjectListRefreshKey = useRef(projectListRefreshKey);
 
   const activeProject = project || 'default';
-  const activeProjectName = projects.find((p) => p.id === activeProject)?.name || activeProject;
 
   useEffect(() => {
     if (!projects || projects.length === 0) return;
@@ -130,14 +129,11 @@ export function AppShell({ project, reqId, children, projectListRefreshKey }: Pr
         loading={loading}
         onRefresh={() => void refresh()}
         projectId={activeProject}
-        projectName={activeProjectName}
       />
 
       <div className="layout">
         <Sidebar
-          projects={projects}
           selectedItem={selectedItem}
-          onProjectChange={handleProjectChange}
           onProjectCreate={handleProjectCreate}
           createOpen={projectCreateOpen}
           onCreateOpenChange={setProjectCreateOpen}
@@ -174,11 +170,14 @@ export function AppShell({ project, reqId, children, projectListRefreshKey }: Pr
                 <RequirementGrid
                   data={data}
                   project={activeProject}
+                  projects={projects}
                   filters={filters}
                   onFiltersChange={setFilters}
                   selectedId={selectedItem?.id || null}
                   loading={loading}
                   onCreated={refresh}
+                  onProjectChange={handleProjectChange}
+                  onProjectCreateRequested={() => setProjectCreateOpen(true)}
                 />
               )}
         </Content>

@@ -2,14 +2,12 @@
 
 import { useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { Button, Form, Input, Modal, message } from 'antd';
-import type { Project, Requirement } from '@/lib/types';
-import { MODULE_NAV } from '@/lib/nav';
+import { Form, Input, Modal, message } from 'antd';
+import type { Requirement } from '@/lib/types';
+import { MANAGEMENT_NAV, MODULE_NAV, WORKSPACE_NAV, type ModuleNavItem } from '@/lib/nav';
 
 interface SidebarProps {
-  projects: Project[];
   selectedItem: Requirement | null;
-  onProjectChange?: (project: string) => void;
   onProjectCreate?: (project: ProjectForm) => Promise<void> | void;
   createOpen?: boolean;
   onCreateOpenChange?: (open: boolean) => void;
@@ -22,9 +20,7 @@ interface ProjectForm {
 }
 
 export function Sidebar({
-  projects,
   selectedItem,
-  onProjectChange,
   onProjectCreate,
   createOpen,
   onCreateOpenChange
@@ -63,63 +59,47 @@ export function Sidebar({
     }
   };
 
+  const renderNav = (items: ModuleNavItem[]) => (
+    <nav className="sidenav-list">
+      {items.map((mod) => {
+        const Icon = mod.icon;
+        const active = mod.match(pathname, currentProjectId);
+        const soon = mod.status === 'soon';
+        return (
+          <button
+            key={mod.key}
+            type="button"
+            className={`sidenav-item ${active ? 'is-active' : ''} ${soon ? 'is-soon' : ''}`}
+            disabled={soon}
+            onClick={() => !soon && router.push(mod.path(currentProjectId))}
+            aria-current={active ? 'page' : undefined}
+            title={soon ? `${mod.label}（即将上线）` : mod.label}
+          >
+            <Icon className="sidenav-item-icon" />
+            <span className="sidenav-item-label">{mod.label}</span>
+            {soon && <span className="sidenav-soon">Soon</span>}
+          </button>
+        );
+      })}
+    </nav>
+  );
+
   return (
     <aside className="sidenav">
       <div className="sidenav-scroll">
         <section className="sidenav-section">
-          <div className="sidenav-section-head">
-            <div className="sidenav-eyebrow">项目</div>
-            <Button size="small" type="text" className="sidenav-create" onClick={() => setCreateOpen(true)}>
-              创建项目
-            </Button>
-          </div>
-          <nav className="sidenav-list">
-            {projects.map((p) => {
-              const active = currentProjectId === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={`sidenav-item ${active ? 'is-active' : ''}`}
-                  onClick={() => onProjectChange?.(p.id)}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  <span className={`sidenav-dot ${active ? 'is-active' : ''}`} />
-                  <span className="sidenav-project-text">
-                    <span className="sidenav-item-label">{p.name || p.id}</span>
-                    {p.name && p.name !== p.id && <span className="sidenav-project-id">{p.id}</span>}
-                  </span>
-                </button>
-              );
-            })}
-            {projects.length === 0 && <div className="sidenav-empty">暂无项目</div>}
-          </nav>
+          <div className="sidenav-eyebrow">工作台</div>
+          {renderNav(WORKSPACE_NAV)}
         </section>
 
         <section className="sidenav-section">
-          <div className="sidenav-eyebrow">模块</div>
-          <nav className="sidenav-list">
-            {MODULE_NAV.map((mod) => {
-              const Icon = mod.icon;
-              const active = mod.match(pathname, currentProjectId);
-              const soon = mod.status === 'soon';
-              return (
-                <button
-                  key={mod.key}
-                  type="button"
-                  className={`sidenav-item ${active ? 'is-active' : ''} ${soon ? 'is-soon' : ''}`}
-                  disabled={soon}
-                  onClick={() => !soon && router.push(mod.path(currentProjectId))}
-                  aria-current={active ? 'page' : undefined}
-                  title={soon ? `${mod.label}（即将上线）` : mod.label}
-                >
-                  <Icon className="sidenav-item-icon" />
-                  <span className="sidenav-item-label">{mod.label}</span>
-                  {soon && <span className="sidenav-soon">Soon</span>}
-                </button>
-              );
-            })}
-          </nav>
+          <div className="sidenav-eyebrow">业务模块</div>
+          {renderNav(MODULE_NAV)}
+        </section>
+
+        <section className="sidenav-section">
+          <div className="sidenav-eyebrow">管理</div>
+          {renderNav(MANAGEMENT_NAV)}
         </section>
       </div>
 

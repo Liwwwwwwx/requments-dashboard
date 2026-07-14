@@ -1,9 +1,12 @@
 import type { ComponentType } from 'react';
 import {
   ApartmentOutlined,
+  BarChartOutlined,
+  FileTextOutlined,
+  HomeOutlined,
+  ProjectOutlined,
   SettingOutlined,
-  TableOutlined,
-  RobotOutlined
+  TableOutlined
 } from '@ant-design/icons';
 
 /** 模块上线状态：ready 可用，soon 预留（导航中可见但不可进入）。 */
@@ -24,8 +27,8 @@ export interface ModuleNavItem {
 }
 
 /**
- * V2 应用级模块导航：只保留需求看板、AI 小助手和设置。
- * 项目入口由左侧项目列表承担，复杂后台能力不进入第一版导航。
+ * 全局侧栏只表达产品能力，不把项目列表混入其中。
+ * 项目是各业务模块内的工作范围，由模块页面自行切换。
  */
 export const MODULE_NAV: ModuleNavItem[] = [
   {
@@ -37,16 +40,46 @@ export const MODULE_NAV: ModuleNavItem[] = [
     match: (pathname, p) => pathname === `/p/${p}` || pathname.startsWith(`/p/${p}/r/`)
   },
   {
-    key: 'ai',
-    label: 'AI 小助手',
-    icon: RobotOutlined,
-    status: 'ready',
-    path: (p) => `/p/${p}/ai`,
-    match: (pathname, p) => pathname.startsWith(`/p/${p}/ai`)
+    key: 'documents',
+    label: '文档中心',
+    icon: FileTextOutlined,
+    status: 'soon',
+    path: () => '#',
+    match: () => false
   },
   {
-    key: 'settings',
-    label: '设置',
+    key: 'insights',
+    label: '数据分析',
+    icon: BarChartOutlined,
+    status: 'soon',
+    path: () => '#',
+    match: () => false
+  }
+];
+
+export const WORKSPACE_NAV: ModuleNavItem[] = [
+  {
+    key: 'overview',
+    label: '概览',
+    icon: HomeOutlined,
+    status: 'soon',
+    path: () => '#',
+    match: () => false
+  }
+];
+
+export const MANAGEMENT_NAV: ModuleNavItem[] = [
+  {
+    key: 'projects',
+    label: '项目管理',
+    icon: ProjectOutlined,
+    status: 'soon',
+    path: () => '#',
+    match: () => false
+  },
+  {
+    key: 'project-settings',
+    label: '项目设置',
     icon: SettingOutlined,
     status: 'ready',
     path: (p) => `/p/${p}/settings`,

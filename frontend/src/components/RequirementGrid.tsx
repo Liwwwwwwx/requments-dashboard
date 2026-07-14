@@ -1,12 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Modal, Select, message } from 'antd';
+import { DownOutlined, FolderOpenOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Form, Input, Modal, Select, message, type MenuProps } from 'antd';
 import { useRouter } from 'next/navigation';
 import { createRequirement } from '@/lib/api';
 import { statusLabel, unique } from '@/lib/utils';
-import type { BoardState, Filters, Priority, RequirementStatus } from '@/lib/types';
+import type { BoardState, Filters, Priority, Project, RequirementStatus } from '@/lib/types';
 import { BOARD_VIEWS } from '@/lib/nav';
 import { BoardColumns } from './board/BoardColumns';
 import { ListView } from './board/ListView';
@@ -14,11 +14,14 @@ import { ListView } from './board/ListView';
 interface Props {
   data: BoardState;
   project: string;
+  projects?: Project[];
   filters: Filters;
   onFiltersChange?: (filters: Filters) => void;
   selectedId: string | null;
   loading?: boolean;
   onCreated?: () => Promise<void> | void;
+  onProjectChange?: (project: string) => void;
+  onProjectCreateRequested?: () => void;
 }
 
 interface CreateRequirementForm {
@@ -48,11 +51,14 @@ const PRIORITY_OPTIONS: { value: 'all' | Priority; label: string }[] = [
 export function RequirementGrid({
   data,
   project,
+  projects = [],
   filters,
   onFiltersChange,
   selectedId,
   loading,
-  onCreated
+  onCreated,
+  onProjectChange,
+  onProjectCreateRequested
 }: Props) {
   const router = useRouter();
   const [activeView, setActiveView] = useState('board');
@@ -76,6 +82,22 @@ export function RequirementGrid({
   }, [data.items, filters.priority, filters.status, ownerFilter, query]);
 
   const owners = useMemo(() => unique(data.items.map((item) => item.owner)), [data.items]);
+  const currentProject = projects.find((item) => item.id === project);
+  const projectLabel = currentProject?.name || project;
+  const projectMenuItems: MenuProps['items'] = [
+    ...projects.map((item) => ({
+      key: item.id,
+      label: item.name || item.id,
+      onClick: () => onProjectChange?.(item.id)
+    })),
+    { type: 'divider' },
+    {
+      key: 'create-project',
+      icon: <PlusOutlined />,
+      label: '新建项目',
+      onClick: () => onProjectCreateRequested?.()
+    }
+  ];
 
   const isInitialLoading = !!loading && data.items.length === 0;
   const isProjectEmpty = !isInitialLoading && data.items.length === 0;
@@ -112,28 +134,37 @@ export function RequirementGrid({
   return (
     <div className="board-wrap">
       <div className="board-toolbar">
-        <div className="viewtabs" role="tablist" aria-label="视图切换">
-          {BOARD_VIEWS.map((view) => {
-            const Icon = view.icon;
-            const active = activeView === view.key;
-            const soon = view.status === 'soon';
-            return (
-              <button
-                key={view.key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                disabled={soon}
-                className={`viewtab ${active ? 'is-active' : ''} ${soon ? 'is-soon' : ''}`}
-                onClick={() => !soon && setActiveView(view.key)}
-                title={soon ? `${view.label}视图（即将上线）` : `${view.label}视图`}
-              >
-                <Icon className="viewtab-icon" />
-                <span>{view.label}</span>
-                {soon && <span className="viewtab-soon">Soon</span>}
-              </button>
-            );
-          })}
+        <div className="board-context">
+          <Dropdown menu={{ items: projectMenuItems }} trigger={['click']}>
+            <button type="button" className="board-project-switcher" aria-label="切换项目">
+              <FolderOpenOutlined />
+              <span>{projectLabel}</span>
+              <DownOutlined className="board-project-switcher-arrow" />
+            </button>
+          </Dropdown>
+          <div className="viewtabs" role="tablist" aria-label="视图切换">
+            {BOARD_VIEWS.map((view) => {
+              const Icon = view.icon;
+              const active = activeView === view.key;
+              const soon = view.status === 'soon';
+              return (
+                <button
+                  key={view.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  disabled={soon}
+                  className={`viewtab ${active ? 'is-active' : ''} ${soon ? 'is-soon' : ''}`}
+                  onClick={() => !soon && setActiveView(view.key)}
+                  title={soon ? `${view.label}视图（即将上线）` : `${view.label}视图`}
+                >
+                  <Icon className="viewtab-icon" />
+                  <span>{view.label}</span>
+                  {soon && <span className="viewtab-soon">Soon</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="board-toolbar-actions">
           <div className="board-filters" aria-label="需求筛选">

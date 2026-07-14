@@ -20,7 +20,6 @@ interface TopBarProps {
   onRefresh: () => void;
   /** 当前项目 id，用于「AI 小助手」按钮跳转 */
   projectId?: string;
-  projectName?: string;
 }
 
 export function TopBar({
@@ -31,7 +30,6 @@ export function TopBar({
   loading,
   onRefresh,
   projectId,
-  projectName
 }: TopBarProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -74,11 +72,6 @@ export function TopBar({
       <div className="topbar-brand" aria-label="TraceBoard">
         <span className="topbar-brand-mark" />
         Trace<span className="topbar-brand-accent">Board</span>
-      </div>
-
-      <div className="topbar-project" aria-label="当前项目" title={projectName || projectId || 'default'}>
-        <span className="topbar-project-label">当前项目</span>
-        <span className="topbar-project-name">{projectName || projectId || 'default'}</span>
       </div>
 
       <div className="topbar-actions">
