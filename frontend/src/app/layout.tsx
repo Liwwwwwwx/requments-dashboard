@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { AntdProvider } from '@/components/AntdProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider, themeInitScript } from '@/components/ThemeProvider';
+import { LanguageProvider } from '@/components/LanguageProvider';
 import AuthLayout from './AuthLayout';
 import './globals.css';
 
@@ -27,10 +28,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ErrorBoundary>
           <ThemeProvider>
-            <AntdProvider>
-              <AuthLayout>{children}</AuthLayout>
-              <UpdateNotifier />
-            </AntdProvider>
+            <LanguageProvider>
+              <AntdProvider>
+                <AuthLayout>{children}</AuthLayout>
+                <UpdateNotifier />
+              </AntdProvider>
+            </LanguageProvider>
           </ThemeProvider>
         </ErrorBoundary>
       </body>

@@ -6,7 +6,6 @@ import { Button, Form, Input, Modal, Select, Space, Typography, message } from '
 import { addRequirementNote, fetchRequirementEvents, updateRequirement } from '@/lib/api';
 import { priorityChipClass, statusChipClass, statusLabel } from '@/lib/utils';
 import type { Priority, Requirement, RequirementEvent, RequirementStatus } from '@/lib/types';
-import { ChatPanel } from './ai/ChatPanel';
 
 const { Paragraph } = Typography;
 
@@ -173,16 +172,6 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
     router.push(`/p/${project}`);
   };
 
-  const openAi = () => {
-    if (!item) return;
-    router.push(`/p/${project}/ai?requirementId=${encodeURIComponent(item.id)}`);
-  };
-
-  const handleAiProposalApplied = async () => {
-    await onUpdated?.();
-    await loadHistory();
-  };
-
   const openEdit = () => {
     if (!item) return;
     form.setFieldsValue({
@@ -267,9 +256,6 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
             <span>需求详情</span>
           </div>
           <Space className="view-detail-actions" size={8}>
-            <Button size="small" onClick={openAi}>
-              完整 AI
-            </Button>
             <Button size="small" onClick={openEdit}>
               编辑需求
             </Button>
@@ -422,18 +408,6 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
           </section>
         </div>
 
-        <aside className="view-detail-aside" aria-label="需求 AI 小助手">
-          <div className="view-detail-ai-head">
-            <h3 className="view-detail-ai-title">AI 小助手</h3>
-            <span className="view-detail-ai-context">{item.id}</span>
-          </div>
-          <ChatPanel
-            project={project}
-            requirementId={item.id}
-            compact
-            onProposalApplied={() => void handleAiProposalApplied()}
-          />
-        </aside>
       </div>
 
       <Modal

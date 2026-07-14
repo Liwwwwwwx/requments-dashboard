@@ -9,6 +9,7 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './shell/TopBar';
 import { RequirementGrid } from './RequirementGrid';
 import { RequirementDetailView } from './RequirementDetailView';
+import { AiAssistantWidget } from './ai/AiAssistantWidget';
 import type { Filters, Requirement } from '@/lib/types';
 
 const { Content } = Layout;
@@ -25,13 +26,23 @@ interface Props {
   reqId?: string;
   children?: ReactNode;
   projectListRefreshKey?: number;
+  assistantOpenOnLoad?: boolean;
+  assistantRequirementId?: string;
 }
 
-export function AppShell({ project, reqId, children, projectListRefreshKey }: Props) {
+export function AppShell({
+  project,
+  reqId,
+  children,
+  projectListRefreshKey,
+  assistantOpenOnLoad = false,
+  assistantRequirementId
+}: Props) {
   const router = useRouter();
   const { projects, data, loading, error, refresh, loadProjects } = useRequirements({ project });
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [projectCreateOpen, setProjectCreateOpen] = useState(false);
+  const [aiAssistantOpen, setAiAssistantOpen] = useState(assistantOpenOnLoad);
   const [detailItem, setDetailItem] = useState<Requirement | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -53,17 +64,17 @@ export function AppShell({ project, reqId, children, projectListRefreshKey }: Pr
     void loadProjects();
   }, [loadProjects, projectListRefreshKey]);
 
-  // Cmd/Ctrl + K：跳到当前项目的 AI 小助手
+  // Cmd/Ctrl + K：打开当前项目的悬浮 AI 助手
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
-        router.push(`/p/${activeProject}/ai`);
+        setAiAssistantOpen(true);
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activeProject, router]);
+  }, []);
 
   const listedItem: Requirement | null = useMemo(() => {
     if (!reqId) return null;
@@ -103,7 +114,6 @@ export function AppShell({ project, reqId, children, projectListRefreshKey }: Pr
     };
   }, [activeProject, listedItem, reqId]);
 
-  const total = (data.items || []).length;
   const hasNoProjects = !loading && projects.length === 0;
 
   const handleProjectChange = (next: string) => {
@@ -121,19 +131,13 @@ export function AppShell({ project, reqId, children, projectListRefreshKey }: Pr
 
   return (
     <Layout className="app">
-      <TopBar
-        total={total}
-        showSearch={!reqId}
-        query={filters.query}
-        onQueryChange={(query) => setFilters((f) => ({ ...f, query }))}
-        loading={loading}
-        onRefresh={() => void refresh()}
-        projectId={activeProject}
-      />
+      <TopBar />
 
       <div className="layout">
         <Sidebar
           selectedItem={selectedItem}
+          assistantOpen={aiAssistantOpen}
+          onToggleAssistant={() => setAiAssistantOpen((open) => !open)}
           onProjectCreate={handleProjectCreate}
           createOpen={projectCreateOpen}
           onCreateOpenChange={setProjectCreateOpen}
@@ -182,6 +186,15 @@ export function AppShell({ project, reqId, children, projectListRefreshKey }: Pr
               )}
         </Content>
       </div>
+      {!hasNoProjects && (
+        <AiAssistantWidget
+          project={activeProject}
+          requirementId={assistantRequirementId || reqId}
+          open={aiAssistantOpen}
+          onOpenChange={setAiAssistantOpen}
+          key={`${activeProject}:${assistantRequirementId || reqId || 'project'}`}
+        />
+      )}
     </Layout>
   );
 }

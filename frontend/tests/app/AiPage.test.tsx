@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import AiPage from '@/app/p/[project]/ai/page';
 
-const chatPanel = vi.fn();
+const appShell = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useParams: () => ({ project: 'alpha' }),
@@ -11,24 +11,21 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/components/AppShell', () => ({
-  AppShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
-}));
-
-vi.mock('@/components/ai/ChatPanel', () => ({
-  ChatPanel: (props: { project: string; requirementId?: string }) => {
-    chatPanel(props);
-    return <div>AI Panel</div>;
+  AppShell: (props: { project: string; assistantOpenOnLoad?: boolean; assistantRequirementId?: string }) => {
+    appShell(props);
+    return <div>Workspace</div>;
   }
 }));
 
 describe('AiPage', () => {
-  it('passes requirementId from search params to ChatPanel', () => {
+  it('opens the floating assistant with requirement context from search params', () => {
     render(<AiPage />);
 
-    expect(screen.getByText('AI Panel')).toBeInTheDocument();
-    expect(chatPanel).toHaveBeenCalledWith({
+    expect(screen.getByText('Workspace')).toBeInTheDocument();
+    expect(appShell).toHaveBeenCalledWith({
       project: 'alpha',
-      requirementId: 'REQ-0001'
+      assistantOpenOnLoad: true,
+      assistantRequirementId: 'REQ-0001'
     });
   });
 });

@@ -4,6 +4,7 @@ import {
   BarChartOutlined,
   FileTextOutlined,
   HomeOutlined,
+  MessageOutlined,
   ProjectOutlined,
   SettingOutlined,
   TableOutlined
@@ -63,6 +64,14 @@ export const WORKSPACE_NAV: ModuleNavItem[] = [
     label: '概览',
     icon: HomeOutlined,
     status: 'soon',
+    path: () => '#',
+    match: () => false
+  },
+  {
+    key: 'chat',
+    label: '聊天',
+    icon: MessageOutlined,
+    status: 'ready',
     path: () => '#',
     match: () => false
   }

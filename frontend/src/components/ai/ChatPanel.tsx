@@ -6,7 +6,10 @@ import { Button, Input, Space, Spin, Switch, Tooltip, Typography } from 'antd';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
+  FileTextOutlined,
+  FolderOpenOutlined,
   RedoOutlined,
+  RobotOutlined,
   StopOutlined
 } from '@ant-design/icons';
 import {
@@ -344,6 +347,19 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
 
       <div className="ai-main">
         <div className="ai-panel-toolbar">
+          <div className="ai-toolbar-title">
+            <span className="ai-toolbar-heading">AI 助手</span>
+            <span className="ai-toolbar-context">
+              <FolderOpenOutlined />
+              {project}
+            </span>
+            {requirementId && (
+              <span className="ai-toolbar-context">
+                <FileTextOutlined />
+                {requirementId}
+              </span>
+            )}
+          </div>
           <Space size={6} align="center">
             <span className="ai-model-dot" />
             <Text className="ai-toolbar-label">deepseek-chat</Text>
@@ -354,15 +370,15 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
           {messages.length === 0 ? (
             <div className="ai-panel-empty">
               <div className="ai-panel-empty-icon">
-                <Spin size="large" />
+                <RobotOutlined />
               </div>
-              <div className="ai-panel-empty-title">开始与 DeepSeek 对话</div>
+              <div className="ai-panel-empty-title">从这里开始工作</div>
               <Text type="secondary" style={{ fontSize: 13 }}>
                 {requirementId
                   ? `已自动绑定到 ${requirementId}`
-                  : '支持自然语言提问、需求摘要、推进建议'}
+                  : '围绕当前项目梳理需求、制定下一步或生成草稿'}
               </Text>
-              <Space wrap style={{ marginTop: 16, justifyContent: 'center' }}>
+              <Space wrap className="ai-quick-prompts">
                 {QUICK_PROMPTS.map((p) => (
                   <Button
                     key={p.label}
@@ -454,13 +470,17 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
               placeholder={
                 sending
                   ? '正在生成中…'
-                  : '发消息给 DeepSeek'
+                  : '问问 AI，或描述你想推进的工作'
               }
               disabled={sending}
               variant="borderless"
             />
             <div className="ai-input-toolbar">
               <div className="ai-input-toolbar-left">
+                <span className="ai-input-context">
+                  {requirementId ? <FileTextOutlined /> : <FolderOpenOutlined />}
+                  {requirementId || project}
+                </span>
                 <Tooltip title="开启后 AI 只生成建议事件，用户确认后才会应用到看板；关闭后只回答问题">
                   <Space size={4} align="center" className="ai-input-toolswitch">
                     <Switch
@@ -468,7 +488,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
                       checked={toolsEnabled}
                       onChange={setToolsEnabled}
                     />
-                    <Text type="secondary" style={{ fontSize: 12 }}>建议变更</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>允许建议变更</Text>
                   </Space>
                 </Tooltip>
               </div>
@@ -510,7 +530,7 @@ export function ChatPanel({ project, requirementId, onProposalApplied, compact =
             </div>
           </div>
           <div className="ai-input-hint">
-            Enter 发送 · Shift+Enter 换行
+            AI 生成的变更需经你确认后才会写入看板 · Enter 发送
           </div>
         </div>
       </div>

@@ -2,15 +2,21 @@
 
 import { useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { Form, Input, Modal, message } from 'antd';
+import { Avatar, Dropdown, Form, Input, Modal, message, type MenuProps } from 'antd';
+import { CheckOutlined, GlobalOutlined, LogoutOutlined, SkinOutlined } from '@ant-design/icons';
 import type { Requirement } from '@/lib/types';
 import { MANAGEMENT_NAV, MODULE_NAV, WORKSPACE_NAV, type ModuleNavItem } from '@/lib/nav';
+import { useAuth } from '@/components/AuthProvider';
+import { useTheme, type ThemePreference } from '@/components/ThemeProvider';
+import { useLanguage } from '@/components/LanguageProvider';
 
 interface SidebarProps {
   selectedItem: Requirement | null;
   onProjectCreate?: (project: ProjectForm) => Promise<void> | void;
   createOpen?: boolean;
   onCreateOpenChange?: (open: boolean) => void;
+  assistantOpen?: boolean;
+  onToggleAssistant?: () => void;
 }
 
 interface ProjectForm {
@@ -23,11 +29,16 @@ export function Sidebar({
   selectedItem,
   onProjectCreate,
   createOpen,
-  onCreateOpenChange
+  onCreateOpenChange,
+  assistantOpen = false,
+  onToggleAssistant
 }: SidebarProps) {
   const params = useParams<{ project?: string }>();
   const pathname = usePathname() || '';
   const router = useRouter();
+  const { user, logout } = useAuth();
+  const { preference, setPreference } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const [form] = Form.useForm<ProjectForm>();
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -63,7 +74,8 @@ export function Sidebar({
     <nav className="sidenav-list">
       {items.map((mod) => {
         const Icon = mod.icon;
-        const active = mod.match(pathname, currentProjectId);
+        const isChat = mod.key === 'chat';
+        const active = mod.match(pathname, currentProjectId) || (isChat && assistantOpen);
         const soon = mod.status === 'soon';
         return (
           <button
@@ -71,7 +83,10 @@ export function Sidebar({
             type="button"
             className={`sidenav-item ${active ? 'is-active' : ''} ${soon ? 'is-soon' : ''}`}
             disabled={soon}
-            onClick={() => !soon && router.push(mod.path(currentProjectId))}
+            onClick={() => {
+              if (isChat) onToggleAssistant?.();
+              else if (!soon) router.push(mod.path(currentProjectId));
+            }}
             aria-current={active ? 'page' : undefined}
             title={soon ? `${mod.label}（即将上线）` : mod.label}
           >
@@ -83,6 +98,26 @@ export function Sidebar({
       })}
     </nav>
   );
+
+  const themeItems: MenuProps['items'] = (['light', 'dark', 'system'] as ThemePreference[]).map((value) => ({
+    key: value,
+    label: value === 'light' ? '亮色' : value === 'dark' ? '暗色' : '跟随系统',
+    icon: preference === value ? <CheckOutlined /> : undefined,
+    onClick: () => setPreference(value)
+  }));
+  const languageItems: MenuProps['items'] = [
+    { key: 'zh-CN', label: '简体中文', icon: language === 'zh-CN' ? <CheckOutlined /> : undefined, onClick: () => setLanguage('zh-CN') },
+    { key: 'en-US', label: 'English', icon: language === 'en-US' ? <CheckOutlined /> : undefined, onClick: () => setLanguage('en-US') }
+  ];
+  const accountMenu: MenuProps['items'] = [
+    { key: 'profile', label: <div className="sidenav-account-menu-name">{user?.displayName || user?.username || '当前用户'}</div>, disabled: true },
+    { type: 'divider' },
+    { key: 'theme', icon: <SkinOutlined />, label: '主题', children: themeItems },
+    { key: 'language', icon: <GlobalOutlined />, label: '语言 / Language', children: languageItems },
+    { type: 'divider' },
+    { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true, onClick: () => void logout() }
+  ];
+  const displayName = user?.displayName || user?.username || '当前用户';
 
   return (
     <aside className="sidenav">
@@ -110,6 +145,21 @@ export function Sidebar({
           <div className="sidenav-current-meta">
             <span className="mono">{selectedItem.id}</span>
           </div>
+        </div>
+      )}
+
+      {user && (
+        <div className="sidenav-account">
+          <Dropdown menu={{ items: accountMenu }} trigger={['click']} placement="topLeft">
+            <button type="button" className="sidenav-account-button" aria-label="用户与偏好设置">
+              <Avatar size={30} className="sidenav-account-avatar">{displayName.slice(0, 1).toUpperCase()}</Avatar>
+              <span className="sidenav-account-details">
+                <span>{displayName}</span>
+                <small>{user.username}</small>
+              </span>
+              <span className="sidenav-account-more">•••</span>
+            </button>
+          </Dropdown>
         </div>
       )}
 
