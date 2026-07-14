@@ -5,7 +5,13 @@ export function middleware(request: NextRequest) {
   const refreshToken = request.cookies.get('refresh_token')?.value;
   const { pathname, search } = request.nextUrl;
 
-  if (pathname === '/login' || pathname === '/version.json' || pathname.startsWith('/_next') || pathname.startsWith('/api')) {
+  if (
+    pathname === '/login'
+    || pathname === '/version.json'
+    || pathname.startsWith('/_next')
+    || pathname.startsWith('/api')
+    || pathname.startsWith('/images/')
+  ) {
     return NextResponse.next();
   }
 
