@@ -27,6 +27,7 @@ interface Props {
 interface CreateRequirementForm {
   title: string;
   description?: string;
+  goal?: string;
   next?: string;
   status: RequirementStatus;
   priority: Priority;
@@ -114,9 +115,13 @@ export function RequirementGrid({
 
   const handleCreate = async () => {
     const values = await form.validateFields();
+    const { goal, ...input } = values;
     setCreating(true);
     try {
-      const res = await createRequirement(project, values);
+      const res = await createRequirement(project, {
+        ...input,
+        ...(goal?.trim() ? { goal: goal.trim() } : {})
+      });
       message.success('需求已创建');
       form.resetFields();
       setCreateOpen(false);
@@ -283,8 +288,11 @@ export function RequirementGrid({
           >
             <Input placeholder="例如：登录页支持手机号登录" />
           </Form.Item>
-          <Form.Item label="描述" name="description">
-            <Input.TextArea rows={4} placeholder="补充背景、目标或范围" />
+          <Form.Item label="摘要" name="description">
+            <Input.TextArea rows={3} placeholder="用一两句话概括需求背景与目标" />
+          </Form.Item>
+          <Form.Item label="详细方案" name="goal">
+            <Input.TextArea rows={6} placeholder="补充详细方案，支持 Markdown" />
           </Form.Item>
           <Form.Item label="下一步" name="next">
             <Input.TextArea rows={2} placeholder="例如：确认登录失败提示文案" />

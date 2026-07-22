@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react';
 import { InboxOutlined } from '@ant-design/icons';
+import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Priority, Requirement, RequirementStatus } from '@/lib/types';
 
 interface Props {
@@ -22,6 +24,29 @@ const PRIORITY_TONE: Record<string, string> = { P0: 'p0', P1: 'p1', P2: 'p2' };
 function prioTone(priority: Priority | string): string {
   return PRIORITY_TONE[priority] || 'p3';
 }
+
+const cardMarkdownComponents: Components = {
+  h1: ({ children }) => <span>{children} </span>,
+  h2: ({ children }) => <span>{children} </span>,
+  h3: ({ children }) => <span>{children} </span>,
+  h4: ({ children }) => <span>{children} </span>,
+  p: ({ children }) => <span>{children} </span>,
+  ul: ({ children }) => <span>{children}</span>,
+  ol: ({ children }) => <span>{children}</span>,
+  li: ({ children }) => <span className="card-markdown-list-item">• {children} </span>,
+  pre: ({ children }) => <span>{children}</span>,
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>
+      {children}
+    </a>
+  ),
+  table: ({ children }) => <span>{children}</span>,
+  thead: ({ children }) => <span>{children}</span>,
+  tbody: ({ children }) => <span>{children}</span>,
+  tr: ({ children }) => <span>{children} </span>,
+  th: ({ children }) => <span>{children} </span>,
+  td: ({ children }) => <span>{children} </span>
+};
 
 export function BoardColumns({ items, selectedId, isInitialLoading, onOpen }: Props) {
   const cols = useMemo(
@@ -63,7 +88,16 @@ export function BoardColumns({ items, selectedId, isInitialLoading, onOpen }: Pr
                       }}
                     >
                       <h4 className="card-title">{item.title}</h4>
-                      {item.summary && <p className="card-summary">{item.summary}</p>}
+                      {item.summary && (
+                        <div className="card-summary card-markdown-summary">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={cardMarkdownComponents}
+                          >
+                            {item.summary}
+                          </ReactMarkdown>
+                        </div>
+                      )}
                       <footer className="card-meta">
                         <span className={`card-prio tone-${prioTone(item.priority)}`}>
                           {item.priority || 'P3'}

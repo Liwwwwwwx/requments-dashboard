@@ -124,6 +124,35 @@ describe('RequirementGrid', () => {
     expect(screen.getByText('项目列表')).toBeInTheDocument();
   });
 
+  it('在看板卡片中渲染紧凑 Markdown 摘要', () => {
+    render(
+      <RequirementGrid
+        data={{
+          ...data,
+          items: [
+            makeRequirement({
+              id: 'REQ-MD',
+              title: 'Markdown 卡片',
+              status: 'todo',
+              priority: 'P1',
+              owner: 'pm',
+              summary: '## 技术方案\n\n- 支持 **Markdown**\n- 查看[接口文档](https://example.com/docs)\n\n`fetch()`'
+            })
+          ]
+        }}
+        project="alpha"
+        filters={initialFilters}
+        selectedId={null}
+      />
+    );
+
+    expect(screen.getByText('技术方案')).toBeInTheDocument();
+    expect(screen.getByText('Markdown').tagName).toBe('STRONG');
+    expect(screen.getByText('fetch()').tagName).toBe('CODE');
+    expect(screen.getByRole('link', { name: '接口文档' })).toHaveAttribute('href', 'https://example.com/docs');
+    expect(screen.queryByText(/## 技术方案/)).not.toBeInTheDocument();
+  });
+
   it('筛选后没有匹配需求时展示清空筛选入口', () => {
     render(<GridHarness />);
 
@@ -174,7 +203,7 @@ describe('RequirementGrid', () => {
     fireEvent.change(within(dialog).getByLabelText('标题'), {
       target: { value: '需求详情' }
     });
-    fireEvent.change(within(dialog).getByLabelText('描述'), {
+    fireEvent.change(within(dialog).getByLabelText('摘要'), {
       target: { value: '编辑基础字段和备注' }
     });
     fireEvent.change(within(dialog).getByLabelText('下一步'), {

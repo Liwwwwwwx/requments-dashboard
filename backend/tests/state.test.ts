@@ -62,6 +62,21 @@ describe('buildState', () => {
     expect(req.detail).not.toHaveProperty('nonGoals');
   });
 
+  it('keeps the summary separate when no detailed plan is provided', () => {
+    const state = buildState([
+      {
+        kind: 'req.new',
+        requirementId: 'REQ-0001',
+        title: '登录',
+        summary: '支持手机号登录',
+        actor: 'a'
+      }
+    ]);
+
+    expect(state.items[0].summary).toBe('支持手机号登录');
+    expect(state.items[0].detail.goal).toBe('');
+  });
+
   it('applies req.status updates', () => {
     const events = [
       {

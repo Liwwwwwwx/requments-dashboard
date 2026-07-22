@@ -1299,6 +1299,96 @@ body {
   color: var(--text-secondary);
 }
 
+.requirement-markdown > :first-child {
+  margin-top: 0;
+}
+
+.requirement-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.requirement-markdown h1,
+.requirement-markdown h2,
+.requirement-markdown h3,
+.requirement-markdown h4 {
+  color: var(--text-primary);
+  line-height: 1.35;
+  margin: 24px 0 12px;
+}
+
+.requirement-markdown h1 { font-size: 22px; }
+.requirement-markdown h2 { font-size: 18px; }
+.requirement-markdown h3 { font-size: 16px; }
+.requirement-markdown h4 { font-size: 14px; }
+
+.requirement-markdown p,
+.requirement-markdown blockquote,
+.requirement-markdown pre,
+.requirement-markdown table {
+  margin: 0 0 14px;
+}
+
+.requirement-markdown ul,
+.requirement-markdown ol {
+  margin: 0 0 14px;
+  padding-left: 22px;
+}
+
+.requirement-markdown a {
+  color: var(--accent-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.requirement-markdown code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.requirement-markdown pre {
+  overflow-x: auto;
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.requirement-markdown pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.requirement-markdown blockquote {
+  margin-left: 0;
+  padding-left: 14px;
+  border-left: 3px solid var(--border-strong);
+  color: var(--text-tertiary);
+}
+
+.requirement-markdown table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.requirement-markdown th,
+.requirement-markdown td {
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.requirement-markdown th {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
 .history-list {
   list-style: none;
   padding: 0;
@@ -2033,6 +2123,29 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
   word-break: break-word;
+}
+
+.card-markdown-summary {
+  white-space: normal;
+}
+
+.card-markdown-summary code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.card-markdown-summary a {
+  color: var(--accent-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.card-markdown-list-item::before {
+  color: var(--text-quaternary);
 }
 
 .card-meta {

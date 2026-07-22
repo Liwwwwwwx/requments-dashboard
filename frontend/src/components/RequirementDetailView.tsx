@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Form, Input, Modal, Select, Space, Typography, message } from 'antd';
+import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { addRequirementNote, fetchRequirementEvents, updateRequirement } from '@/lib/api';
 import { priorityChipClass, statusChipClass, statusLabel } from '@/lib/utils';
 import type { Priority, Requirement, RequirementEvent, RequirementStatus } from '@/lib/types';
@@ -10,6 +12,14 @@ import type { Priority, Requirement, RequirementEvent, RequirementStatus } from 
 const { Paragraph } = Typography;
 
 const V2_HISTORY_KINDS = new Set(['req.new', 'req.status', 'req.patch', 'note.add']);
+
+const requirementMarkdownComponents: Components = {
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noreferrer">
+      {children}
+    </a>
+  )
+};
 
 interface Props {
   item: Requirement | null;
@@ -20,6 +30,7 @@ interface Props {
 interface RequirementEditForm {
   title: string;
   description?: string;
+  goal?: string;
   next?: string;
   acceptanceText?: string;
   status: RequirementStatus;
@@ -176,7 +187,8 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
     if (!item) return;
     form.setFieldsValue({
       title: item.title,
-      description: item.summary || item.detail?.goal || '',
+      description: item.summary || '',
+      goal: item.detail?.goal || '',
       next: item.detail?.next || '',
       acceptanceText: (item.acceptance || []).join('\n'),
       status: item.status,
@@ -194,6 +206,7 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
       await updateRequirement(project, item.id, {
         title: values.title.trim(),
         description: values.description?.trim() || '',
+        goal: values.goal?.trim() || '',
         next: values.next?.trim() || '',
         acceptance: linesToList(values.acceptanceText),
         status: values.status,
@@ -307,16 +320,35 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
 
       <div className="view-detail-grid">
         <div>
-          {(item.summary || item.detail?.goal) && (
+          {item.summary && (
             <section className="view-detail-section">
-              <h3 className="view-detail-section-title">描述</h3>
-              <div className="view-detail-section-body">
-                <Paragraph style={{ marginBottom: 0 }}>
-                  {item.summary || item.detail?.goal}
-                </Paragraph>
+              <h3 className="view-detail-section-title">摘要</h3>
+              <div className="view-detail-section-body requirement-markdown">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={requirementMarkdownComponents}
+                >
+                  {item.summary}
+                </ReactMarkdown>
               </div>
             </section>
           )}
+
+          <section className="view-detail-section">
+            <h3 className="view-detail-section-title">详细方案</h3>
+            <div className="view-detail-section-body requirement-markdown">
+              {item.detail?.goal ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={requirementMarkdownComponents}
+                >
+                  {item.detail.goal}
+                </ReactMarkdown>
+              ) : (
+                <span className="view-detail-empty">暂无详细方案</span>
+              )}
+            </div>
+          </section>
 
           {item.detail?.next && (
             <section className="view-detail-section">
@@ -428,8 +460,11 @@ export function RequirementDetailView({ item, project, onUpdated }: Props) {
           >
             <Input placeholder="需求标题" />
           </Form.Item>
-          <Form.Item label="描述" name="description">
-            <Input.TextArea rows={4} placeholder="需求描述" />
+          <Form.Item label="摘要" name="description">
+            <Input.TextArea rows={3} placeholder="用一两句话概括需求背景与目标" />
+          </Form.Item>
+          <Form.Item label="详细方案" name="goal">
+            <Input.TextArea rows={8} placeholder="补充详细方案，支持 Markdown" />
           </Form.Item>
           <Form.Item label="下一步" name="next">
             <Input.TextArea rows={2} placeholder="例如：确认登录失败提示文案" />
