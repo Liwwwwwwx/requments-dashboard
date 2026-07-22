@@ -130,7 +130,7 @@ describe('RequirementDetailView', () => {
     expect(screen.queryByText(/范围：用户名密码登录/)).not.toBeInTheDocument();
   });
 
-  it('详情页使用描述作为基础字段标题', async () => {
+  it('详情页分别展示摘要和详细方案', async () => {
     render(
       <RequirementDetailView
         item={requirement}
@@ -141,8 +141,30 @@ describe('RequirementDetailView', () => {
     await waitFor(() => {
       expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
     });
-    expect(screen.getByRole('heading', { name: '描述' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: '摘要' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '摘要' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '详细方案' })).toBeInTheDocument();
+    expect(screen.getByText('补齐最简单的登录体验')).toBeInTheDocument();
+    expect(screen.getByText('用户可以登录系统')).toBeInTheDocument();
+  });
+
+  it('将描述渲染为安全的 Markdown', async () => {
+    render(
+      <RequirementDetailView
+        item={{
+          ...requirement,
+          summary: '## 技术方案\n\n- 支持 **Markdown**\n- 查看[接口文档](https://example.com/docs)\n\n`fetch()`'
+        }}
+        project="alpha"
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchRequirementEvents).toHaveBeenCalledWith('alpha', 'REQ-0001');
+    });
+    expect(screen.getByRole('heading', { name: '技术方案' })).toBeInTheDocument();
+    expect(screen.getByText('Markdown').tagName).toBe('STRONG');
+    expect(screen.getByRole('link', { name: '接口文档' })).toHaveAttribute('href', 'https://example.com/docs');
+    expect(screen.getByText('fetch()').tagName).toBe('CODE');
   });
 
   it('不展示旧版详情范围字段', async () => {
@@ -325,8 +347,11 @@ describe('RequirementDetailView', () => {
     fireEvent.change(screen.getByLabelText('标题'), {
       target: { value: '登录页 V2' }
     });
-    fireEvent.change(screen.getByLabelText('描述'), {
+    fireEvent.change(screen.getByLabelText('摘要'), {
       target: { value: '只保留用户名密码登录' }
+    });
+    fireEvent.change(screen.getByLabelText('详细方案'), {
+      target: { value: '补充登录失败的交互与接口约束' }
     });
     fireEvent.change(screen.getByLabelText('下一步'), {
       target: { value: '确认登录失败提示' }
@@ -352,6 +377,7 @@ describe('RequirementDetailView', () => {
       expect(updateRequirement).toHaveBeenCalledWith('alpha', 'REQ-0001', {
         title: '登录页 V2',
         description: '只保留用户名密码登录',
+        goal: '补充登录失败的交互与接口约束',
         status: 'blocked',
         priority: 'P0',
         owner: 'owner-a',

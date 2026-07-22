@@ -114,7 +114,10 @@ function createPostgresRoutes(rootDir) {
       const priority = validPriority(req.body.priority, next); if (priority === null) return;
       const status = validStatus(req.body.status, next); if (status === null) return;
       const current = await stateFor(project.id);
-      const event = { kind: "req.new", requirementId: nextRequirementId(current.items), title, summary: String(req.body.description || req.body.summary || "").trim(), priority: priority || "P1", status: status || "todo", owner: req.body.owner === undefined ? undefined : String(req.body.owner).trim(), detail: req.body.next === undefined ? undefined : { next: String(req.body.next).trim() }, actor: req.user.username };
+      const detail = {};
+      if (req.body.goal !== undefined) detail.goal = String(req.body.goal).trim();
+      if (req.body.next !== undefined) detail.next = String(req.body.next).trim();
+      const event = { kind: "req.new", requirementId: nextRequirementId(current.items), title, summary: String(req.body.description || req.body.summary || "").trim(), priority: priority || "P1", status: status || "todo", owner: req.body.owner === undefined ? undefined : String(req.body.owner).trim(), detail: Object.keys(detail).length ? detail : undefined, actor: req.user.username };
       const appended = await store.appendEvents(project.id, event);
       const state = await stateFor(project.id);
       res.status(201).json({ ok: true, project: project.id, requirement: state.items.find((item) => item.id === event.requirementId), event: appended[0] });
@@ -129,7 +132,12 @@ function createPostgresRoutes(rootDir) {
       const current = (await stateFor(project.id)).items.find((item) => item.id === req.params.requirementId); if (!current) return next(httpError(404, "REQUIREMENT_NOT_FOUND", "需求不存在"));
       const status = validStatus(req.body.status, next); if (status === null) return; const priority = validPriority(req.body.priority, next); if (priority === null) return;
       const patch = {}; ["title", "summary", "owner", "week", "dueDate", "acceptance"].forEach((key) => { if (req.body[key] !== undefined) patch[key] = req.body[key]; });
-      if (req.body.description !== undefined) patch.summary = String(req.body.description).trim(); if (req.body.next !== undefined) patch.detail = { next: String(req.body.next).trim() }; if (priority) patch.priority = priority;
+      if (req.body.description !== undefined) patch.summary = String(req.body.description).trim();
+      const detail = {};
+      if (req.body.goal !== undefined) detail.goal = String(req.body.goal).trim();
+      if (req.body.next !== undefined) detail.next = String(req.body.next).trim();
+      if (Object.keys(detail).length) patch.detail = detail;
+      if (priority) patch.priority = priority;
       const events = Object.keys(patch).length ? [{ kind: "req.patch", requirementId: current.id, actor: req.user.username, ...patch }] : [];
       if (status) { assertRequirementTransition(current.status, status, current.id); events.push({ kind: "req.status", requirementId: current.id, status, actor: req.user.username }); }
       if (!events.length) return next(httpError(400, "EMPTY_PATCH", "没有可更新的需求字段"));

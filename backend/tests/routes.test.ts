@@ -448,6 +448,7 @@ describe('V2 requirement REST APIs', () => {
         .send({
           title: '需求看板',
           description: '按项目查看需求',
+          goal: '用看板按状态推进需求，并保留每次调整的审计记录',
           next: '先补新建需求弹窗',
           priority: 'P0',
           owner: 'pm'
@@ -465,6 +466,7 @@ describe('V2 requirement REST APIs', () => {
       createdBy: 'admin',
       status: 'todo',
       detail: {
+        goal: '用看板按状态推进需求，并保留每次调整的审计记录',
         next: '先补新建需求弹窗'
       }
     });
@@ -542,6 +544,7 @@ describe('V2 requirement REST APIs', () => {
         .send({
           title: '新标题',
           description: '新描述',
+          goal: '登录流程、失败提示与状态恢复方案',
           next: '确认登录失败提示',
           acceptance: ['登录成功后进入项目页', '密码错误时显示提示'],
           status: 'blocked',
@@ -560,6 +563,7 @@ describe('V2 requirement REST APIs', () => {
       priority: 'P1',
       owner: 'dev',
       detail: {
+        goal: '登录流程、失败提示与状态恢复方案',
         next: '确认登录失败提示'
       },
       acceptance: ['登录成功后进入项目页', '密码错误时显示提示']
@@ -568,6 +572,7 @@ describe('V2 requirement REST APIs', () => {
     const patchEvent = readEvents(paths.eventsPath).find((event) => event.kind === 'req.patch');
     expect(patchEvent).toMatchObject({
       detail: {
+        goal: '登录流程、失败提示与状态恢复方案',
         next: '确认登录失败提示'
       },
       acceptance: ['登录成功后进入项目页', '密码错误时显示提示']

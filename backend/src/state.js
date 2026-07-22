@@ -105,7 +105,7 @@ function applyEvent(state, event) {
     req.updatedAt = event.updatedAt || localDate();
     req.summary = event.summary || "";
     req.detail = {
-      goal: event.detail?.goal || req.summary,
+      goal: event.detail?.goal || "",
       scope: normalizeArray(event.detail?.scope),
       nonGoals: normalizeArray(event.detail?.nonGoals),
       next: event.detail?.next || ""
