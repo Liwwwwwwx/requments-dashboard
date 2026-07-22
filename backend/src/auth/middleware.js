@@ -13,10 +13,10 @@ function matchesApiToken(token) {
 }
 
 function authMiddleware(users) {
-  return function (req, res, next) {
+  return async function (req, res, next) {
     const token = readBearerToken(req);
     if (!token) {
-      return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+      return res.status(401).json({ ok: false, code: "UNAUTHORIZED", message: "请先登录。" });
     }
     if (matchesApiToken(token)) {
       req.user = { id: "api-token", username: "api-token", displayName: "API Token" };
@@ -24,20 +24,20 @@ function authMiddleware(users) {
     }
     try {
       const decoded = verifyAccess(token);
-      const user = users.findById(decoded.sub);
+      const user = await users.findById(decoded.sub);
       if (!user) {
-        return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+        return res.status(401).json({ ok: false, code: "UNAUTHORIZED", message: "用户不存在或已被删除。" });
       }
       req.user = { id: user.id, username: user.username, displayName: user.display_name, role: user.role };
       next();
     } catch (_err) {
-      return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+      return res.status(401).json({ ok: false, code: "UNAUTHORIZED", message: "登录已过期，请重新登录。" });
     }
   };
 }
 
 function optionalAuth(users) {
-  return function (req, _res, next) {
+  return async function (req, _res, next) {
     const token = readBearerToken(req);
     if (!token) {
       req.user = null;
@@ -49,7 +49,7 @@ function optionalAuth(users) {
     }
     try {
       const decoded = verifyAccess(token);
-      const user = users.findById(decoded.sub);
+      const user = await users.findById(decoded.sub);
       if (user) {
         req.user = { id: user.id, username: user.username, displayName: user.display_name, role: user.role };
       } else {
