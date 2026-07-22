@@ -16,6 +16,7 @@ const path = require("node:path");
 const secretsPath = path.join(__dirname, "ecosystem.secrets.cjs");
 const secrets = fs.existsSync(secretsPath) ? require(secretsPath) : {};
 const backendSecrets = secrets.backendEnv || {};
+const mcpSecrets = secrets.mcpEnv || {};
 
 module.exports = {
   apps: [
@@ -25,7 +26,7 @@ module.exports = {
       script: "backend/src/index.js",
       interpreter: "node",
       env: {
-        REQUIREMENTS_HOST: "0.0.0.0",
+        REQUIREMENTS_HOST: "127.0.0.1",
         NODE_ENV: "production",
         COOKIE_SECURE: "false",
         ...backendSecrets
@@ -39,13 +40,32 @@ module.exports = {
       name: "req-board-frontend",
       cwd: "/home/ubuntu/requments-dashboard/frontend",
       script: "/home/ubuntu/requments-dashboard/node_modules/.bin/next",
-      args: "start -H 0.0.0.0 -p 5173",
+      args: "start -H 127.0.0.1 -p 5173",
       env: {
         NODE_ENV: "production"
       },
       max_memory_restart: "400M",
       out_file: "/home/ubuntu/.pm2/logs/req-board-frontend-out.log",
       error_file: "/home/ubuntu/.pm2/logs/req-board-frontend-error.log",
+      merge_logs: true
+    },
+    {
+      name: "req-board-mcp",
+      cwd: "/home/ubuntu/requments-dashboard",
+      script: "mcp-server/src/http.js",
+      interpreter: "node",
+      env: {
+        NODE_ENV: "production",
+        MCP_HOST: "127.0.0.1",
+        MCP_PORT: "4318",
+        MCP_PUBLIC_ORIGIN: "https://aiwai.cloud",
+        TRACEBOARD_BASE_URL: "http://127.0.0.1:4315",
+        TRACEBOARD_API_TOKEN: backendSecrets.REQUIREMENTS_API_TOKEN || "",
+        MCP_ACCESS_TOKEN: mcpSecrets.MCP_ACCESS_TOKEN || ""
+      },
+      max_memory_restart: "300M",
+      out_file: "/home/ubuntu/.pm2/logs/req-board-mcp-out.log",
+      error_file: "/home/ubuntu/.pm2/logs/req-board-mcp-error.log",
       merge_logs: true
     }
   ]
