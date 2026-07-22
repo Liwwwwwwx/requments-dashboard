@@ -15,6 +15,7 @@ export default defineConfig({
       'tests/state.test.ts',
       'tests/state-machine.test.ts',
       'tests/errors.test.ts',
+      'tests/auth/middleware.test.ts',
       'tests/ai/provider.deepseek.test.ts',
       'tests/ai/tools.test.ts',
       'tests/postgres.integration.test.ts'

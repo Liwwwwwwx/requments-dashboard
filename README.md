@@ -12,8 +12,8 @@ TraceBoard 是一个轻量的项目需求看板，帮助个人开发者和小团
 ## 技术栈
 
 - 前端：Next.js 15、TypeScript、Ant Design 5、Vitest。
-- 后端：Node.js 18+、Express 4、SQLite（better-sqlite3）。
-- 数据：按项目隔离，默认存放在 `data/<project>/events.db`。
+- 后端：Node.js 22+、Express 4、PostgreSQL。
+- 数据：PostgreSQL，按项目成员权限隔离。
 
 ## 启动
 
@@ -36,6 +36,8 @@ npm run test:backend
 npm run test:frontend
 npm run lint
 npm run typecheck
+npm run mcp
+npm run test:mcp
 ```
 
 ## 页面
@@ -54,9 +56,9 @@ npm run typecheck
 | --- | --- | --- |
 | `GET` | `/api/health` | 健康检查 |
 | `GET` / `POST` | `/api/projects` | 查询或创建项目 |
-| `GET` / `PATCH` | `/api/projects/:project` | 查询或更新项目 |
+| `GET` / `PATCH` / `DELETE` | `/api/projects/:project` | 查询、更新或永久删除项目（仅 owner） |
 | `GET` / `POST` | `/api/projects/:project/requirements` | 查询或创建需求 |
-| `GET` / `PATCH` | `/api/projects/:project/requirements/:id` | 查询或更新需求 |
+| `GET` / `PATCH` / `DELETE` | `/api/projects/:project/requirements/:id` | 查询、更新或从当前看板删除需求（保留删除事件） |
 | `GET` / `POST` | `/api/projects/:project/requirements/:id/events` | 查询历史或写入需求事件 |
 
 ## 开发文档

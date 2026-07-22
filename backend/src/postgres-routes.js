@@ -95,6 +95,14 @@ function createPostgresRoutes(rootDir) {
       res.json({ ok: true, project: await store.updateProject(project.id, { name: req.body.name === undefined ? undefined : String(req.body.name).trim(), description: req.body.description === undefined ? undefined : String(req.body.description).trim() }) });
     } catch (error) { next(error); }
   });
+  router.delete("/projects/:project", async (req, res, next) => {
+    try {
+      const project = await requireProject(req, next); if (!project) return;
+      if (project.role !== "owner") return next(httpError(403, "PROJECT_DELETE_FORBIDDEN", "仅项目 owner 可以删除项目"));
+      const deleted = await store.deleteProject(project.id);
+      res.json({ ok: true, project: project.id, deleted });
+    } catch (error) { next(error); }
+  });
 
   router.get("/projects/:project/requirements", async (req, res, next) => {
     try { const project = await requireProject(req, next); if (project) res.json({ ok: true, project: project.id, requirements: (await stateFor(project.id)).items }); } catch (error) { next(error); }
@@ -128,12 +136,21 @@ function createPostgresRoutes(rootDir) {
       await store.appendEvents(project.id, events); const state = await stateFor(project.id); res.json({ ok: true, project: project.id, requirement: state.items.find((item) => item.id === current.id), appended: events.length });
     } catch (error) { next(error); }
   });
+  router.delete("/projects/:project/requirements/:requirementId", async (req, res, next) => {
+    try {
+      const project = await requireProject(req, next); if (!project) return;
+      const current = (await stateFor(project.id)).items.find((item) => item.id === req.params.requirementId);
+      if (!current) return next(httpError(404, "REQUIREMENT_NOT_FOUND", "需求不存在"));
+      const [event] = await store.appendEvents(project.id, { kind: "req.delete", requirementId: current.id, actor: req.user.username });
+      res.json({ ok: true, project: project.id, requirementId: current.id, deleted: true, event });
+    } catch (error) { next(error); }
+  });
   router.get("/projects/:project/requirements/:requirementId/events", async (req, res, next) => {
     try {
       const project = await requireProject(req, next); if (!project) return;
       const state = await stateFor(project.id);
       if (!state.items.some((item) => item.id === req.params.requirementId)) return next(httpError(404, "REQUIREMENT_NOT_FOUND", "需求不存在"));
-      const events = (await store.listEvents(project.id)).filter((event) => event.requirementId === req.params.requirementId && ["req.new", "req.status", "req.patch", "note.add"].includes(event.kind)).map((event) => ({ eventId: event.eventId, ts: event.ts, kind: event.kind, actor: event.actor, requirementId: event.requirementId, taskId: event.taskId, updatedAt: event.updatedAt, at: event.at, event }));
+      const events = (await store.listEvents(project.id)).filter((event) => event.requirementId === req.params.requirementId && ["req.new", "req.status", "req.patch", "req.delete", "note.add"].includes(event.kind)).map((event) => ({ eventId: event.eventId, ts: event.ts, kind: event.kind, actor: event.actor, requirementId: event.requirementId, taskId: event.taskId, updatedAt: event.updatedAt, at: event.at, event }));
       res.json({ ok: true, project: project.id, requirementId: req.params.requirementId, events });
     } catch (error) { next(error); }
   });

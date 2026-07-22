@@ -8,18 +8,21 @@ function createEventId() {
 }
 
 function toProject(row) {
-  return row && {
+  if (!row) return null;
+  const project = {
     id: row.id,
     name: row.name,
     description: row.description || "",
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+  if (row.role) project.role = row.role;
+  return project;
 }
 
 async function listProjects(userId) {
   const result = await query(
-    `SELECT p.id, p.name, p.description, p.created_at, p.updated_at
+    `SELECT p.id, p.name, p.description, p.created_at, p.updated_at, m.role
      FROM projects p
      JOIN project_members m ON m.project_id = p.id
      WHERE m.user_id = $1
@@ -31,7 +34,7 @@ async function listProjects(userId) {
 
 async function getProject(projectId, userId) {
   const result = await query(
-    `SELECT p.id, p.name, p.description, p.created_at, p.updated_at
+    `SELECT p.id, p.name, p.description, p.created_at, p.updated_at, m.role
      FROM projects p
      JOIN project_members m ON m.project_id = p.id
      WHERE p.id = $1 AND m.user_id = $2`,
@@ -69,6 +72,11 @@ async function updateProject(projectId, input) {
   return toProject(result.rows[0]);
 }
 
+async function deleteProject(projectId) {
+  const result = await query("DELETE FROM projects WHERE id = $1 RETURNING id", [projectId]);
+  return result.rowCount === 1;
+}
+
 async function listEvents(projectId) {
   const result = await query(
     "SELECT payload FROM events WHERE project_id = $1 ORDER BY ts ASC, id ASC",
@@ -101,6 +109,7 @@ module.exports = {
   getProjectById,
   createProject,
   updateProject,
+  deleteProject,
   listEvents,
   appendEvents
 };

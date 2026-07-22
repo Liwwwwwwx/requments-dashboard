@@ -1,0 +1,21 @@
+{
+  "name": "traceboard-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TraceBoard 的本地 stdio MCP 适配层",
+  "scripts": {
+    "start": "node src/stdio.js",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
+  }
+}

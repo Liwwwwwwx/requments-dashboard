@@ -12,6 +12,14 @@ function matchesApiToken(token) {
   return Boolean(apiToken && token && token === apiToken);
 }
 
+async function apiTokenUser(users) {
+  const userId = String(process.env.REQUIREMENTS_API_USER_ID || "").trim();
+  if (!userId) return { error: "API_TOKEN_USER_NOT_CONFIGURED", message: "API Token 尚未绑定用户。" };
+  const user = await users.findById(userId);
+  if (!user) return { error: "API_TOKEN_USER_NOT_FOUND", message: "API Token 绑定的用户不存在。" };
+  return { user: { id: user.id, username: user.username, displayName: user.display_name, role: user.role } };
+}
+
 function authMiddleware(users) {
   return async function (req, res, next) {
     const token = readBearerToken(req);
@@ -19,7 +27,9 @@ function authMiddleware(users) {
       return res.status(401).json({ ok: false, code: "UNAUTHORIZED", message: "请先登录。" });
     }
     if (matchesApiToken(token)) {
-      req.user = { id: "api-token", username: "api-token", displayName: "API Token" };
+      const result = await apiTokenUser(users);
+      if (result.error) return res.status(401).json({ ok: false, code: result.error, message: result.message });
+      req.user = result.user;
       return next();
     }
     try {
@@ -44,7 +54,8 @@ function optionalAuth(users) {
       return next();
     }
     if (matchesApiToken(token)) {
-      req.user = { id: "api-token", username: "api-token", displayName: "API Token" };
+      const result = await apiTokenUser(users);
+      req.user = result.user || null;
       return next();
     }
     try {
@@ -62,4 +73,4 @@ function optionalAuth(users) {
   };
 }
 
-module.exports = { authMiddleware, optionalAuth };
+module.exports = { authMiddleware, optionalAuth, apiTokenUser };

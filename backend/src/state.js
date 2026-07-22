@@ -118,6 +118,12 @@ function applyEvent(state, event) {
   }
 
   if (!event.requirementId) return;
+
+  if (kind === "req.delete") {
+    state.requirements.delete(event.requirementId);
+    return;
+  }
+
   const req = getOrCreateRequirement(state, event.requirementId);
 
   if (kind === "req.status") {
