@@ -58,7 +58,7 @@ module.exports = {
         NODE_ENV: "production",
         MCP_HOST: "127.0.0.1",
         MCP_PORT: "4318",
-        MCP_PUBLIC_ORIGIN: "https://aiwai.cloud",
+        MCP_PUBLIC_ORIGIN: "https://aiwai.cloud:9443",
         TRACEBOARD_BASE_URL: "http://127.0.0.1:4315",
         TRACEBOARD_API_TOKEN: backendSecrets.REQUIREMENTS_API_TOKEN || "",
         MCP_ACCESS_TOKEN: mcpSecrets.MCP_ACCESS_TOKEN || ""
