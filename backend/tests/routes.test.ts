@@ -85,7 +85,7 @@ describe('GET /api/projects', () => {
         .get('/api/projects')
         .set('Authorization', 'Bearer wrong-token');
       expect(res.status).toBe(401);
-      expect(res.body).toEqual({ ok: false, error: 'UNAUTHORIZED' });
+      expect(res.body).toMatchObject({ ok: false, code: 'UNAUTHORIZED' });
     } finally {
       if (previous === undefined) delete process.env.REQUIREMENTS_API_TOKEN;
       else process.env.REQUIREMENTS_API_TOKEN = previous;

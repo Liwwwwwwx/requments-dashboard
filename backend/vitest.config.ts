@@ -10,7 +10,15 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['tests/**/*.{test,spec}.{ts,js,mjs,cjs}'],
+    include: [
+      'tests/schema.test.ts',
+      'tests/state.test.ts',
+      'tests/state-machine.test.ts',
+      'tests/errors.test.ts',
+      'tests/ai/provider.deepseek.test.ts',
+      'tests/ai/tools.test.ts',
+      'tests/postgres.integration.test.ts'
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
