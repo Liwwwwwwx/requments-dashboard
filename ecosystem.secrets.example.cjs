@@ -6,5 +6,9 @@ module.exports = {
     DEFAULT_USERNAME: "15232780628",
     DEFAULT_PASSWORD_HASH: "$2b$10$sQCh30VeEHqQqtwELlpaNucmN8lP6au1aSkVzsn5YGWpWkjpgfGZC",
     DEFAULT_DISPLAY_NAME: "管理员"
+  },
+  mcpEnv: {
+    // 仅远程 MCP 客户端使用；不要与 REQUIREMENTS_API_TOKEN 复用。
+    MCP_ACCESS_TOKEN: "replace-with-a-second-random-token"
   }
 };

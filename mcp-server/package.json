@@ -6,6 +6,7 @@
   "description": "TraceBoard 的本地 stdio MCP 适配层",
   "scripts": {
     "start": "node src/stdio.js",
+    "start:http": "node src/http.js",
     "test": "vitest run"
   },
   "engines": {

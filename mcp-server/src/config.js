@@ -24,3 +24,29 @@ export function loadConfig(env = process.env) {
     timeoutMs
   };
 }
+
+export function loadHttpConfig(env = process.env) {
+  const config = loadConfig(env);
+  const publicOrigin = required(env, "MCP_PUBLIC_ORIGIN").replace(/\/$/, "");
+  let origin;
+  try {
+    origin = new URL(publicOrigin);
+  } catch {
+    throw new Error("MCP_PUBLIC_ORIGIN must be an absolute URL");
+  }
+  if (origin.protocol !== "https:") throw new Error("MCP_PUBLIC_ORIGIN must use HTTPS");
+
+  const port = Number(env.MCP_PORT || 4318);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error("MCP_PORT must be a valid TCP port");
+  }
+
+  return {
+    ...config,
+    accessToken: required(env, "MCP_ACCESS_TOKEN"),
+    host: String(env.MCP_HOST || "127.0.0.1").trim(),
+    port,
+    publicOrigin,
+    publicHost: origin.host
+  };
+}

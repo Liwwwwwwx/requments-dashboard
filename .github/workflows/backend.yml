@@ -5,12 +5,16 @@ on:
     branches: [main, dev]
     paths:
       - 'backend/**'
+      - 'mcp-server/**'
+      - 'ecosystem.config.cjs'
       - 'package*.json'
       - '.github/workflows/backend.yml'
   pull_request:
     branches: [main, dev]
     paths:
       - 'backend/**'
+      - 'mcp-server/**'
+      - 'ecosystem.config.cjs'
       - 'package*.json'
       - '.github/workflows/backend.yml'
   workflow_dispatch:
@@ -128,6 +132,7 @@ jobs:
               export PATH="${{ env.PM2_PATH }}:$PATH"
               cd "${{ env.DEPLOY_PATH }}"
               pm2 startOrReload ecosystem.config.cjs --only req-board-backend --update-env
+              pm2 startOrReload ecosystem.config.cjs --only req-board-mcp --update-env
               pm2 save
               pm2 ls --no-color
             '
@@ -143,3 +148,4 @@ jobs:
             set -e
             sleep 3
             curl -fsS http://127.0.0.1:4315/api/health && echo " (backend)"
+            curl -fsS -o /dev/null -w '%{http_code}' http://127.0.0.1:4318/mcp | grep -qx '401'
