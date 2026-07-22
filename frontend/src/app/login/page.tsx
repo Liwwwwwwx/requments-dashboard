@@ -25,13 +25,15 @@ function safeRedirectTarget(value: string | null) {
 }
 
 function LoginForm() {
-  const { login, user } = useAuth();
+  const { login, register, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pageRef = useRef<HTMLElement | null>(null);
   const didRedirect = useRef(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -73,7 +75,11 @@ function LoginForm() {
     setError('');
     setLoading(true);
     try {
-      await login(username.trim(), password);
+      if (isRegistering) {
+        await register(username.trim(), password, displayName.trim() || undefined);
+      } else {
+        await login(username.trim(), password);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败');
     } finally {
@@ -127,13 +133,26 @@ function LoginForm() {
               {error && <Alert message={error} type="error" showIcon className="login-alert" />}
 
               <form onSubmit={handleSubmit} className="login-form">
+                {isRegistering && (
+                  <label className="login-field" htmlFor="login-display-name">
+                    <span>显示名称（可选）</span>
+                    <Input
+                      id="login-display-name"
+                      size="large"
+                      placeholder="例如：李明"
+                      value={displayName}
+                      onChange={(event) => setDisplayName(event.target.value)}
+                    />
+                  </label>
+                )}
+
                 <label className="login-field" htmlFor="login-username">
                   <span>用户名</span>
                   <Input
                     id="login-username"
                     size="large"
                     prefix={<UserOutlined />}
-                    placeholder="输入用户名"
+                    placeholder={isRegistering ? '3–32 位字母、数字或 ._-' : '输入用户名'}
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
                     autoFocus
@@ -146,7 +165,7 @@ function LoginForm() {
                     id="login-password"
                     size="large"
                     prefix={<LockOutlined />}
-                    placeholder="输入密码"
+                    placeholder={isRegistering ? '至少 8 位密码' : '输入密码'}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                   />
@@ -157,13 +176,24 @@ function LoginForm() {
                   htmlType="submit"
                   size="large"
                   loading={loading}
-                  disabled={!username.trim() || !password}
+                  disabled={!username.trim() || !password || (isRegistering && password.length < 8)}
                   className="login-submit"
                   block
                 >
-                  进入工作台 <ArrowRightOutlined />
+                  {isRegistering ? '创建账号并进入' : '进入工作台'} <ArrowRightOutlined />
                 </Button>
               </form>
+
+              <Button
+                type="link"
+                className="login-mode-toggle"
+                onClick={() => {
+                  setError('');
+                  setIsRegistering((value) => !value);
+                }}
+              >
+                {isRegistering ? '已有账号？去登录' : '没有账号？注册'}
+              </Button>
 
               <p className="login-security-note">
                 <LockOutlined /> 登录后将按你的项目权限加载工作内容。
@@ -246,6 +276,7 @@ function LoginForm() {
           }
 
           .login-story-main { max-width: 510px; margin: clamp(76px, 11vh, 132px) 0 auto; }
+          .login-mode-toggle { width: 100%; margin-top: 8px; color: #8da4d3; }
           .login-story-kicker, .login-access-eyebrow {
             margin: 0 0 14px;
             color: #8da4d3;

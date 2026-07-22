@@ -36,10 +36,9 @@ describe('AuthProvider + RouteGuard', () => {
 
   it('通过 refresh 恢复用户后展示受保护页面', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      jsonResponse({ ok: true, accessToken: 'access-1' })
-    ).mockResolvedValueOnce(
       jsonResponse({
         ok: true,
+        accessToken: 'access-1',
         user: { id: 'u1', username: 'admin', displayName: '管理员' }
       })
     );
@@ -55,12 +54,12 @@ describe('AuthProvider + RouteGuard', () => {
     expect(screen.getByLabelText('正在检查登录状态')).toBeInTheDocument();
     expect(await screen.findByText('Protected Board')).toBeInTheDocument();
     expect(navState.replace).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      '/api/auth/me',
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/refresh',
       expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: 'Bearer access-1'
-        })
+        method: 'POST',
+        credentials: 'include'
       })
     );
   });

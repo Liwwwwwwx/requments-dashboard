@@ -4,8 +4,10 @@
   "description": "需求看板后端：Express + SQLite + 多项目隔离",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
+    "start": "node --env-file=../.env.local src/index.js",
+    "dev": "node --env-file=../.env.local --watch src/index.js",
+    "db:migrate": "node scripts/db-migrate.js",
+    "db:import-sqlite": "node scripts/import-sqlite-to-postgres.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -21,6 +23,7 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.3",
+    "pg": "^8.16.3",
     "zod": "^3.23.0"
   },
   "devDependencies": {

@@ -11,7 +11,23 @@ const HOST = process.env.REQUIREMENTS_HOST || "127.0.0.1";
 const PORT = Number(process.env.REQUIREMENTS_PORT || 4315);
 
 const app = express();
-app.use(cors());
+
+const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // 允许无 origin 的请求（如服务器间调用、curl、Postman 等）
+    if (!origin || corsOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked: ${origin}`));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 

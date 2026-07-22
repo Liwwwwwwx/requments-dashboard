@@ -1,7 +1,5 @@
 "use strict";
 
-const fs = require("fs");
-const { readEvents } = require("./events");
 const { assertRequirementTransition, assertTaskTransition } = require("./state-machine");
 
 const BOARD_STATUSES = [
@@ -269,21 +267,8 @@ function buildState(events) {
   };
 }
 
-function writeState(paths, state) {
-  fs.mkdirSync(paths.dataDir, { recursive: true });
-  fs.writeFileSync(paths.stateJsonPath, `${JSON.stringify(state, null, 2)}\n`);
-}
-
-function render(paths) {
-  const events = readEvents(paths.eventsPath);
-  const state = buildState(events);
-  writeState(paths, state);
-  return state;
-}
-
 module.exports = {
   BOARD_STATUSES,
   buildState,
-  applyEvent,
-  render
+  applyEvent
 };

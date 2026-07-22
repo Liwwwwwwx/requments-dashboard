@@ -29,6 +29,23 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: traceboard_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres -d traceboard_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      ALLOW_REGISTRATION: 'true'
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/traceboard_test
 
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +61,9 @@ jobs:
 
       - name: Backend smoke test (zod schema)
         run: npm run test:schema
+
+      - name: Run PostgreSQL migrations
+        run: node backend/scripts/db-migrate.js
 
       - name: Backend tests
         run: npm run test:backend

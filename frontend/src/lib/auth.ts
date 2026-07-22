@@ -55,8 +55,12 @@ export async function authFetchJson<T>(url: string, options: RequestInit = {}): 
   const res = await authFetch(url, options);
   if (!res.ok) {
     const text = await res.text();
-    const body = text ? JSON.parse(text) : {};
-    throw new Error(body.error || `HTTP ${res.status}`);
+    let body: Record<string, unknown> = {};
+    try { body = text ? JSON.parse(text) : {}; } catch { /* ignore */ }
+    const message = (typeof body.message === 'string' && body.message) ||
+                    (typeof body.code === 'string' && body.code) ||
+                    `HTTP ${res.status}`;
+    throw new Error(message);
   }
   return res.json();
 }

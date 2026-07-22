@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { setAccessToken, authFetchJson } from '@/lib/auth';
+import { setAccessToken } from '@/lib/auth';
 
 interface User {
   id: string;
@@ -15,6 +15,7 @@ interface AuthCtx {
   user: User | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string, displayName?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthCtx>({
   user: null,
   loading: true,
   login: async () => {},
+  register: async () => {},
   logout: async () => {}
 });
 
@@ -42,8 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await res.json();
           if (data.ok) {
             setAccessToken(data.accessToken);
-            const meRes = await authFetchJson<{ ok: boolean; user: User }>('/api/auth/me');
-            if (active && meRes.ok) setUser(meRes.user);
+            // refresh 端点现在直接返回 user，无需额外请求 /auth/me
+            if (active && data.user) setUser(data.user);
           }
         } else {
           setAccessToken(null);
@@ -68,7 +70,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ username, password })
     });
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || '登录失败');
+    if (!data.ok) throw new Error(data.message || data.code || '登录失败');
+    setAccessToken(data.accessToken);
+    setUser(data.user);
+  }, []);
+
+  const register = useCallback(async (username: string, password: string, displayName?: string) => {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, password, displayName })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || data.code || '注册失败');
     setAccessToken(data.accessToken);
     setUser(data.user);
   }, []);
@@ -81,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -99,8 +114,7 @@ export function RouteGuard({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading || user || isLoginPage) return;
-    const current = `${window.location.pathname}${window.location.search}`;
-    router.replace(`/login?redirect=${encodeURIComponent(current)}`);
+    router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
   }, [isLoginPage, loading, pathname, router, user]);
 
   if (isLoginPage) return <>{children}</>;
