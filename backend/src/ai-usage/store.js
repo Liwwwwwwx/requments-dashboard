@@ -10,8 +10,7 @@
  * 余额/额度同步、快照、chat 用量聚合等已移除。
  */
 
-const fs = require("fs");
-const path = require("path");
+const { query } = require("../postgres");
 
 const DEFAULT_ACCOUNTS = [
   {
@@ -29,38 +28,9 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function usagePaths(rootDir) {
-  const dataDir = path.join(rootDir, "data", "ai-usage");
-  return {
-    dataDir,
-    accountsPath: path.join(dataDir, "accounts.json")
-  };
-}
-
-function ensureStore(rootDir) {
-  const paths = usagePaths(rootDir);
-  fs.mkdirSync(paths.dataDir, { recursive: true });
-  if (!fs.existsSync(paths.accountsPath)) {
-    const accounts = DEFAULT_ACCOUNTS.map((account) => ({
-      ...account,
-      createdAt: nowIso(),
-      updatedAt: nowIso()
-    }));
-    fs.writeFileSync(paths.accountsPath, `${JSON.stringify(accounts, null, 2)}\n`, "utf8");
-  }
-  return paths;
-}
-
-function readJson(filePath, fallback) {
-  if (!fs.existsSync(filePath)) return fallback;
-  const content = fs.readFileSync(filePath, "utf8").trim();
-  if (!content) return fallback;
-  return JSON.parse(content);
-}
-
-function readAccounts(rootDir) {
-  const paths = ensureStore(rootDir);
-  const accounts = readJson(paths.accountsPath, []);
+async function readAccounts() {
+  const stored = await query("SELECT * FROM ai_accounts WHERE enabled = true ORDER BY id");
+  const accounts = stored.rows.length ? stored.rows.map((row) => ({ id: row.id, provider: row.provider, accountName: row.account_name, baseUrl: row.base_url, modelId: row.model_id, extraHeadersJson: row.extra_headers_json ? JSON.stringify(row.extra_headers_json) : "", enabled: row.enabled })) : DEFAULT_ACCOUNTS;
   const deepseekKey = String(process.env.DEEPSEEK_API_KEY || "").trim();
   if (!deepseekKey) return accounts;
   return accounts.map((account) => {

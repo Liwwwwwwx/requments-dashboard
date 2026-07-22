@@ -37,14 +37,14 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
   const providerKey = String(body?.provider || "deepseek");
   const { mod: provider, key: resolvedProviderKey } = pickProvider(providerKey);
 
-  const accounts = readAccounts(rootDir);
+  const accounts = await readAccounts();
   const account = selectAccount(accounts, {
     provider: providerKey,
     accountId: body?.accountId || conv.accountId
   });
 
   // 1. 落库 user 消息
-  const userMsg = store.appendMessage(rootDir, projectId, {
+  const userMsg = await store.appendMessage(rootDir, projectId, {
     conversationId: conv.id,
     role: "user",
     content: body.text
@@ -56,7 +56,7 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
   if (!conv.title) {
     const candidate = store.autoTitleFromText(body.text);
     if (candidate) {
-      titledNow = store.setConversationTitleIfEmpty(rootDir, projectId, conv.id, candidate);
+      titledNow = await store.setConversationTitleIfEmpty(rootDir, projectId, conv.id, candidate);
       if (titledNow) {
         conv.title = candidate;
       }
@@ -65,18 +65,18 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
   sse.send(res, "titled", { conversationId: conv.id, title: conv.title || null });
 
   // 2. 构造 messages
-  const systemPrompt = buildSystemPrompt(rootDir, {
+  const systemPrompt = await buildSystemPrompt(rootDir, {
     projectId,
     requirementId: conv.requirementId
   });
-  const history = store.listMessages(rootDir, projectId, conv.id);
+  const history = await store.listMessages(rootDir, projectId, conv.id);
   const messages = [
     { role: "system", content: systemPrompt },
     ...history.map((m) => ({ role: m.role, content: m.content }))
   ];
 
   // 3. 准备流式 assistant 消息（先占位，落库前不持久化内容）
-  const assistantMsg = store.appendMessage(rootDir, projectId, {
+  const assistantMsg = await store.appendMessage(rootDir, projectId, {
     conversationId: conv.id,
     role: "assistant",
     content: "",
@@ -147,7 +147,7 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
             errors: validation.errors
           });
         } else {
-          const proposal = store.createProposal(rootDir, projectId, {
+          const proposal = await store.createProposal(rootDir, projectId, {
             conversationId: conv.id,
             messageId: assistantMsg.id,
             events: validation.events
@@ -164,25 +164,14 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
     }
 
     // 5. 把占位消息覆写为完整内容 + tool_calls 元数据
-    const finalMsg = store.updateMessageContent(rootDir, projectId, assistantMsg.id, {
+    const finalMsg = await store.updateMessageContent(rootDir, projectId, assistantMsg.id, {
       content: buffer,
       tokensIn: usage.inputTokens,
       tokensOut: usage.outputTokens
     });
-    store.touchConversation(rootDir, projectId, conv.id);
+    await store.touchConversation(rootDir, projectId, conv.id);
 
-    // 把 tool_calls 也存到消息里（用于对话历史展示）
-    if (toolCalls.length > 0) {
-      const db = store.openAiDb(rootDir, projectId);
-      try {
-        db.prepare("UPDATE ai_messages SET tool_calls = ? WHERE id = ?").run(
-          JSON.stringify(toolCalls),
-          finalMsg.id
-        );
-      } finally {
-        db.close();
-      }
-    }
+    if (toolCalls.length > 0) await store.updateMessageContent(rootDir, projectId, finalMsg.id, { toolCalls });
 
     sse.send(res, "usage", usage);
     const donePayload = {
@@ -199,7 +188,7 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
     const code = err.code || "AI_CHAT_FAILED";
     // 把已 buffer 的内容也保留，便于用户复盘
     if (buffer) {
-      store.updateMessageContent(rootDir, projectId, assistantMsg.id, {
+      await store.updateMessageContent(rootDir, projectId, assistantMsg.id, {
         content: buffer,
         tokensIn: usage.inputTokens,
         tokensOut: usage.outputTokens
@@ -208,12 +197,12 @@ async function streamMessage(rootDir, req, res, projectId, conv, body) {
     // 如果客户端已主动断开，则用 aborted 事件代替 error；否则把错误推回客户端
     if (err.name === "AbortError") {
       if (buffer) {
-        store.updateMessageContent(rootDir, projectId, assistantMsg.id, {
+        await store.updateMessageContent(rootDir, projectId, assistantMsg.id, {
           content: buffer + "\n[已中断]",
           tokensIn: usage.inputTokens,
           tokensOut: usage.outputTokens
         });
-        store.touchConversation(rootDir, projectId, conv.id);
+        await store.touchConversation(rootDir, projectId, conv.id);
       }
       sse.send(res, "aborted", { reason: err.message || "aborted" });
       sse.endSse(res);

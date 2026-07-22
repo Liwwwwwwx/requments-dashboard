@@ -22,6 +22,8 @@ data/
 
 # 本机 / 服务器私有配置
 ecosystem.secrets.cjs
+.env.local
+.env.test
 
 # Next.js / 构建产物
 .next/
