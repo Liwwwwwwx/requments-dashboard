@@ -107,6 +107,14 @@ describe('buildState', () => {
     expect(state.items[0].priority).toBe('P0');
   });
 
+  it('hides a requirement after req.delete while preserving the event stream', () => {
+    const state = buildState([
+      { kind: 'req.new', requirementId: 'REQ-0001', title: '待删除', summary: '测试' },
+      { kind: 'req.delete', requirementId: 'REQ-0001', actor: 'tester' }
+    ]);
+    expect(state.items).toEqual([]);
+  });
+
   it('replays legacy task events without exposing task fields', () => {
     const events = [
       {

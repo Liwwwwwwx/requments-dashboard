@@ -42,6 +42,7 @@ const KnownKinds = [
   "req.new",
   "req.status",
   "req.patch",
+  "req.delete",
   "task.new",
   "task.status",
   "contract.set",

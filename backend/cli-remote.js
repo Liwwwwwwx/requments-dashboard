@@ -12,7 +12,6 @@ const DEFAULT_TIMEOUT_MS = 60000;
 const DEFAULT_ACTOR = "Agent-A-remote";
 const DEFAULT_RETRIES = 3;
 const DEFAULT_RETRY_DELAY_MS = 2000;
-const DEFAULT_TOKEN = "531abb6a4e6d7e9c085a150be1dea0d67a9ee0b6e43436367b7a8e1d224389a4";
 
 function parseArgs(argv) {
   const positional = [];
@@ -41,7 +40,9 @@ function project() {
 }
 
 function token() {
-  return process.env.REQUIREMENTS_BOARD_TOKEN || DEFAULT_TOKEN;
+  const value = String(process.env.REQUIREMENTS_BOARD_TOKEN || "").trim();
+  if (!value) throw new Error("REQUIREMENTS_BOARD_TOKEN is required");
+  return value;
 }
 
 function timeoutMs() {

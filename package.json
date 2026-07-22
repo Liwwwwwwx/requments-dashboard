@@ -5,7 +5,8 @@
   "private": true,
   "workspaces": [
     "backend",
-    "frontend"
+    "frontend",
+    "mcp-server"
   ],
   "scripts": {
     "install:all": "npm install",
@@ -24,10 +25,12 @@
     "typecheck": "npm run typecheck --workspace=frontend",
     "lint": "npm run lint --workspace=frontend",
     "req": "node backend/cli.js",
-    "req:remote": "node backend/cli-remote.js"
+    "req:remote": "node backend/cli-remote.js",
+    "mcp": "npm run start --workspace=traceboard-mcp",
+    "test:mcp": "npm run test --workspace=traceboard-mcp"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "keywords": [
     "requirements",

@@ -27,6 +27,10 @@ describe('validateEvent', () => {
       expect(result.ts).toBeUndefined();
     });
 
+    it('accepts req.delete with a requirementId', () => {
+      expect(validateEvent({ kind: 'req.delete', requirementId: 'REQ-0001', actor: 'tester' }).kind).toBe('req.delete');
+    });
+
     it('rejects req.new without requirementId', () => {
       const ev = { kind: 'req.new', title: 't', summary: 's' };
       expect(() => validateEvent(ev)).toThrow(/req.new.*必须包含 requirementId/);
